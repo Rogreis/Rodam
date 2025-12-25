@@ -164,29 +164,109 @@ async function saveParagraph() {
   }
 }
 
-async function performSearch() {
-  // Try to find input in the modal first
-  let query = "";
-  const modalInput = document.getElementById('modalSearchInput');
-  if (modalInput) {
-    query = modalInput.value;
-  } else {
-    // Fallback to navbar input if it still exists (legacy)
-    const navInput = document.getElementById('searchInput');
-    if (navInput) query = navInput.value;
-  }
+// Toggle Search Scope Inputs
+function toggleSearchScope() {
+  const scope = document.querySelector('input[name="scopeType"]:checked').value;
+  const partsDiv = document.getElementById('partsOptions');
+  const docsInput = document.getElementById('docsInput');
 
+  if (scope === 'parts') {
+    // Enable checkboxes, disable text
+    docsInput.disabled = true;
+    partsDiv.querySelectorAll('input').forEach(el => el.disabled = false);
+  } else {
+    // Disable checkboxes, enable text
+    docsInput.disabled = false;
+    partsDiv.querySelectorAll('input').forEach(el => el.disabled = true);
+  }
+}
+
+// Load settings from backend
+async function loadSettings() {
+  try {
+    const response = await fetch('/settings');
+    if (!response.ok) return;
+    const config = await response.json();
+
+    if (Object.keys(config).length === 0) return;
+
+    // Language
+    if (config.search_lang) {
+      document.querySelector(`input[name="searchLang"][value="${config.search_lang}"]`).checked = true;
+    }
+
+    // Sort
+    if (config.search_sort) {
+      document.querySelector(`input[name="searchSort"][value="${config.search_sort}"]`).checked = true;
+    }
+
+    // Scope Type
+    if (config.search_scope_type) {
+      document.querySelector(`input[name="scopeType"][value="${config.search_scope_type}"]`).checked = true;
+    }
+
+    // Parts
+    if (config.search_parts && Array.isArray(config.search_parts)) {
+      // Uncheck all first
+      document.querySelectorAll('.part-check').forEach(el => el.checked = false);
+      // Check saved
+      config.search_parts.forEach(part => {
+        const el = document.querySelector(`.part-check[value="${part}"]`);
+        if (el) el.checked = true;
+      });
+    }
+
+    // Docs
+    if (config.search_docs) {
+      document.getElementById('docsInput').value = config.search_docs;
+    }
+
+    // Limits
+    if (config.search_max_results) {
+      document.getElementById('maxResults').value = config.search_max_results;
+      document.getElementById('maxResultsVal').innerText = config.search_max_results;
+    }
+    if (config.search_page_size) {
+      document.getElementById('pageSize').value = config.search_page_size;
+    }
+
+    toggleSearchScope();
+
+  } catch (e) {
+    console.error("Error loading settings:", e);
+  }
+}
+
+
+async function performSearch() {
+  const query = document.getElementById('modalSearchInput').value;
   if (!query) return;
 
-  // Show loading state
-  const list = document.getElementById('searchResultsList');
-  if (list) list.innerHTML = '<div class="text-center p-3">Pesquisando...</div>';
+  // Gather Config
+  const lang = document.querySelector('input[name="searchLang"]:checked').value;
+  const sort = document.querySelector('input[name="searchSort"]:checked').value;
+  const scopeType = document.querySelector('input[name="scopeType"]:checked').value;
+  const maxResults = document.getElementById('maxResults').value;
+  const pageSize = document.getElementById('pageSize').value;
+  const docs = document.getElementById('docsInput').value;
 
-  // Ensure modal is open
-  showSearchModal();
+  const parts = [];
+  document.querySelectorAll('.part-check:checked').forEach(el => parts.push(el.value));
+
+  // Show loading
+  const list = document.getElementById('searchResultsList');
+  if (list) list.innerHTML = '<div class="text-center p-3">Pesquisando e Salvando Configurações...</div>';
+
+  const payload = {
+    query, lang, sort, scope_type: scopeType, max_results: maxResults, page_size: pageSize, docs, parts
+  };
 
   try {
-    const response = await fetch(`/search?q=${encodeURIComponent(query)}`);
+    const response = await fetch('/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
     const results = await response.json();
 
     if (list) {
@@ -211,16 +291,19 @@ async function performSearch() {
           if (typeof loadDocByPaperSectionParagraph === 'function') {
             loadDocByPaperSectionParagraph(item.paper, item.section, item.paragraph);
           } else {
-            console.error("loadDocByPaperSectionParagraph not found");
+            window.location.href = `indexToc.html?paper=${item.paper}&section=${item.section}&paragraph=${item.paragraph}`;
           }
         };
+
+        const relevanceBadge = item.relevance ? `<span class="badge bg-secondary float-end">Rel: ${item.relevance}</span>` : '';
+        const displayText = item.display_text || (lang === 'pt' ? item.text_pt : item.text_en);
 
         a.innerHTML = `
                     <div class="d-flex w-100 justify-content-between">
                         <h5 class="mb-1">${item.paper}:${item.section}.${item.paragraph}</h5>
+                        ${relevanceBadge}
                     </div>
-                    <p class="mb-1">${item.text_pt || '(Sem texto PT)'}</p>
-                    <small class="text-muted">${(item.text_en || '').substring(0, 100)}...</small>
+                    <p class="mb-1">${displayText}</p>
                 `;
         list.appendChild(a);
       });
@@ -236,6 +319,10 @@ function showSearchModal() {
   if (modalEl) {
     let modal = bootstrap.Modal.getInstance(modalEl);
     if (!modal) modal = new bootstrap.Modal(modalEl);
+
+    // Load settings when opening
+    loadSettings();
+
     modal.show();
 
     // Focus input after show
