@@ -1,174 +1,242 @@
-﻿<!DOCTYPE html>  
+﻿<!DOCTYPE html>
 <html lang="en" data-bs-theme="dark">
-  
-<head>  
- <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">  
- <title>Documentos</title> 
- <meta charset="utf-8">  
- <meta name="viewport" content="width=device-width, initial-scale=1">  
-  
- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">  
- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>  
-  
-    <!-- Mermaid JS --> 
-    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script> 
-  
-  
- <link rel="preconnect" href="https://fonts.googleapis.com"> 
- <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin> 
- <link href="https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700&display=swap" rel="stylesheet"> 
-  
- <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.min.js"></script>  
- <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>  
-  
- <link href="css/tub_pt_br.css"  rel="stylesheet">
- <link href="css/combotrack.css" rel="stylesheet">
- <link href="css/indexToc.css" rel="stylesheet">
- <link href="css/articles.css" rel="stylesheet">
- <script src="js/tub_pt_br.js"></script>  
- <script src="js/indexToc.js"></script> 
-</head> 
-  
-<body onload="StartPage()"> <!-- common -->  
-    <nav class="navbar navbar-expand-lg navbar-light bg-primary"> 
-        <div class="container-fluid"> 
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" 
-                data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" 
-                aria-label="Toggle navigation"> 
-                <span class="navbar-toggler-icon"></span> 
-            </button> 
-            <div class="collapse navbar-collapse" id="navbarNav"> 
- 
-				<ul class="navbar-nav"> 
-          <li class="nav-item bg-primary">  
-            <a class="nav-link active navactive" aria-current="page" href="javascript:open_page('indexToc')">Documentos</a> 
-          </li>  
-          <li class="nav-item bg-primary">  
-            <a class="nav-link navinactive" aria-current="page" href="javascript:open_page('indexSubject')">Assuntos</a> 
-          </li>  
-          <li class="nav-item bg-primary">  
-            <a class="nav-link navinactive" aria-current="page" href="javascript:open_page('indexStudy')">Artigos</a> 
-          </li>  
-   
- 
-                    <li class="nav-item"> 
-                        <span class="navbar-brand mx-3 titulo">Estudos sobre "O Livro de Urântia"</span> 
-                    </li> 
- 
-                     
-            <div class="trackCombo"> 
-              <div class="trackCombo-input-wrapper"> 
-                <input type="text" class="trackCombo-input" id="mytrackCombo" autocomplete="off"> 
-                <button class="trackCombo-button" id="mytrackComboButton"></button> 
-              </div> 
-              <div class="trackCombo-options" id="mytrackComboOptions"></div> 
-            </div> 
- 
-                </ul> 
-                    <div class="small-text-container"> 
-                        <p class="small-text">Texto PT-BR atualizado em: 05/09/2025</p> 
-                    </div> 
- 
-                <div class="navbar-nav ms-auto">   
-			<button class="btn btn-primary" onclick="window.print()" title="Imprime o texto do documento selecionado." >Imprimir</button> 
-			    <button class="btn btn-primary" data-bs-toggle="modal"  
-				    data-bs-target="#myModal" title="Clique para entender o significado das cores de fundo de cada parágrafo.">Cores</button>  
-                </div>   
- 
-            </div> 
-        </div> 
-    </nav> 
- 
-    <main> 
-        <div id="leftColumn"> 
-        </div> 
- 
-        <div id="divisor" role="separator" aria-orientation="horizontal" tabindex="0" aria-valuemin="0" aria-valuemax="100" aria-valuenow="25" aria-label="Divisor entre colunas"></div> 
- 
-        <div id="rightColumn"> 
-        </div> 
-    </main> 
-<div class="modal" id="myModal">  
-		<div class="modal-dialog">  
-			<div class="modal-content">  
-  
-				<!-- Modal Header -->  
-				<div class="modal-header">  
-					<h4 class="modal-title">Significado das cores de fundo</h4>  
-					<button type="button" class="btn-close" data-bs-dismiss="modal"></button>  
-				</div>  
-  
-				<!-- Modal body -->  
-				<div class="modal-body">  
-  
-					<table class="table">  
-						<thead>  
-							<tr>  
-								<th>Cor de fundo</th>  
-								<th>Significado</th>  
-							</tr>  
-						</thead>  
-						<tbody>  
-							<tr>  
-								<td>  
-									<div class="badge badgeStarted">Iniciado</div>  
-								</td>  
-								<td>4986 Parágrafo(s) ainda na versão 2007.</td>  
-							</tr>  
-							<tr>  
-								<td>  
-									<div class="badge badgeWorking">Em trabalho</div>  
-								</td>  
-								<td>9156 Parágrafo(s) com tradução em andamento.</td>  
-							</tr>  
-							<tr>  
-								<td>  
-									<div class="badge badgeDoubt">Em dúvida</div>  
-								</td>  
-								<td>0 Parágrafo(s) em dúvida.</td>  
-							</tr>  
-							<tr>  
-								<td>  
-									<div class="badge badgeOk">Ok</div>  
-								</td>  
-								<td>168 Parágrafo(s) finalizado(s).</td>  
-							</tr>  
-							<tr>  
-								<td>  
-									<div class="badge badgeClosed">Fechado</div>  
-								</td>  
-								<td>6187 Parágrafo(s) fechado(s).</td>  
-							</tr>  
-						</tbody>  
-					</table>  
-				</div>  
-  
-				<!-- Modal footer -->  
-				<div class="modal-footer">  
-					<button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>  
-				</div>  
-  
-			</div>  
-		</div>  
-	</div>  
- 
-    <div class="modal fade" id="modalText" tabindex="-1"> 
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 80vw; max-height: 80vh;"> 
-            <div class="modal-content"> 
-                <div class="modal-header bg-primary"> 
-                    <h5 class="modal-title text-white"  style="color: gold;" id="tableModalLabel">Parágrafo</h5> 
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button> 
-                </div> 
-                <div class="modal-body" style="overflow-y: auto;"> 
-                    <div id="divParagrafo" class="table-responsive"> 
-                    </div> 
-                </div> 
-                <div class="modal-footer"> 
-                    <button type="button" class="btn btn-primary " data-bs-dismiss="modal">Fechar</button> 
-                </div> 
-            </div> 
-        </div> 
-    </div> 
-<script src="js/combotrack.js"></script> 
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>Documentos</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
+
+    <link href="css/tub_pt_br.css" rel="stylesheet">
+    <link href="css/combotrack.css" rel="stylesheet">
+    <link href="css/indexToc.css" rel="stylesheet">
+    <link href="css/articles.css" rel="stylesheet">
+    <script src="js/tub_pt_br.js"></script>
+    <script src="js/indexToc.js"></script>
+</head>
+
+<body onload="StartPage()"> <!-- common -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-primary">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+
+                <ul class="navbar-nav">
+                    <li class="nav-item bg-primary">
+                        <a class="nav-link active navactive" aria-current="page"
+                            href="javascript:open_page('indexToc')">Documentos</a>
+                    </li>
+                    <li class="nav-item bg-primary">
+                        <a class="nav-link navinactive" aria-current="page"
+                            href="javascript:open_page('indexSubject')">Assuntos</a>
+                    </li>
+                    <li class="nav-item bg-primary">
+                        <a class="nav-link navinactive" aria-current="page"
+                            href="javascript:open_page('indexStudy')">Artigos</a>
+                    </li>
+                    <li class="nav-item bg-primary">
+                        <a class="nav-link navinactive" aria-current="page"
+                            href="javascript:showSearchModal()">Busca</a>
+                    </li>
+                    <li class="nav-item bg-primary">
+                        <a class="nav-link navinactive" aria-current="page"
+                            href="javascript:showSettingsModal()">Configurações</a>
+                    </li>
+
+
+                    <li class="nav-item">
+                        <span class="navbar-brand mx-3 titulo">Estudos sobre "O Livro de Urântia"</span>
+                    </li>
+
+
+                    <div class="trackCombo">
+                        <div class="trackCombo-input-wrapper">
+                            <input type="text" class="trackCombo-input" id="mytrackCombo" autocomplete="off"
+                                placeholder="Ir para ex: 1:2.3">
+                            <button class="trackCombo-button" id="mytrackComboButton"></button>
+                        </div>
+                        <div class="trackCombo-options" id="mytrackComboOptions"></div>
+                    </div>
+
+                </ul>
+                <div class="small-text-container">
+                    <p class="small-text">Texto PT-BR atualizado em: 05/09/2025</p>
+                </div>
+
+                <div class="navbar-nav ms-auto">
+                    <button class="btn btn-primary" onclick="window.print()"
+                        title="Imprime o texto do documento selecionado.">Imprimir</button>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal"
+                        title="Clique para entender o significado das cores de fundo de cada parágrafo.">Cores</button>
+                </div>
+
+            </div>
+        </div>
+    </nav>
+
+    <main>
+        <div id="leftColumn">
+        </div>
+
+        <div id="divisor" role="separator" aria-orientation="horizontal" tabindex="0" aria-valuemin="0"
+            aria-valuemax="100" aria-valuenow="25" aria-label="Divisor entre colunas"></div>
+
+        <div id="rightColumn">
+        </div>
+    </main>
+    <div class="modal" id="myModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+
+                <!-- Modal Header -->
+                <div class="modal-header">
+                    <h4 class="modal-title">Significado das cores de fundo</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+
+                <!-- Modal body -->
+                <div class="modal-body">
+
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Cor de fundo</th>
+                                <th>Significado</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="badge badgeStarted">Iniciado</div>
+                                </td>
+                                <td>4986 Parágrafo(s) ainda na versão 2007.</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="badge badgeWorking">Em trabalho</div>
+                                </td>
+                                <td>9156 Parágrafo(s) com tradução em andamento.</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="badge badgeDoubt">Em dúvida</div>
+                                </td>
+                                <td>0 Parágrafo(s) em dúvida.</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="badge badgeOk">Ok</div>
+                                </td>
+                                <td>168 Parágrafo(s) finalizado(s).</td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="badge badgeClosed">Fechado</div>
+                                </td>
+                                <td>6187 Parágrafo(s) fechado(s).</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Modal footer -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Fechar</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modalText" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+            style="max-width: 80vw; max-height: 80vh;">
+            <div class="modal-content">
+                <div class="modal-header bg-primary">
+                    <h5 class="modal-title text-white" style="color: gold;" id="tableModalLabel">Parágrafo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+                </div>
+                <div class="modal-body" style="overflow-y: auto;">
+                    <div id="divParagrafo" class="table-responsive">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary " data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">Editar Parágrafo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm">
+                        <input type="hidden" id="editPaper">
+                        <input type="hidden" id="editSection">
+                        <input type="hidden" id="editParagraph">
+                        <div class="mb-3">
+                            <label for="editText" class="form-label">Texto (Português)</label>
+                            <textarea class="form-control" id="editText" rows="10"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveParagraph()">Salvar Alterações</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results Modal -->
+    <div class="modal fade" id="searchResultsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-dark">
+                    <h5 class="modal-title">Pesquisar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" id="modalSearchInput" placeholder="Digite sua busca..."
+                            aria-label="Search">
+                        <button class="btn btn-primary" type="button" onclick="performSearch()">Buscar</button>
+                    </div>
+                    <hr>
+                    <div id="searchResultsList" class="list-group">
+                        <!-- Results injected here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/combotrack.js"></script>
 </body>
+
 </html>
