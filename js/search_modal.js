@@ -1,7 +1,58 @@
 // JavaScript para controlar a abertura do modal de busca
 function showSearchModal() {
-    var myModal = new bootstrap.Modal(document.getElementById('searchResultsModal'));
-    myModal.show();
+    // Check if we are returning from a performed search
+    const urlParams = new URLSearchParams(window.location.search); // Note: window.location.search might be empty if hash routing or SPA-like loading.
+    // Our 'loadContent' updates history? No. It just fetches.
+    // The loadContent call was `loadContent('/search?action=perform_search')`.
+    // The fetch URL has the param. The window URL might not.
+    // However, the `SearchFragment` injects `<script>showSearchModal()</script>`.
+
+    // Better approach: Pass an argument to showSearchModal based on context? No, the call is hardcoded in Python.
+
+    // Let's check a global flag or the element state.
+    // Actually, `loadContent` URL is internal.
+    // If the Python code injects the script, it executes.
+
+    // Correct logic:
+    // If we just performed a search, we want to SEE the results (the text in Left/Right columns).
+    // We do NOT want the modal to cover them.
+    // So distinct state is needed.
+
+    // If I modify SearchFragment to conditionally inject the script?
+    // That requires `app.py` to pass the `action` param to `SearchFragment`.
+    // Let's do that. It's robust.
+
+    // But since I am in `js/search_modal.js` instructions here...
+    // I will proceed with the Python fix in the NEXT tool call if this one was intended for JS.
+    // Wait, I can't conditionally execute the tool.
+    // I will assume modifying Python is better.
+
+    // Let's Stick to the requested tool change: JS.
+    // But JS `window.location` might `/?p=indexToc`. `loadContent` doesn't change window URL?
+    // Checking `app.py`, `loadContent` updates history? No "pushState" seen in `main.html`.
+
+    // So `window.location` is useless.
+
+    // Alternative: set a global JS variable before calling loadContent?
+    // In performSearch: `window.justPerformedSearch = true; loadContent(...)`
+    // In showSearchModal: `if (window.justPerformedSearch) { window.justPerformedSearch = false; return; }`
+
+    if (window.justPerformedSearch) {
+        window.justPerformedSearch = false;
+        return;
+    }
+
+    var el = document.getElementById('searchResultsModal');
+    // Use getOrCreateInstance if available (BS5), otherwise fallback logic using getInstance
+    var myModal = bootstrap.Modal.getInstance(el);
+    if (!myModal) {
+        myModal = new bootstrap.Modal(el);
+    }
+
+    // Only show if not already shown to avoid backdrop accumulation or interfering with open state
+    if (!el.classList.contains('show')) {
+        myModal.show();
+    }
 }
 
 function toggleSearchScope() {
@@ -67,10 +118,9 @@ async function performSearch() {
         SearchItemsToShow: SearchItemsToShow
     };
 
-    const resultsList = document.getElementById('searchResultsList');
-    resultsList.innerHTML = '<div class="text-center text-white"><div class="spinner-border" role="status"></div><br>Buscando...</div>';
-
     try {
+        // We only send the payload to save the config.
+        // We ignore the returned results because the requirement is to "return to SearchFragment".
         const response = await fetch('/search', {
             method: 'POST',
             headers: {
@@ -79,17 +129,29 @@ async function performSearch() {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error('Erro na busca');
+        if (!response.ok) throw new Error('Erro ao salvar busca');
 
-        const results = await response.json();
-        renderSearchResults(results);
+        // Hide Modal
+        const el = document.getElementById('searchResultsModal');
+        const modal = bootstrap.Modal.getInstance(el);
+        if (modal) {
+            modal.hide();
+        }
+
+        // Trigger reload of the search page.
+        // This causes the SearchFragment to render again.
+        // The SearchFragment will read the updated global_config (saved by /search endpoint).
+        window.justPerformedSearch = true;
+        loadContent('/search?action=perform_search');
 
     } catch (error) {
         console.error(error);
-        resultsList.innerHTML = `<div class="alert alert-danger">Erro ao realizar busca: ${error.message}</div>`;
+        alert(`Erro ao iniciar busca: ${error.message}`);
     }
 }
 
+// renderSearchResults is no longer needed in the modal
+/*
 function renderSearchResults(results) {
     const list = document.getElementById('searchResultsList');
     list.innerHTML = '';
@@ -137,3 +199,4 @@ function renderSearchResults(results) {
         list.appendChild(div);
     });
 }
+*/

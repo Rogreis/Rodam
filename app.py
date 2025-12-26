@@ -254,7 +254,7 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         {
             "id": "search", 
             "label": "Busca", 
-            "href": "javascript:showSearchModal()" 
+            "href": "javascript:loadContent('/search')" 
         },
         {
             "id": "settings", 

@@ -193,8 +193,14 @@
                 const leftDiv = document.getElementById('leftColumn');
                 const rightDiv = document.getElementById('rightColumn');
 
-                if (leftDiv) leftDiv.innerHTML = data.left;
-                if (rightDiv) rightDiv.innerHTML = data.right;
+                if (leftDiv) {
+                    leftDiv.innerHTML = data.left;
+                    executeScripts(leftDiv);
+                }
+                if (rightDiv) {
+                    rightDiv.innerHTML = data.right;
+                    executeScripts(rightDiv);
+                }
 
                 // Update active state in navbar
                 document.querySelectorAll('.nav-link').forEach(link => {
@@ -211,6 +217,16 @@
                 console.error('Error loading content:', error);
                 document.getElementById('rightColumn').innerHTML = `<p class="text-danger">Erro ao carregar conteúdo: ${error.message}</p>`;
             }
+        }
+
+        function executeScripts(container) {
+            const scripts = container.querySelectorAll('script');
+            scripts.forEach(oldScript => {
+                const newScript = document.createElement('script');
+                Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                newScript.textContent = oldScript.textContent;
+                oldScript.parentNode.replaceChild(newScript, oldScript);
+            });
         }
     </script>
 </body>
