@@ -1,224 +1,273 @@
-from flask import Flask, send_from_directory, request, jsonify
 import os
-import glob
-from bs4 import BeautifulSoup
-import re
 import sys
+import threading
+import time
+import json
+import uvicorn
+import webview
+from fastapi import FastAPI, Request, Query
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
+from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
+from typing import List, Optional
+from bs4 import BeautifulSoup
+import logging
+
+# Import isolated Search Engine
+from search_engine import RodamSearch
+
+
+# 1. Configuração Básica (Afeta o log raiz e os filhos)
+logging.basicConfig(
+    level=logging.INFO, # Mostra INFO, WARNING, ERROR e CRITICAL
+    format='%(levelname)s: \t%(asctime)s - %(message)s',
+    datefmt='%H:%M:%S'
+)
+
+# 2. Crie o seu logger pessoal
+logger = logging.getLogger("Rodam")
+
+# --- Configuration & Paths ---
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
         base_path = os.path.abspath(".")
-
     return os.path.join(base_path, relative_path)
 
-# Initialize Flask app
-# static_folder will be set dynamically or we use send_from_directory with explicit paths
-app = Flask(__name__, static_folder=resource_path('.'))
+def get_config_dir():
+    if sys.platform == 'win32':
+        base = os.environ.get('APPDATA')
+    elif sys.platform == 'darwin':
+        base = os.path.join(os.environ.get('HOME'), 'Library', 'Application Support')
+    else:
+        base = os.path.join(os.environ.get('HOME'), '.config')
+    return os.path.join(base, 'Rodam')
 
-# Global Search Index
-SEARCH_INDEX = []
+CONFIG_FILE = os.path.join(get_config_dir(), 'Rodam.json')
 
-def load_content():
-    """Parses all content/Doc*.html files and builds the search index."""
-    print("Loading content for search index...")
-    global SEARCH_INDEX
-    SEARCH_INDEX = []
+# Ensure config dir
+if not os.path.exists(get_config_dir()):
+    os.makedirs(get_config_dir())
+
+# --- FastAPI App ---
+app = FastAPI()
+
+# Templates
+templates = Jinja2Templates(directory=resource_path("templates"))
+
+# Initialize Search Engine
+search_engine = RodamSearch()
+
+
+
+# Monte pastas específicas, não a raiz inteira
+app.mount("/css", StaticFiles(directory=resource_path("css")), name="css")
+app.mount("/js", StaticFiles(directory=resource_path("js")), name="js")
+app.mount("/content", StaticFiles(directory=resource_path("content")), name="content")
+
+# Se tiver outros arquivos soltos na raiz que o HTML chama, monte-os ou mova-os.
+# Mas REMOVA app.mount("/", ...)
+
+
+# --- Models ---
+class SearchRequest(BaseModel):
+    query: str
+    lang: str = 'pt'
+    sort: str = 'sequential'
+    scope_type: str = 'parts'
+    parts: List[str] = []
+    docs: str = ''
+    max_results: int = 100
+    page_size: int = 50
+
+class SaveParagraphRequest(BaseModel):
+    paper: int
+    section: int
+    paragraph: int
+    text: str
+
+# --- Endpoints ---
+
+@app.get("/")
+async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
+    """
+    Rota principal que renderiza a página baseada no argumento 'p'.
+    """
+    logger.info(f"Rendering page: {p}")
     
-    # Use resource_path for globbing
-    search_path = resource_path(os.path.join('content', 'Doc*.html'))
-    files = glob.glob(search_path)
-    print(f"Searching in {search_path}, found {len(files)} files")
-    
-    for file_path in files:
+    # Definição dos itens do menu para facilitar a iteração no template
+    nav_items = [
+        {
+            "id": "indexToc", 
+            "label": "Documentos", 
+            "href": "javascript:loadContent('/toc')"
+        },
+        {
+            "id": "indexSubject", 
+            "label": "Assuntos", 
+            "href": "javascript:loadContent('/subject')"
+        },
+        {
+            "id": "indexStudy", 
+            "label": "Artigos", 
+            "href": "javascript:loadContent('/articles')"
+        },
+        {
+            "id": "search", 
+            "label": "Busca", 
+            "href": "javascript:loadContent('/search')"
+        },
+        {
+            "id": "settings", 
+            "label": "Configurações", 
+            "href": "javascript:loadContent('/settings')"
+        }
+    ]
+
+    return templates.TemplateResponse("main.html", {
+        "request": request,
+        "current_page": p,
+        "nav_items": nav_items
+    })
+
+# --- UI Fragment Endpoints ---
+
+@app.get("/toc")
+async def get_toc_ui():
+    return JSONResponse({
+        "left": "<p>indexToc-left</p>",
+        "right": "<p>indexToc-right</p>"
+    })
+
+@app.get("/subject")
+async def get_subject_ui():
+    return JSONResponse({
+        "left": "<p>indexSubject-left</p>",
+        "right": "<p>indexSubject-right</p>"
+    })
+
+@app.get("/articles")
+async def get_articles_ui():
+    return JSONResponse({
+        "left": "<p>indexStudy-left</p>",
+        "right": "<p>indexStudy-right</p>"
+    })
+
+@app.get("/search")
+async def get_search_ui():
+    return JSONResponse({
+        "left": "<p>search-left</p>",
+        "right": "<p>search-right</p>"
+    })
+
+@app.get("/settings")
+async def get_settings_ui():
+    return JSONResponse({
+        "left": "<p>settings-left</p>",
+        "right": "<p>settings-right</p>"
+    })
+
+# Renamed API endpoint to avoid conflict
+@app.get("/api/settings")
+async def get_settings_data():
+    if os.path.exists(CONFIG_FILE):
         try:
-            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
-                content = f.read()
-            
-            soup = BeautifulSoup(content, 'html.parser')
-            rows = soup.find_all('tr')
-            for row in rows:
-                cols = row.find_all('td')
-                if len(cols) == 2:
-                    # English Column
-                    div_en = cols[0].find('div')
-                    if not div_en: continue
-                    
-                    id_str = div_en.get('id') # e.g., p001_000_001
-                    if not id_str: continue
-                    
-                    # Parse ID
-                    parts = id_str.split('_')
-                    if len(parts) != 3: continue
-                    
-                    try:
-                        paper = int(parts[0][1:])
-                        section = int(parts[1])
-                        paragraph = int(parts[2])
-                    except ValueError:
-                        continue
-                        
-                    text_en = div_en.get_text(strip=True)
-                    
-                    # Portuguese Column
-                    div_pt = cols[1].find('div')
-                    text_pt = ""
-                    if div_pt:
-                        text_pt = div_pt.get_text(strip=True)
-                    
-                    SEARCH_INDEX.append({
-                        'id': id_str,
-                        'paper': paper,
-                        'section': section,
-                        'paragraph': paragraph,
-                        'text_en': text_en,
-                        'text_pt': text_pt
-                    })
-        except Exception as e:
-            print(f"Error parsing {file_path}: {e}")
-            
-    print(f"Index built with {len(SEARCH_INDEX)} paragraphs.")
+            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except:
+            return {}
+    return {}
 
-@app.route('/')
-def index():
-    return send_from_directory(resource_path('.'), 'indexToc.html')
-
-@app.route('/<path:path>')
-def serve_static(path):
-    file_path = resource_path(path)
-    if os.path.exists(file_path):
-        return send_from_directory(resource_path('.'), path)
-    return "File not found", 404
-
-@app.route('/search')
-def search():
-    query = request.args.get('q', '').lower()
-    if not query:
-        return jsonify([])
-    
-    results = []
-    # Simple case-insensitive contains search
-    for item in SEARCH_INDEX:
-        if query in item['text_pt'].lower() or query in item['text_en'].lower():
-            # Highlight match ? (Optional, maybe later)
-            results.append(item)
-            if len(results) > 50: # Limit results
-                break
-    
-    return jsonify(results)
-
-@app.route('/save_paragraph', methods=['POST'])
-def save_paragraph():
-    data = request.json
-    paper = data.get('paper')
-    section = data.get('section')
-    paragraph = data.get('paragraph')
-    new_text = data.get('text')
-    
-    if paper is None or section is None or paragraph is None or new_text is None:
-        return jsonify({'error': 'Missing fields'}), 400
+@app.post("/search")
+async def search_endpoint(request: SearchRequest):
+    # Save Settings
+    config = request.dict()
+    # Remove query from saved config to keep it generic
+    config_to_save = config.copy()
+    if 'query' in config_to_save:
+        del config_to_save['query']
         
+    try:
+        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            json.dump(config_to_save, f, indent=4)
+    except Exception as e:
+        print(f"Error saving config: {e}")
+
+    # Perform Search
+    if not request.query:
+        return []
+
+    return search_engine.search(
+        query_str=request.query,
+        lang=request.lang,
+        max_results=request.max_results
+    )
+
+@app.post("/save_paragraph")
+async def save_paragraph_endpoint(req: SaveParagraphRequest):
     # Construct Filename
-    filename = f"Doc{str(paper).zfill(3)}.html"
+    filename = f"Doc{str(req.paper).zfill(3)}.html"
     filepath = resource_path(os.path.join('content', filename))
     
     if not os.path.exists(filepath):
-        return jsonify({'error': 'File not found'}), 404
+        return JSONResponse(status_code=404, content={'error': 'File not found'})
         
     try:
-        # Read file
         with open(filepath, 'r', encoding='utf-8') as f:
             content = f.read()
             
         soup = BeautifulSoup(content, 'html.parser')
         
-        # IDs are on the EN div: pPPP_SSS_PPP
-        id_str = f"p{str(paper).zfill(3)}_{str(section).zfill(3)}_{str(paragraph).zfill(3)}"
+        id_str = f"p{str(req.paper).zfill(3)}_{str(req.section).zfill(3)}_{str(req.paragraph).zfill(3)}"
         
+        # Locating logic logic (same as legacy)
         div_en = soup.find('div', id=id_str)
         if not div_en:
-             return jsonify({'error': 'Paragraph ID not found'}), 404
+             return JSONResponse(status_code=404, content={'error': 'Paragraph ID not found'})
              
-        # Find the parent row
         td_en = div_en.find_parent('td')
         tr = td_en.find_parent('tr')
-        
-        # Get the PT col (index 1)
         td_pt = tr.find_all('td')[1]
         div_pt = td_pt.find('div')
         
-        # Update text
-        # Strategy: We want to preserve the <a ...><small>...</small></a> part if it exists
-        # But for now, we assume the user is editing the 'text' part.
-        # Let's see structure again:
-        # <div ...> <a ...><small>1:0-1 (21.1)</small></a>  TEXT IS HERE </div>
-        
-        # Simple approach: Rebuild the innerHTML.
-        # Find the anchor/small tag
         anchor = div_pt.find('a')
         
-        # Create new content
-        # Note: 'new_text' from frontend should be just the text, or HTML?
-        # User said "search and editing of paragraphs".
-        # Assuming plain text update for now, but preserving the ID tag.
-        
         if anchor:
-            # Clear div content but keep anchor
-            # This is tricky with BS4.
-            # Let's clean the div and re-append.
             anchor_soup = BeautifulSoup(str(anchor), 'html.parser').body.next
             div_pt.clear()
             div_pt.append(anchor_soup)
-            div_pt.append("  " + new_text) # Add space
+            div_pt.append("  " + req.text)
         else:
-            div_pt.string = new_text
+            div_pt.string = req.text
             
-        # Write back
-        # Use soup.prettify() or str(soup)?
-        # HTML files might have specific formatting. str(soup) usually works but might change formatting.
-        # Given it's a "Bootstrap 5" site, might be robust enough.
-        
         with open(filepath, 'w', encoding='utf-8') as f:
             f.write(str(soup))
             
-        # Update Index
-        for item in SEARCH_INDEX:
-            if item['id'] == id_str:
-                item['text_pt'] = new_text
-                break
-                
-        return jsonify({'status': 'success'})
+        return {'status': 'success'}
         
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return JSONResponse(status_code=500, content={'error': str(e)})
 
-import sys
-import threading
-import webview
-import time
-
-# Initialize Index on Start
-load_content()
-
-def start_flask():
-    # Run Flask without the reloader to avoid MainThread issues in pywebview
-    app.run(debug=False, port=5000, use_reloader=False)
+# --- Server Start ---
+def start_server():
+    # Run Uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=5000, log_level="info")
 
 if __name__ == '__main__':
-    print("Starting Standalone App...")
+    print("Starting Rodam (FastAPI + Whoosh)...")
     
-    # Start Flask in a background thread
-    t = threading.Thread(target=start_flask)
+    # Start Server Thread
+    t = threading.Thread(target=start_server)
     t.daemon = True
     t.start()
     
-    # Give Flask a moment to start
-    time.sleep(1)
+    # Give it a moment
+    time.sleep(1.5)
     
-    # Create the standalone window
-    # Validates if local server is up, otherwise points to static file or error
-    webview.create_window('Rodam', 'http://localhost:5000', maximized=True)
+    # Start WebView
+    webview.create_window('Rodam', 'http://127.0.0.1:5000', maximized=True)
     webview.start()

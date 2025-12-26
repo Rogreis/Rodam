@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Type" content="text/html; charset=windows-1252">
+    <title>Rodam - O Livro de Urântia</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Mermaid JS -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
+
+    <link href="css/tub_pt_br.css" rel="stylesheet">
+    <link href="css/combotrack.css" rel="stylesheet">
+    <link href="css/indexToc.css" rel="stylesheet">
+    <link href="css/articles.css" rel="stylesheet">
+    <script src="js/tub_pt_br.js"></script>
+    <script src="js/indexToc.js"></script>
+
+    <link href="css/main_layout.css" rel="stylesheet">
+</head>
+
+<body>
+    <div class="container-fluid p-0">
+        <nav class="navbar navbar-expand-lg navbar-light bg-primary">
+            <!-- Navbar Content Preserved -->
+            <div class="container-fluid">
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                    aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+
+                        <li class="nav-item bg-primary">
+                            <a class="nav-link navinactive" href="/?p=indexToc" title="Voltar ao Início">
+                                <i class="bi bi-house-door-fill text-white"></i>
+                            </a>
+                        </li>
+
+                        {% for item in nav_items %}
+                        <li class="nav-item bg-primary">
+                            <a class="nav-link {{ 'active navactive' if current_page == item.id else 'navinactive' }}"
+                                aria-current="{{ 'page' if current_page == item.id else 'false' }}"
+                                href="{{ item.href }}">
+                                {{ item.label }}
+                            </a>
+                        </li>
+                        {% endfor %}
+
+                        <li class="nav-item">
+                            <span class="navbar-brand mx-3 titulo">Estudos sobre "O Livro de Urântia"</span>
+                        </li>
+
+                        <div class="trackCombo">
+                            <div class="trackCombo-input-wrapper">
+                                <input type="text" class="trackCombo-input" id="mytrackCombo" autocomplete="off"
+                                    placeholder="Ir para ex: 1:2.3">
+                                <button class="trackCombo-button" id="mytrackComboButton"></button>
+                            </div>
+                            <div class="trackCombo-options" id="mytrackComboOptions"></div>
+                        </div>
+
+                    </ul>
+
+                    <div class="small-text-container">
+                        <p class="small-text">Texto PT-BR atualizado em: 05/09/2025</p>
+                    </div>
+
+                    <div class="navbar-nav ms-auto">
+                        <button class="btn btn-primary" onclick="window.print()"
+                            title="Imprime o texto do documento selecionado.">Imprimir</button>
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal"
+                            title="Clique para entender o significado das cores de fundo de cada parágrafo.">Cores</button>
+                    </div>
+
+                </div>
+            </div>
+        </nav>
+
+        <div class="main-row">
+            <div id="leftColumn">
+            </div>
+
+            <div id="divisor"></div>
+
+            <div id="rightColumn">
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals (Preserved) -->
+    <!-- Colors Modal -->
+    <div class="modal fade" id="colorsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Definição de Cores</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Aqui você poderá configurar as cores da interface (Em breve).</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Results Modal (Using the new dark mode structure) -->
+    <div class="modal fade" id="searchResultsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-dark">
+                    <h5 class="modal-title">Pesquisar</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Search Controls -->
+                    <div class="container-fluid mb-3">
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="modalSearchInput"
+                                        placeholder="Digite sua busca..." aria-label="Search">
+                                    <button class="btn btn-primary" type="button"
+                                        onclick="performSearch()">Buscar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Grid (Dark Mode) -->
+                        <div class="row p-2 border border-secondary rounded bg-dark text-white">
+                            <!-- Column 1: Language & Sorting -->
+                            <div class="col-md-3">
+                                <h6>Idioma</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="searchLang" id="langPT"
+                                        value="pt" checked>
+                                    <label class="form-check-label" for="langPT">Português</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="searchLang" id="langEN"
+                                        value="en">
+                                    <label class="form-check-label" for="langEN">Inglês</label>
+                                </div>
+                                <hr class="my-2">
+                                <h6>Ordenação</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="searchSort" id="sortSeq"
+                                        value="sequential" checked>
+                                    <label class="form-check-label" for="sortSeq">Sequencial</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="searchSort" id="sortRank"
+                                        value="ranking">
+                                    <label class="form-check-label" for="sortRank">Ranking</label>
+                                </div>
+                            </div>
+
+                            <!-- Column 2: Filter Scope -->
+                            <div class="col-md-5">
+                                <h6>Onde buscar?</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scopeType" id="scopeParts"
+                                        value="parts" checked onchange="toggleSearchScope()">
+                                    <label class="form-check-label" for="scopeParts">Por Partes</label>
+                                </div>
+                                <div class="ms-3" id="partsOptions">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" id="partIntro"
+                                            value="Intro" checked>
+                                        <label class="form-check-label" for="partIntro">Intr.</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" id="part1"
+                                            value="Part I" checked>
+                                        <label class="form-check-label" for="part1">Pt I</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" id="part2"
+                                            value="Part II" checked>
+                                        <label class="form-check-label" for="part2">Pt II</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" id="part3"
+                                            value="Part III" checked>
+                                        <label class="form-check-label" for="part3">Pt III</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" id="part4"
+                                            value="Part IV" checked>
+                                        <label class="form-check-label" for="part4">Pt IV</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="radio" name="scopeType" id="scopeDocs"
+                                        value="docs" onchange="toggleSearchScope()">
+                                    <label class="form-check-label" for="scopeDocs">Por Documentos</label>
+                                </div>
+                                <div class="ms-3">
+                                    <input type="text" class="form-control form-control-sm" id="docsInput"
+                                        placeholder="Ex: 1; 5-10; 100" disabled>
+                                </div>
+                            </div>
+
+                            <!-- Column 3: Limits -->
+                            <div class="col-md-4">
+                                <h6>Limites</h6>
+                                <label for="maxResults" class="form-label">Máx. de Resultados: <span
+                                        id="maxResultsVal">100</span></label>
+                                <input type="range" class="form-range" min="20" max="300" step="10" id="maxResults"
+                                    value="100"
+                                    oninput="document.getElementById('maxResultsVal').innerText = this.value">
+
+                                <div class="mt-2">
+                                    <label for="pageSize" class="form-label">Itens por página</label>
+                                    <select class="form-select form-select-sm" id="pageSize">
+                                        <option value="20">20</option>
+                                        <option value="50" selected>50</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <div id="searchResultsList" class="list-group">
+                        <!-- Results injected here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
+        crossorigin="anonymous"></script>
+
+    <!-- Local JS -->
+    <script src="js/tub_pt_br.js"></script>
+    <script src="js/indexToc.js"></script> <!-- Assuming this handles ToC population -->
+    <script src="js/combotrack.js"></script>
+
+    <script>
+        // Init logic based on 'p' parameter
+        document.addEventListener('DOMContentLoaded', () => {
+            // Resizer Logic
+            const divisor = document.getElementById('divisor');
+            const leftColumn = document.getElementById('leftColumn');
+            const rightColumn = document.getElementById('rightColumn');
+            const container = document.querySelector('.main-row'); // Parent flex container
+
+            let isResizing = false;
+
+            divisor.addEventListener('mousedown', (e) => {
+                isResizing = true;
+                divisor.classList.add('resizing');
+                document.body.style.cursor = 'col-resize';
+                document.body.style.userSelect = 'none'; // Disable text selection during drag
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isResizing) return;
+
+                // Calculate new width relative to container
+                const containerRect = container.getBoundingClientRect();
+                const containerLeft = containerRect.left;
+
+                // Current Mouse X relative to container
+                let pointerRelativeXpos = e.clientX - containerLeft;
+
+                // Constrain minimum widths (e.g., 100px)
+                const minWidth = 100;
+                const maxWidth = containerRect.width - 100;
+
+                if (pointerRelativeXpos < minWidth) pointerRelativeXpos = minWidth;
+                if (pointerRelativeXpos > maxWidth) pointerRelativeXpos = maxWidth;
+
+                // Set left width (Flexbox will adjust right automatically via flex-grow)
+                leftColumn.style.width = `${pointerRelativeXpos}px`;
+                leftColumn.style.flex = `0 0 ${pointerRelativeXpos}px`; // Fix flex properties
+            });
+
+            document.addEventListener('mouseup', () => {
+                if (isResizing) {
+                    isResizing = false;
+                    divisor.classList.remove('resizing');
+                    document.body.style.cursor = 'default';
+                    document.body.style.userSelect = 'auto';
+                }
+            });
+        });
+
+        async function loadContent(route) {
+            try {
+                const response = await fetch(route);
+                if (!response.ok) throw new Error('Network response was not ok');
+                const data = await response.json();
+
+                const leftDiv = document.getElementById('leftColumn');
+                const rightDiv = document.getElementById('rightColumn');
+
+                if (leftDiv) leftDiv.innerHTML = data.left;
+                if (rightDiv) rightDiv.innerHTML = data.right;
+
+                // Update active state in navbar
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active', 'navactive');
+                    link.classList.add('navinactive');
+                    // Simple check if href matches
+                    if (link.getAttribute('href') === `javascript:loadContent('${route}')`) {
+                        link.classList.add('active', 'navactive');
+                        link.classList.remove('navinactive');
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error loading content:', error);
+                document.getElementById('rightColumn').innerHTML = `<p class="text-danger">Erro ao carregar conteúdo: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+
+</html>

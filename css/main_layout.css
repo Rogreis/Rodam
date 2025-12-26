@@ -1,0 +1,48 @@
+/* Split Layout Styling */
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden; /* Prevent body scroll, handled by columns */
+}
+
+/* Parent container for the split layout */
+.main-row {
+    display: flex;
+    flex-direction: row;
+    height: calc(100vh - 66px); /* Subtract navbar height (approx 56px + padding/borders if any) */
+    width: 100%;
+    margin: 0;
+    overflow: hidden;
+}
+
+#leftColumn {
+    width: 300px; /* Initial width */
+    min-width: 100px;
+    height: 100%;
+    overflow-y: auto;
+    border-right: 1px solid #ccc;
+    flex-shrink: 0; 
+}
+
+#divisor {
+    width: 8px;
+    background-color: #f1f1f1;
+    cursor: col-resize;
+    flex-shrink: 0;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#divisor:active, #divisor:hover {
+    background-color: #ddd;
+}
+
+#rightColumn {
+    flex-grow: 1; 
+    min-width: 200px;
+    height: 100%;
+    overflow-y: auto;
+}

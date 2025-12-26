@@ -2,3 +2,8 @@ flask
 beautifulsoup4
 lxml
 pywebview
+fastapi
+uvicorn
+whoosh
+jinja2
+jinja2
