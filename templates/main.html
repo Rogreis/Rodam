@@ -27,6 +27,7 @@
     <link href="css/articles.css" rel="stylesheet">
     <script src="js/tub_pt_br.js"></script>
     <script src="js/indexToc.js"></script>
+    <script src="js/search_modal.js"></script> <!-- Added Search Modal Logic -->
 
     <link href="css/main_layout.css" rel="stylesheet">
 </head>
@@ -121,135 +122,8 @@
         </div>
     </div>
 
-    <!-- Search Results Modal (Using the new dark mode structure) -->
-    <div class="modal fade" id="searchResultsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header bg-info text-dark">
-                    <h5 class="modal-title">Pesquisar</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Search Controls -->
-                    <div class="container-fluid mb-3">
-                        <div class="row mb-2">
-                            <div class="col-12">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="modalSearchInput"
-                                        placeholder="Digite sua busca..." aria-label="Search">
-                                    <button class="btn btn-primary" type="button"
-                                        onclick="performSearch()">Buscar</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Settings Grid (Dark Mode) -->
-                        <div class="row p-2 border border-secondary rounded bg-dark text-white">
-                            <!-- Column 1: Language & Sorting -->
-                            <div class="col-md-3">
-                                <h6>Idioma</h6>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="searchLang" id="langPT"
-                                        value="pt" checked>
-                                    <label class="form-check-label" for="langPT">Português</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="searchLang" id="langEN"
-                                        value="en">
-                                    <label class="form-check-label" for="langEN">Inglês</label>
-                                </div>
-                                <hr class="my-2">
-                                <h6>Ordenação</h6>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="searchSort" id="sortSeq"
-                                        value="sequential" checked>
-                                    <label class="form-check-label" for="sortSeq">Sequencial</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="searchSort" id="sortRank"
-                                        value="ranking">
-                                    <label class="form-check-label" for="sortRank">Ranking</label>
-                                </div>
-                            </div>
-
-                            <!-- Column 2: Filter Scope -->
-                            <div class="col-md-5">
-                                <h6>Onde buscar?</h6>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="scopeType" id="scopeParts"
-                                        value="parts" checked onchange="toggleSearchScope()">
-                                    <label class="form-check-label" for="scopeParts">Por Partes</label>
-                                </div>
-                                <div class="ms-3" id="partsOptions">
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" id="partIntro"
-                                            value="Intro" checked>
-                                        <label class="form-check-label" for="partIntro">Intr.</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" id="part1"
-                                            value="Part I" checked>
-                                        <label class="form-check-label" for="part1">Pt I</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" id="part2"
-                                            value="Part II" checked>
-                                        <label class="form-check-label" for="part2">Pt II</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" id="part3"
-                                            value="Part III" checked>
-                                        <label class="form-check-label" for="part3">Pt III</label>
-                                    </div>
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" id="part4"
-                                            value="Part IV" checked>
-                                        <label class="form-check-label" for="part4">Pt IV</label>
-                                    </div>
-                                </div>
-
-                                <div class="form-check mt-2">
-                                    <input class="form-check-input" type="radio" name="scopeType" id="scopeDocs"
-                                        value="docs" onchange="toggleSearchScope()">
-                                    <label class="form-check-label" for="scopeDocs">Por Documentos</label>
-                                </div>
-                                <div class="ms-3">
-                                    <input type="text" class="form-control form-control-sm" id="docsInput"
-                                        placeholder="Ex: 1; 5-10; 100" disabled>
-                                </div>
-                            </div>
-
-                            <!-- Column 3: Limits -->
-                            <div class="col-md-4">
-                                <h6>Limites</h6>
-                                <label for="maxResults" class="form-label">Máx. de Resultados: <span
-                                        id="maxResultsVal">100</span></label>
-                                <input type="range" class="form-range" min="20" max="300" step="10" id="maxResults"
-                                    value="100"
-                                    oninput="document.getElementById('maxResultsVal').innerText = this.value">
-
-                                <div class="mt-2">
-                                    <label for="pageSize" class="form-label">Itens por página</label>
-                                    <select class="form-select form-select-sm" id="pageSize">
-                                        <option value="20">20</option>
-                                        <option value="50" selected>50</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <hr>
-                    <div id="searchResultsList" class="list-group">
-                        <!-- Results injected here -->
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Search Results Modal (Included from Template) -->
+    {% include 'search_modal.html' %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"

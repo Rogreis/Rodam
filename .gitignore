@@ -1,5 +1,5 @@
 *.backup
 .venv
 .vscode
-
-
+__pycache__/
+assets/

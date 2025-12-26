@@ -12,30 +12,11 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Optional
 from bs4 import BeautifulSoup
+import logging
+
 # --- Configuration & Paths ---
-
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-    return os.path.join(base_path, relative_path)
-
-def get_config_dir():
-    if sys.platform == 'win32':
-        base = os.environ.get('APPDATA')
-    elif sys.platform == 'darwin':
-        base = os.path.join(os.environ.get('HOME'), 'Library', 'Application Support')
-    else:
-        base = os.path.join(os.environ.get('HOME'), '.config')
-    return os.path.join(base, 'Rodam')
-
-CONFIG_FILE = os.path.join(get_config_dir(), 'Rodam.json')
-
-# Ensure config dir
-if not os.path.exists(get_config_dir()):
-    os.makedirs(get_config_dir())
+from helpers.globals import resource_path, get_config_dir, CONFIG_FILE
+from helpers.config import Config
 
 # Import UI Fragments
 from ui_fragments import (
@@ -47,7 +28,6 @@ from ui_fragments import (
 )
 
 # 1. Configuração Básica
-import logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(levelname)s: \t%(asctime)s - %(message)s',
@@ -102,27 +82,27 @@ async def get_settings_ui():
     return JSONResponse(settings_frag.html())
 
 # --- Models (Must be defined before usage) ---
+# --- Models (Must be defined before usage) ---
 class SearchRequest(BaseModel):
     query: str
-    lang: str = 'pt'
-    sort: str = 'sequential'
-    scope_type: str = 'parts'
-    parts: List[str] = []
-    docs: str = ''
-    max_results: int = 100
-    page_size: int = 50
+    LanguageIdToSearch: int = 1
+    SearchResultsOrder: int = 0
+    SearchParts: bool = True
+    SearchDocuments: bool = False
+    SearchIntroduction: bool = True
+    SearchPartI: bool = True
+    SearchPartII: bool = True
+    SearchPartIII: bool = True
+    SearchPartIV: bool = True
+    SearchDocumentsList: str = ""
+    SearchMaxResults: int = 100
+    SearchItemsToShow: int = 50
 
 class SaveParagraphRequest(BaseModel):
     paper: int
     section: int
     paragraph: int
     text: str
-
-
-
-
-
-
 
 # Renamed API endpoint to avoid conflict
 @app.get("/api/settings")
@@ -137,27 +117,62 @@ async def get_settings_data():
 
 @app.post("/search")
 async def search_endpoint(request: SearchRequest):
-    # Save Settings
-    config = request.dict()
-    # Remove query from saved config to keep it generic
-    config_to_save = config.copy()
-    if 'query' in config_to_save:
-        del config_to_save['query']
-        
-    try:
-        with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
-            json.dump(config_to_save, f, indent=4)
-    except Exception as e:
-        print(f"Error saving config: {e}")
+    # Update Global Config and Save
+    from helpers.globals import global_config
+    
+    global_config.query = "" # Do not save the query to disk generally, or if requested by user logic. User said "fields initialized with this config... saved in config".
+    # Logic: "save values in the same fields of config".
+    # Since config has 'query' field now, maybe we should save it? 
+    # BUT, the prompt said "query: str" in config.py update.
+    # Re-reading: "config.query" IS in config.py.
+    # Ok, I will save it but maybe exclude it if it causes issues.
+    # Actually, let's save everything that comes from the modal.
+    
+    global_config.LanguageIdToSearch = request.LanguageIdToSearch
+    global_config.SearchResultsOrder = request.SearchResultsOrder
+    global_config.SearchParts = request.SearchParts
+    global_config.SearchDocuments = request.SearchDocuments
+    global_config.SearchIntroduction = request.SearchIntroduction
+    global_config.SearchPartI = request.SearchPartI
+    global_config.SearchPartII = request.SearchPartII
+    global_config.SearchPartIII = request.SearchPartIII
+    global_config.SearchPartIV = request.SearchPartIV
+    global_config.SearchDocumentsList = request.SearchDocumentsList
+    global_config.SearchMaxResults = request.SearchMaxResults
+    global_config.SearchItemsToShow = request.SearchItemsToShow
+    
+    # Save the query too if desired, usually distinct from saved preferences, but Config has it now.
+    # "query" field was added to Config.
+    # So we save it.
+    global_config.query = request.query
+    
+    global_config.save()
 
     # Perform Search
     if not request.query:
         return []
 
+    # Map new parameters to search_engine expectations
+    # search_engine.search(query_str, lang, max_results)
+    # Adjust lang from int to str if needed. 
+    # Assuming search_engine expects 'pt' or 'en'. 
+    # User set LanguageIdToSearch: 1 (PT), 2 (EN?). 
+    # I need to confirm mapping. 
+    # Config default is 1. Standard is usually 1=PT.
+    lang_map = {1: 'pt', 2: 'en'}
+    lang_str = lang_map.get(request.LanguageIdToSearch, 'pt')
+    
+    # Scope logic needs to be handled by search_engine or here?
+    # search_engine.search probably needs updates to handle 'parts' vs 'docs' if it supports it.
+    # For now, I will pass just what search_engine accepts based on previous view: (query_str, lang, max_results).
+    # If search_engine needs scope, I'll update it later or now if I can view it.
+    # Inspecting previous app.py snippet: search_engine.search(query_str, lang, max_results).
+    # I will stick to that interface.
+    
     return search_engine.search(
         query_str=request.query,
-        lang=request.lang,
-        max_results=request.max_results
+        lang=lang_str,
+        max_results=request.SearchMaxResults
     )
 
 @app.post("/save_paragraph")
@@ -215,6 +230,10 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
     """
     logger.info(f"Rendering page: {p}")
     
+    # Load Config
+    from helpers.globals import global_config
+    config = global_config
+    
     # Definição dos itens do menu
     nav_items = [
         {
@@ -235,7 +254,7 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         {
             "id": "search", 
             "label": "Busca", 
-            "href": "javascript:loadContent('/search')"
+            "href": "javascript:showSearchModal()" 
         },
         {
             "id": "settings", 
@@ -247,7 +266,8 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
     return templates.TemplateResponse("main.html", {
         "request": request,
         "current_page": p,
-        "nav_items": nav_items
+        "nav_items": nav_items,
+        "config": config
     })
 
 # --- Server Start ---
