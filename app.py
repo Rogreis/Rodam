@@ -12,22 +12,6 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Optional
 from bs4 import BeautifulSoup
-import logging
-
-# Import isolated Search Engine
-from search_engine import RodamSearch
-
-
-# 1. Configuração Básica (Afeta o log raiz e os filhos)
-logging.basicConfig(
-    level=logging.INFO, # Mostra INFO, WARNING, ERROR e CRITICAL
-    format='%(levelname)s: \t%(asctime)s - %(message)s',
-    datefmt='%H:%M:%S'
-)
-
-# 2. Crie o seu logger pessoal
-logger = logging.getLogger("Rodam")
-
 # --- Configuration & Paths ---
 
 def resource_path(relative_path):
@@ -53,27 +37,71 @@ CONFIG_FILE = os.path.join(get_config_dir(), 'Rodam.json')
 if not os.path.exists(get_config_dir()):
     os.makedirs(get_config_dir())
 
+# Import UI Fragments
+from ui_fragments import (
+    TocFragment,
+    SubjectFragment,
+    ArticlesFragment,
+    SearchFragment,
+    SettingsFragment
+)
+
+# 1. Configuração Básica
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(levelname)s: \t%(asctime)s - %(message)s',
+    datefmt='%H:%M:%S'
+)
+logger = logging.getLogger("Rodam")
+
 # --- FastAPI App ---
 app = FastAPI()
 
 # Templates
 templates = Jinja2Templates(directory=resource_path("templates"))
 
+# Import isolated Search Engine
+from search_engine import RodamSearch
+
 # Initialize Search Engine
 search_engine = RodamSearch()
 
+# Initialize Fragments
+toc_frag = TocFragment()
+subject_frag = SubjectFragment()
+articles_frag = ArticlesFragment()
+search_frag = SearchFragment()
+settings_frag = SettingsFragment()
 
-
-# Monte pastas específicas, não a raiz inteira
+# Static Mounts
 app.mount("/css", StaticFiles(directory=resource_path("css")), name="css")
 app.mount("/js", StaticFiles(directory=resource_path("js")), name="js")
 app.mount("/content", StaticFiles(directory=resource_path("content")), name="content")
 
-# Se tiver outros arquivos soltos na raiz que o HTML chama, monte-os ou mova-os.
-# Mas REMOVA app.mount("/", ...)
+# --- UI Fragment Endpoints ---
 
+@app.get("/toc")
+async def get_toc_ui():
+    return JSONResponse(toc_frag.html())
 
-# --- Models ---
+@app.get("/subject")
+async def get_subject_ui():
+    return JSONResponse(subject_frag.html())
+
+@app.get("/articles")
+async def get_articles_ui():
+    return JSONResponse(articles_frag.html())
+
+@app.get("/search")
+async def get_search_ui():
+    return JSONResponse(search_frag.html())
+
+@app.get("/settings")
+async def get_settings_ui():
+    return JSONResponse(settings_frag.html())
+
+# --- Models (Must be defined before usage) ---
 class SearchRequest(BaseModel):
     query: str
     lang: str = 'pt'
@@ -90,86 +118,11 @@ class SaveParagraphRequest(BaseModel):
     paragraph: int
     text: str
 
-# --- Endpoints ---
 
-@app.get("/")
-async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
-    """
-    Rota principal que renderiza a página baseada no argumento 'p'.
-    """
-    logger.info(f"Rendering page: {p}")
-    
-    # Definição dos itens do menu para facilitar a iteração no template
-    nav_items = [
-        {
-            "id": "indexToc", 
-            "label": "Documentos", 
-            "href": "javascript:loadContent('/toc')"
-        },
-        {
-            "id": "indexSubject", 
-            "label": "Assuntos", 
-            "href": "javascript:loadContent('/subject')"
-        },
-        {
-            "id": "indexStudy", 
-            "label": "Artigos", 
-            "href": "javascript:loadContent('/articles')"
-        },
-        {
-            "id": "search", 
-            "label": "Busca", 
-            "href": "javascript:loadContent('/search')"
-        },
-        {
-            "id": "settings", 
-            "label": "Configurações", 
-            "href": "javascript:loadContent('/settings')"
-        }
-    ]
 
-    return templates.TemplateResponse("main.html", {
-        "request": request,
-        "current_page": p,
-        "nav_items": nav_items
-    })
 
-# --- UI Fragment Endpoints ---
 
-@app.get("/toc")
-async def get_toc_ui():
-    return JSONResponse({
-        "left": "<p>indexToc-left</p>",
-        "right": "<p>indexToc-right</p>"
-    })
 
-@app.get("/subject")
-async def get_subject_ui():
-    return JSONResponse({
-        "left": "<p>indexSubject-left</p>",
-        "right": "<p>indexSubject-right</p>"
-    })
-
-@app.get("/articles")
-async def get_articles_ui():
-    return JSONResponse({
-        "left": "<p>indexStudy-left</p>",
-        "right": "<p>indexStudy-right</p>"
-    })
-
-@app.get("/search")
-async def get_search_ui():
-    return JSONResponse({
-        "left": "<p>search-left</p>",
-        "right": "<p>search-right</p>"
-    })
-
-@app.get("/settings")
-async def get_settings_ui():
-    return JSONResponse({
-        "left": "<p>settings-left</p>",
-        "right": "<p>settings-right</p>"
-    })
 
 # Renamed API endpoint to avoid conflict
 @app.get("/api/settings")
@@ -251,6 +204,51 @@ async def save_paragraph_endpoint(req: SaveParagraphRequest):
         
     except Exception as e:
         return JSONResponse(status_code=500, content={'error': str(e)})
+
+
+# --- Endpoints ---
+
+@app.get("/")
+async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
+    """
+    Rota principal que renderiza a página baseada no argumento 'p'.
+    """
+    logger.info(f"Rendering page: {p}")
+    
+    # Definição dos itens do menu
+    nav_items = [
+        {
+            "id": "indexToc", 
+            "label": "Documentos", 
+            "href": "javascript:loadContent('/toc')"
+        },
+        {
+            "id": "indexSubject", 
+            "label": "Assuntos", 
+            "href": "javascript:loadContent('/subject')"
+        },
+        {
+            "id": "indexStudy", 
+            "label": "Artigos", 
+            "href": "javascript:loadContent('/articles')"
+        },
+        {
+            "id": "search", 
+            "label": "Busca", 
+            "href": "javascript:loadContent('/search')"
+        },
+        {
+            "id": "settings", 
+            "label": "Configurações", 
+            "href": "javascript:loadContent('/settings')"
+        }
+    ]
+
+    return templates.TemplateResponse("main.html", {
+        "request": request,
+        "current_page": p,
+        "nav_items": nav_items
+    })
 
 # --- Server Start ---
 def start_server():
