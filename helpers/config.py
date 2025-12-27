@@ -32,7 +32,11 @@ class Config:
                  SearchDocumentsList: str = "",
                  
                  SearchMaxResults: int = 100,
-                 SearchItemsToShow: int = 50):
+                 SearchItemsToShow: int = 50,
+                 
+                 # ToC Configs
+                 CurrentPaper: int = 0,
+                 LanguageForToc: int = 0):
         
         self.query = query
         self.LanguageIdToSearch = LanguageIdToSearch
@@ -51,6 +55,9 @@ class Config:
         
         self.SearchMaxResults = SearchMaxResults
         self.SearchItemsToShow = SearchItemsToShow
+        
+        self.CurrentPaper = CurrentPaper
+        self.LanguageForToc = LanguageForToc
 
     @classmethod
     def load(cls):
@@ -75,7 +82,9 @@ class Config:
                     SearchPartIV=data.get("SearchPartIV", True),
                     SearchDocumentsList=data.get("SearchDocumentsList", ""),
                     SearchMaxResults=data.get("SearchMaxResults", 100),
-                    SearchItemsToShow=data.get("SearchItemsToShow", 50)
+                    SearchItemsToShow=data.get("SearchItemsToShow", 50),
+                    CurrentPaper=data.get("CurrentPaper", 0),
+                    LanguageForToc=data.get("LanguageForToc", 0)
                 )
         except Exception as e:
             print(f"Error loading config: {e}")
@@ -96,7 +105,9 @@ class Config:
             "SearchPartIV": self.SearchPartIV,
             "SearchDocumentsList": self.SearchDocumentsList,
             "SearchMaxResults": self.SearchMaxResults,
-            "SearchItemsToShow": self.SearchItemsToShow
+            "SearchItemsToShow": self.SearchItemsToShow,
+            "CurrentPaper": self.CurrentPaper,
+            "LanguageForToc": self.LanguageForToc
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:

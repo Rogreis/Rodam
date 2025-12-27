@@ -36,6 +36,10 @@ from helpers.translations import TTranslations
 
 # Global Objects
 translations_manager = TTranslations(TUB_FILES_DIR)
+print(f"Carregando traduções")
+translation = translations_manager.load(0)
+translation = translations_manager.load(2)
+print(f"Traduções carregadas")
 
 # Import Config after defining paths to avoid circular issues, though Config is independent mostly.
 # Note: helpers.config imports CONFIG_FILE from here, so we must be careful.

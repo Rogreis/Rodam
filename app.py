@@ -9,9 +9,11 @@ from fastapi import FastAPI, Request, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+
 from pydantic import BaseModel
 from typing import List, Optional
 from bs4 import BeautifulSoup
+from helpers.toc_treeview import get_tree_data
 import logging
 
 # --- Configuration & Paths ---
@@ -62,8 +64,66 @@ app.mount("/content", StaticFiles(directory=resource_path("content")), name="con
 # --- UI Fragment Endpoints ---
 
 @app.get("/toc")
-async def get_toc_ui():
-    return JSONResponse(toc_frag.html())
+async def get_toc_ui(request: Request):
+    """
+    Rota que retorna JSON com fragmentos HTML para as duas colunas.
+    """
+    
+    # 1. Obtém os dados estruturados
+    data = get_tree_data()
+    
+    # 2. Renderiza o template passando 'tree_data'
+    # O template vai usar a macro para desenhar isso
+    toc_template = templates.get_template("toc_tree.html")
+    left_content = toc_template.render({"request": request, "tree_data": data})
+    
+    # 3. Conteúdo da direita (estático ou também dinâmico se quiser)
+    right_content = """
+    <div class="p-5">
+        <h2>Biblioteca Anti-Gravity</h2>
+        <p>Selecione um tópico à esquerda para carregar os dados.</p>
+    </div>
+    """
+    
+    return {
+        "left": left_content,
+        "right": right_content
+    }
+
+@app.get("/get_node_content")
+async def get_node_content(code: str):
+    """
+    Recebe a string oculta (ex: REF_NEWTON_V2_2024) e gera conteúdo baseado nela.
+    """
+    
+    # Lógica simples baseada na string recebida
+    # Aqui você poderia consultar um banco de dados usando esse código
+    
+    conteudo_dinamico = ""
+    
+    if "NEWTON" in code:
+        conteudo_dinamico = f"""
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Contexto Identificado!</h4>
+                <p>O sistema detectou que você está buscando sobre <strong>Isaac Newton</strong>.</p>
+                <hr>
+                <p class="mb-0">Código interno processado: <code>{code}</code></p>
+            </div>
+            <div class="mt-4">
+                <h3>Conteúdo da Gravidade</h3>
+                <p>Aqui entra o texto completo do artigo...</p>
+            </div>
+        """
+    elif "CTX" in code:
+        conteudo_dinamico = f"<h3>Você clicou em uma pasta.</h3><p>Código: {code}</p>"
+    else:
+        conteudo_dinamico = f"<h3>Conteúdo Genérico</h3><p>Código recebido: {code}</p>"
+
+    # Retorna o JSON para atualizar a direita
+    return {
+        "right": f"<div class='p-4 fade-in'>{conteudo_dinamico}</div>"
+    }
+
 
 @app.get("/subject")
 async def get_subject_ui():

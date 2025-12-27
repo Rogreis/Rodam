@@ -1,0 +1,84 @@
+<style>
+    /* 1. Rotação do Ícone (Chevron) */
+    /* O seletor procura o ícone dentro do elemento expandido */
+    [aria-expanded="true"] .tree-toggle-icon {
+        transform: rotate(90deg);
+    }
+
+    .tree-toggle-icon {
+        transition: transform 0.2s ease-in-out;
+        /* Opacidade reduzida para não brigar com o ícone da pasta */
+        opacity: 0.7;
+    }
+
+    /* 2. Hover adaptativo para Dark/Light Mode */
+    .tree-item-hover:hover {
+        /* Usa a variável de fundo terciário do Bootstrap (cinza claro no Light, cinza escuro no Dark) */
+        background-color: var(--bs-tertiary-bg) !important;
+        color: var(--bs-primary) !important;
+        cursor: pointer;
+    }
+
+    /* 3. Ajuste fino para os ícones herdarem a cor do texto */
+    .tree-item-hover i {
+        color: inherit;
+        /* Garante que o ícone siga a cor do texto no hover */
+    }
+</style>
+
+<script>
+
+    function loadDynamicContent(secretString) {
+        console.log("Enviando segredo:", secretString); // Para debug
+
+        // Chama uma rota específica passando a string como parâmetro
+        fetch(`/get_node_content?code=${encodeURIComponent(secretString)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Atualiza SOMENTE a coluna da direita
+                document.getElementById('rightColumn').innerHTML = data.right;
+            })
+            .catch(error => console.error('Erro:', error));
+    }
+
+</script>
+
+
+{% macro render_tree(items, level=0) %}
+{% set padding_start = (level * 2.5) + 1 %}
+
+{% for item in items %}
+
+{% if item.type == 'folder' %}
+<div class="list-group-item p-0 border-0 bg-transparent">
+    <a href="#"
+        class="list-group-item-action tree-item-hover d-flex align-items-center p-2 rounded text-decoration-none text-body"
+        style="padding-left: {{ padding_start * 0.5 }}rem !important;" data-bs-toggle="collapse"
+        data-bs-target="#collapse-{{ item.id }}" aria-expanded="false">
+        <i class="bi bi-chevron-right tree-toggle-icon me-2 small"></i>
+        <i class="bi bi-folder2 me-2 text-warning"></i>
+        <span class="fw-medium">{{ item.title }}</span>
+    </a>
+
+    <div class="collapse" id="collapse-{{ item.id }}">
+        {{ render_tree(item.children, level + 1) }}
+    </div>
+</div>
+
+{% else %}
+<a href="#"
+    class="list-group-item-action tree-item-hover d-flex align-items-center p-2 rounded text-decoration-none text-body-secondary"
+    style="padding-left: {{ (padding_start * 0.5) + 1.2 }}rem !important;"
+    onclick="loadDynamicContent('{{ item.secret_code }}')">
+
+    <i class="bi bi-file-text me-2 opacity-75"></i>
+    {{ item.title }}
+</a>
+{% endif %}
+
+{% endfor %}
+{% endmacro %}
+
+<div class="list-group list-group-flush user-select-none">
+    {{ render_tree(tree_data) }}
+</div>
