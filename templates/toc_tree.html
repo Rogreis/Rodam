@@ -1,30 +1,87 @@
 <style>
-    /* 1. Rotação do Ícone (Chevron) */
-    /* O seletor procura o ícone dentro do elemento expandido */
-    [aria-expanded="true"] .tree-toggle-icon {
-        transform: rotate(90deg);
-    }
-
-    .tree-toggle-icon {
-        transition: transform 0.2s ease-in-out;
-        /* Opacidade reduzida para não brigar com o ícone da pasta */
-        opacity: 0.7;
-    }
-
-    /* 2. Hover adaptativo para Dark/Light Mode */
-    .tree-item-hover:hover {
-        /* Usa a variável de fundo terciário do Bootstrap (cinza claro no Light, cinza escuro no Dark) */
-        background-color: var(--bs-tertiary-bg) !important;
-        color: var(--bs-primary) !important;
+    /* Remove sublinhados e decorações padrão dos links */
+    .tree-link {
+        text-decoration: none;
+        color: var(--bs-body-color);
+        /* Adapta cor ao tema Dark/Light */
+        display: flex;
+        align-items: center;
         cursor: pointer;
+        padding: 5px 0;
     }
 
-    /* 3. Ajuste fino para os ícones herdarem a cor do texto */
-    .tree-item-hover i {
-        color: inherit;
-        /* Garante que o ícone siga a cor do texto no hover */
+    .tree-link:hover {
+        background-color: var(--bs-tertiary-bg);
+        border-radius: 4px;
+    }
+
+    /* --- LÓGICA DO ÍCONE (CARET) --- */
+
+    /* 1. Estado padrão (Fechado ►) */
+    /* Usaremos o ícone do Bootstrap 'bi-caret-right-fill' no HTML, 
+   mas controlaremos a rotação aqui */
+    .tree-caret {
+        transition: transform 0.2s ease;
+        /* Animação suave */
+        display: inline-block;
+        margin-right: 8px;
+        font-size: 0.8rem;
+        /* Tamanho ajustado */
+        color: var(--bs-secondary);
+    }
+
+    /* 2. Estado Aberto (▼) */
+    /* O Bootstrap adiciona aria-expanded="true" ao link automaticamente quando abre */
+    [aria-expanded="true"] .tree-caret {
+        transform: rotate(90deg);
+        /* Gira a setinha para baixo */
+        color: var(--bs-primary);
+        /* Opcional: muda a cor quando aberto */
     }
 </style>
+
+
+
+{% macro render_tree(items, level=0) %}
+{% set padding_left = (level * 20) + 10 %}
+
+{% for item in items %}
+
+{% set unique_id = "node-" ~ item.id %}
+
+<div class="list-group-item border-0 p-0 bg-transparent">
+
+    {% if item.type == 'folder' %}
+    <a href="#" class="tree-link" style="padding-left: {{ padding_left }}px;" data-bs-toggle="collapse"
+        data-bs-target="#collapse-{{ unique_id }}" aria-expanded="false">
+
+        <i class="bi bi-caret-right-fill tree-caret"></i>
+
+        <i class="bi bi-folder2 me-2 text-warning"></i>
+        <span class="fw-medium">{{ item.title }}</span>
+    </a>
+
+    <div class="collapse" id="collapse-{{ unique_id }}">
+        {{ render_tree(item.children, level + 1) }}
+    </div>
+
+    {% else %}
+    <a href="#" class="tree-link text-secondary" style="padding-left: {{ padding_left + 22 }}px;"
+        onclick="loadDynamicContent('{{ item.secret_code }}')">
+
+        <i class="bi bi-file-earmark-text me-2 opacity-50"></i>
+        {{ item.title }}
+    </a>
+    {% endif %}
+
+</div>
+
+{% endfor %}
+{% endmacro %}
+
+<div class="list-group list-group-flush user-select-none">
+    {{ render_tree(tree_data) }}
+</div>
 
 <script>
 
@@ -42,43 +99,3 @@
     }
 
 </script>
-
-
-{% macro render_tree(items, level=0) %}
-{% set padding_start = (level * 2.5) + 1 %}
-
-{% for item in items %}
-
-{% if item.type == 'folder' %}
-<div class="list-group-item p-0 border-0 bg-transparent">
-    <a href="#"
-        class="list-group-item-action tree-item-hover d-flex align-items-center p-2 rounded text-decoration-none text-body"
-        style="padding-left: {{ padding_start * 0.5 }}rem !important;" data-bs-toggle="collapse"
-        data-bs-target="#collapse-{{ item.id }}" aria-expanded="false">
-        <i class="bi bi-chevron-right tree-toggle-icon me-2 small"></i>
-        <i class="bi bi-folder2 me-2 text-warning"></i>
-        <span class="fw-medium">{{ item.title }}</span>
-    </a>
-
-    <div class="collapse" id="collapse-{{ item.id }}">
-        {{ render_tree(item.children, level + 1) }}
-    </div>
-</div>
-
-{% else %}
-<a href="#"
-    class="list-group-item-action tree-item-hover d-flex align-items-center p-2 rounded text-decoration-none text-body-secondary"
-    style="padding-left: {{ (padding_start * 0.5) + 1.2 }}rem !important;"
-    onclick="loadDynamicContent('{{ item.secret_code }}')">
-
-    <i class="bi bi-file-text me-2 opacity-75"></i>
-    {{ item.title }}
-</a>
-{% endif %}
-
-{% endfor %}
-{% endmacro %}
-
-<div class="list-group list-group-flush user-select-none">
-    {{ render_tree(tree_data) }}
-</div>
