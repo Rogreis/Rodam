@@ -1,0 +1,89 @@
+name: Build e Release do Rodam
+
+# Gatilho: Apenas quando uma tag começando com 'v' for enviada
+on:
+  push:
+    tags:
+      - 'v*' 
+
+jobs:
+  create-release:
+    name: Build para ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # Cria 3 máquinas virtuais simultâneas
+        include:
+          - os: ubuntu-latest
+            TARGET_OS: Linux
+            FILE_EXT: ""   # Linux não tem extensão padrão
+            MIME_TYPE: application/x-executable
+          - os: windows-latest
+            TARGET_OS: Windows
+            FILE_EXT: .exe
+            MIME_TYPE: application/vnd.microsoft.portable-executable
+          - os: macos-latest
+            TARGET_OS: MacOS
+            FILE_EXT: .dmg # No Mac vamos empacotar depois
+            MIME_TYPE: application/x-apple-diskimage
+
+    steps:
+      - name: Checkout do Código
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # Dependências de sistema para o Linux (necessário para pywebview)
+      - name: Instalar Deps Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+
+      - name: Instalar Python Requirements
+        run: |
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      # Compilar com PyInstaller
+      - name: Build com PyInstaller
+        run: pyinstaller Rodam.spec
+
+      # --- TRATAMENTO PÓS-BUILD ---
+
+      # 1. WINDOWS: Renomeia para Rodam-Windows-v1.0.0.exe
+      - name: Preparar Windows
+        if: runner.os == 'Windows'
+        run: |
+          move dist\Rodam.exe dist\Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}.exe
+
+      # 2. LINUX: Renomeia para Rodam-Linux-v1.0.0
+      - name: Preparar Linux
+        if: runner.os == 'Linux'
+        run: |
+          mv dist/Rodam dist/Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}
+
+      # 3. MAC: Cria DMG e renomeia
+      - name: Preparar Mac (Criar DMG)
+        if: runner.os == 'macOS'
+        run: |
+          npm install -g create-dmg
+          create-dmg dist/Rodam.app dist/ || true
+          mv dist/Rodam\ 0.0.0.dmg dist/Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}.dmg
+
+      # --- PUBLICAR NO GITHUB RELEASES ---
+      
+      - name: Publicar Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          # AQUI ESTÁ O QUE VOCÊ PEDIU:
+          # O nome da Release será a Tag (ex: v1.0.2)
+          name: Versão ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          files: |
+            dist/Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}${{ matrix.FILE_EXT }}
