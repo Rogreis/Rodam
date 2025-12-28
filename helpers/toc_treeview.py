@@ -74,7 +74,8 @@ def get_tree_data():
     """
 
     # Reinicia a contagem de nodes
-    node_id= -1;
+    global node_id
+    node_id= -1
 
     # Determine language (Config or Default 0)
     lang_id = getattr(global_config, 'LanguageForToc', 0)
