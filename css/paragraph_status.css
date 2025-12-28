@@ -39,6 +39,7 @@ a.parStarted:active {
 
 .parWorking {
     background-color: LemonChiffon;
+    color: black;
 }
 
 a.parWorking:link {
@@ -110,24 +111,27 @@ a.parOk:active {
     color: black;
 }
 
-.parClosed {}
+.parClosed {
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+}
 
 a.parClosed:link {
     text-decoration: none;
-    color: white;
+    color: var(--bs-body-color);
 }
 
 a.parClosed:visited {
     text-decoration: none;
-    color: white;
+    color: var(--bs-body-color);
 }
 
 a.parClosed:hover {
     text-decoration: underline;
-    color: white;
+    color: var(--bs-body-color);
 }
 
 a.parClosed:active {
     text-decoration: none;
-    color: white;
+    color: var(--bs-body-color);
 }

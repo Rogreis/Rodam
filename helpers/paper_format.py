@@ -8,17 +8,83 @@ if __name__ == "__main__":
     if root_dir not in sys.path:
         sys.path.append(root_dir)
 
-from helpers.globals import translations_manager, format_table
-from helpers.translations import FormatEntry
+from helpers.globals import translations_manager, format_table, notes_list
+from helpers.format_table import FormatEntry, ParagraphExportHtmlType
 from typing import List, Tuple, Optional
 
-def github_link(paper: int, section: int, paragraphNo: int, display_text: str = None) -> str:
-    paper_str = str(paper).zfill(3)
-    section_str = str(section).zfill(3)
-    par_str = str(paragraphNo).zfill(3)
-    url = f"https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc{paper_str}/Par_{paper_str}_{section_str}_{par_str}.md"
-    text = display_text if display_text else "Git"
-    return f'<a href="{url}" target="_blank">{text}</a>'
+
+class FormatParagraph:
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
+        self.paper = paper
+        self.section = section
+        self.paragraph = paragraph
+
+        self.paper_str = str(self.paper).zfill(3)
+        self.section_str = str(self.section).zfill(3)
+        self.par_str = str(self.paragraph).zfill(3)
+        self.id_paragraph = f"p{self.paper_str}_{self.section_str}_{self.par_str}"
+
+        self.format_entry = format_table.get_by_id(paper, section, paragraph)
+        self.ident_text = "<small>" + self.format_entry.identication() + "</small>"
+
+        self.text= text
+        self.fmt= fmt
+
+class FormatParagraphLeft(FormatParagraph):
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
+        super().__init__(paper, section, paragraph, text, fmt)
+        self.id_paragraph= self.id_paragraph + "_L"
+
+    def format(self) -> str:
+        return f'<div id="{self.id_paragraph}" class="p-3 mb-2">{self.ident_text} {self.text}</div>'
+
+    def html_text(self):
+        if self.fmt == ParagraphExportHtmlType.BookTitle:
+            return f"<h2>{self.text}</h2>"
+        elif self.fmt == ParagraphExportHtmlType.PaperTitle:
+            return f"<h3>{self.text}</h3>"
+        elif self.fmt == ParagraphExportHtmlType.SectionTitle:
+            return f"<h4>{self.text}</h4>"
+        elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
+            return self.format()
+        elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
+            return f"<blockquote>{self.format()}</blockquote>"
+        elif self.fmt == ParagraphExportHtmlType.Separator:
+            return f"<h3 class='text-center'>{self.text}</h3>"
+        elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
+            return f"<h5>{self.text}</h5>"
+
+class FormatParagraphRight(FormatParagraph):
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
+        super().__init__(paper, section, paragraph, text, fmt)
+        self.id_paragraph= self.id_paragraph + "_R"
+        self.css_class = notes_list.get_css_class(paper, section, paragraph)
+
+    def github_link(self, display_text: str) -> str:
+        url = f"https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc{self.paper_str}/Par_{self.paper_str}_{self.section_str}_{self.par_str}.md"
+        return f'<small><a href="{url}" class="{self.css_class}" target="_blank">{display_text}</a></small>'
+
+    def format(self) -> str:
+        link_html = self.github_link(self.ident_text)
+        css_class = notes_list.get_css_class(self.paper, self.section, self.paragraph)
+        return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {css_class}">{link_html} {self.text}</div>'
+
+    def html_text(self):
+        if self.fmt == ParagraphExportHtmlType.BookTitle:
+            return f"<h2>{self.text}</h2>"
+        elif self.fmt == ParagraphExportHtmlType.PaperTitle:
+            return f"<h3>{self.text}</h3>"
+        elif self.fmt == ParagraphExportHtmlType.SectionTitle:
+            return f"<h4>{self.text}</h4>"
+        elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
+            return self.format()
+        elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
+            return "<blockquote>" + self.format() + "</blockquote>"
+        elif self.fmt == ParagraphExportHtmlType.Separator:
+            return f"<h3 class='text-center'>{self.text}</h3>"
+        elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
+            return f"<h5>{self.text}</h5>"
+
 
 def paper_display(paperNo: int) -> Optional[List[Tuple[int, int, int, str, str, int, Optional[FormatEntry]]]]:
     # 1. Verifica se a tradução solicitada existe (neste caso, usamos a padrão em PT-BR id=2 para validar o índice)
@@ -60,31 +126,20 @@ def paper_display(paperNo: int) -> Optional[List[Tuple[int, int, int, str, str, 
         p_pt = paragraphs_pt[i] if i < len(paragraphs_pt) else {}
         
         # Dados de identificação (usamos do EN como base, mas são iguais)
-        paper_idx = p_en.get("Paper", paperNo)
-        section_idx = p_en.get("Section", 0)
-        paragraph_no = p_en.get("ParagraphNo", 0)
-        
+        paper = p_en.get("Paper", paperNo)
+        section = p_en.get("Section", 0)
+        paragraph = p_en.get("ParagraphNo", 0)
         text_left = p_en.get("Text", "")
         text_right = p_pt.get("Text", "")
-        
+
         # Obtém o formato (inteiro), padrão 0 se não existir
-        fmt = p_en.get("Format", 0)
+        fmt = ParagraphExportHtmlType(p_en.get("Format", 0))
 
-        # Obtém FormatEntry da tabela global
-        format_entry = format_table.get_by_id(paper_idx, section_idx, paragraph_no)
+        p_left= FormatParagraphLeft(paper, section, paragraph, text_left, fmt)
+        p_right= FormatParagraphRight(paper, section, paragraph, text_right, fmt)
 
-        if format_entry:
-             ident_text = format_entry.identication()
-             link_html = github_link(paper_idx, section_idx, paragraph_no, ident_text)
-             text_left = f"{ident_text} {text_left}"
-             text_right = f"{link_html} {text_right}"
-        else:
-             # Fallback if no format entry found, though ideally shouldn't happen for valid existing papers
-             text_left = f"{text_left}"
-             text_right = f"{text_right}"
-            
         # Adiciona à lista
-        result.append((paper_idx, section_idx, paragraph_no, text_left, text_right, fmt, format_entry))
+        result.append((p_left.html_text(), p_right.html_text()))
         
     return result
 
