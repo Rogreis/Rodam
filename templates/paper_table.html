@@ -1,0 +1,34 @@
+<link href="css\paragraph_status.css" rel="stylesheet">
+
+{% macro cell_transparent(text, link, p_no) %}
+<div class="p-3 bg-transparent text-body position-relative">
+    {{ text | safe }}
+</div>
+{% endmacro %}
+
+
+{% macro cell_colored(text, fmt, format_entry) %}
+<div class="p-3 h-100 rounded position-relative">
+    {{ text | safe }}
+</div>
+{% endmacro %}
+
+
+<table class="table table-borderless mb-0">
+    <tbody>
+        {% for paper, section, p_no, text_left, text_right, fmt, format_entry in paragraphs %}
+
+        <tr id="row-{{ paper }}-{{ section }}-{{ p_no }}">
+
+            <td class="w-50 align-top p-1">
+                {{ cell_transparent(text_left, link, p_no) }}
+            </td>
+
+            <td class="w-50 align-top p-1">
+                {{ cell_colored(text_right, fmt, format_entry) }}
+            </td>
+
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>

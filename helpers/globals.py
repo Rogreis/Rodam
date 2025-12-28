@@ -41,6 +41,13 @@ translation = translations_manager.load(0)
 translation = translations_manager.load(2)
 print(f"Traduções carregadas")
 
+# Load Global Format Table
+from helpers.translations import TTranslations, FormatTable
+
+FORMAT_TABLE_FILE = resource_path(os.path.join('assets', 'FormatTable.json'))
+format_table = FormatTable(FORMAT_TABLE_FILE)
+print(f"Tabela de Formatos carregada de: {FORMAT_TABLE_FILE}")
+
 # Import Config after defining paths to avoid circular issues, though Config is independent mostly.
 # Note: helpers.config imports CONFIG_FILE from here, so we must be careful.
 # Ideally, we import Config here but Config needs CONFIG_FILE from here.

@@ -19,6 +19,7 @@ import logging
 # --- Configuration & Paths ---
 from helpers.globals import resource_path, get_config_dir, CONFIG_FILE
 from helpers.config import Config
+from helpers.paper_format import paper_display
 
 # Import UI Fragments
 from ui_fragments import (
@@ -61,8 +62,12 @@ app.mount("/css", StaticFiles(directory=resource_path("css")), name="css")
 app.mount("/js", StaticFiles(directory=resource_path("js")), name="js")
 app.mount("/content", StaticFiles(directory=resource_path("content")), name="content")
 
-# --- UI Fragment Endpoints ---
+@app.get('/favicon.ico', include_in_schema=False)
+async def favicon():
+    return FileResponse(resource_path("favicon.ico"))
 
+
+# --- UI Fragment Endpoints ---
 @app.get("/toc")
 async def get_toc_ui(request: Request):
     """
@@ -93,11 +98,27 @@ async def get_toc_ui(request: Request):
 @app.get("/get_node_content")
 async def get_node_content(code: str):
     """
-    Recebe a string oculta (ex: REF_NEWTON_V2_2024) e gera conteúdo baseado nela.
+    Recebe a string oculta (ex: REF_NEWTON_V2_2024 or 001.0.0) e gera conteúdo baseado nela.
     """
     
-    # Lógica simples baseada na string recebida
-    # Aqui você poderia consultar um banco de dados usando esse código
+    # Lógica de Paper (Se começar com 3 dígitos)
+    try:
+        if len(code) >= 3 and code[:3].isdigit():
+            paper_no = int(code[:3])
+            paragraphs = paper_display(paper_no)
+            
+            if paragraphs:
+                template = templates.get_template("paper_table.html")
+                rendered_html = template.render(paragraphs=paragraphs)
+                
+                return {
+                    "right": rendered_html
+                }
+    except Exception as e:
+        logger.error(f"Error rendering paper table: {e}")
+
+    # Lógica simples baseada na string recebida (Fallback)
+    # ...
     
     conteudo_dinamico = ""
     
@@ -332,8 +353,12 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
 
 # --- Server Start ---
 def start_server():
-    # Run Uvicorn
+    """
+        Inicia o servidor Uvicorn em background
+        log_config=None remove logs excessivos no console
+    """
     uvicorn.run(app, host="127.0.0.1", port=5000, log_level="info")
+    #uvicorn.run(app, host="127.0.0.1", port=54321, log_config=None)
 
 if __name__ == '__main__':
     print("Starting Rodam (FastAPI + Whoosh)...")
@@ -348,4 +373,8 @@ if __name__ == '__main__':
     
     # Start WebView
     webview.create_window('Rodam', 'http://127.0.0.1:5000', maximized=True)
-    webview.start()
+
+    # 2. O Controle do "Inspecionar Elemento"
+    # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.
+    # debug=False (Produção): O botão direito é desativado ou não mostra o menu de inspeção. O usuário vê apenas o app, sem saber como ele foi feito.
+    webview.start(debug=True)

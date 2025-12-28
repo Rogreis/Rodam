@@ -1,0 +1,133 @@
+/* Paragraphs Styling to represent status*/
+
+.parStarted,
+.parWorking,
+.parDoubt,
+.parOk,
+.parClosed {
+    text-align: justify;
+    text-justify: inter-word;
+    padding-top: 15px;
+    padding-right: 15px;
+    padding-bottom: 15px;
+    padding-left: 15px;
+}
+
+.parStarted {
+    background-color: FloralWhite;
+}
+
+a.parStarted:link {
+    text-decoration: none;
+    color: black;
+}
+
+a.parStarted:visited {
+    text-decoration: none;
+    color: black;
+}
+
+a.parStarted:hover {
+    text-decoration: underline;
+    color: black;
+}
+
+a.parStarted:active {
+    text-decoration: none;
+    color: black;
+}
+
+.parWorking {
+    background-color: LemonChiffon;
+}
+
+a.parWorking:link {
+    text-decoration: none;
+    color: black;
+}
+
+a.parWorking:visited {
+    text-decoration: none;
+    color: black;
+}
+
+a.parWorking:hover {
+    text-decoration: underline;
+    color: black;
+}
+
+a.parWorking:active {
+    text-decoration: none;
+    color: black;
+}
+
+.parDoubt {
+    background-color: FireBrick;
+    color: white;
+}
+
+a.parDoubt:link {
+    text-decoration: none;
+    color: white;
+}
+
+a.parDoubt:visited {
+    text-decoration: none;
+    color: white;
+}
+
+a.parDoubt:hover {
+    text-decoration: underline;
+    color: white;
+}
+
+a.parDoubt:active {
+    text-decoration: none;
+    color: white;
+}
+
+.parOk {
+    background-color: Aquamarine;
+}
+
+a.parOk:link {
+    text-decoration: none;
+    color: black;
+}
+
+a.parOk:visited {
+    text-decoration: none;
+    color: black;
+}
+
+a.parOk:hover {
+    text-decoration: underline;
+    color: black;
+}
+
+a.parOk:active {
+    text-decoration: none;
+    color: black;
+}
+
+.parClosed {}
+
+a.parClosed:link {
+    text-decoration: none;
+    color: white;
+}
+
+a.parClosed:visited {
+    text-decoration: none;
+    color: white;
+}
+
+a.parClosed:hover {
+    text-decoration: underline;
+    color: white;
+}
+
+a.parClosed:active {
+    text-decoration: none;
+    color: white;
+}
