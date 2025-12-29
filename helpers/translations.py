@@ -4,6 +4,7 @@ import zipfile
 import json
 from typing import Dict, Any, Optional, List
 from enum import IntEnum
+import re
 
 
 
@@ -19,12 +20,61 @@ class Paragraph:
         self.text = data.get("Text")
         self.format = data.get("Format")
 
+    # Generate the secret code for a paragraph
+    def secret(self):
+        _p = str(self.paper).zfill(3)
+        _s = str(self.section).zfill(3)
+        _pn = str(self.paragraph_no).zfill(3)
+        code= f"{_p}_{_s}_{_pn}"
+        return code
+
+    # Generate the reference for a paragraph
+    def reference(self):
+        _p = str(self.paper)
+        _s = str(self.section)
+        _pn = str(self.paragraph_no)
+        code= f"{_p}:{_s}-{_pn}"
+        return code
+
+    # Generate the full_reference code for a paragraph
+    def full_reference(self):
+        return reference() + f"{self.page}.{self.line}"
+
+
     def __repr__(self):
         return f"<Paragraph {self.paper}:{self.section}.{self.paragraph_no}>"
 
 class Paper:
     def __init__(self, data: Dict[str, Any]):
         self.paragraphs = [Paragraph(p) for p in data.get("Paragraphs", [])]
+
+    def get_paragraph_from_string(self, ref_string: str) -> Optional[Paragraph]:
+        """
+        Parses a string containing paper, section, and paragraph numbers 
+        separated by { '_', ',', '-', '.', ' ', ':'} and returns the 
+        corresponding Paragraph object.
+        """
+        # Split by the defined separators
+        tokens = re.split(r'[_,.\- :]+', ref_string.strip())
+        # Filter empty strings
+        tokens = [t for t in tokens if t]
+        
+        if len(tokens) < 3:
+            return None
+            
+        try:
+            target_paper = int(tokens[0])
+            target_section = int(tokens[1])
+            target_paragraph = int(tokens[2])
+        except ValueError:
+            return None
+            
+        for p in self.paragraphs:
+            if (p.paper == target_paper and 
+                p.section == target_section and 
+                p.paragraph_no == target_paragraph):
+                return p
+        return None
 
     def __getitem__(self, item: int) -> Paragraph:
         return self.paragraphs[item]

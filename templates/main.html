@@ -137,9 +137,11 @@
         crossorigin="anonymous"></script>
 
     <!-- Local JS -->
+    <!-- 
     <script src="js/tub_pt_br.js"></script>
-    <script src="js/indexToc.js"></script> <!-- Assuming this handles ToC population -->
-    <script src="js/combotrack.js"></script>
+    <script src="js/combotrack.js"></script> 
+    <script src="js/indexToc.js"></script>
+-->
 
     <script>
         // Init logic based on 'p' parameter
@@ -189,10 +191,28 @@
                     document.body.style.userSelect = 'text';
                 }
             });
+
+            // Auto-load content based on current_page passed from backend
+            const currentPage = "{{ current_page }}";
+            const pageRoutes = {
+                'indexToc': '/toc',
+                'indexSubject': '/subject',
+                'indexStudy': '/articles',
+                'search': '/search',
+                'settings': '/settings'
+            };
+
+            if (pageRoutes[currentPage]) {
+                // Load initial content without saving (it was just restored)
+                // Passing null as pageId to avoid re-saving immediately, or pass currentPage if we want to confirm.
+                // Since read_root already restored it, valid.
+                loadContent(pageRoutes[currentPage], currentPage);
+            }
         });
 
-        async function loadContent(route) {
+        async function loadContent(route, pageId = null) {
             try {
+                // 1. Fetch Content
                 const response = await fetch(route);
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
@@ -209,16 +229,26 @@
                     executeScripts(rightDiv);
                 }
 
-                // Update active state in navbar
+                // 2. Update Navbar State
                 document.querySelectorAll('.nav-link').forEach(link => {
                     link.classList.remove('active', 'navactive');
                     link.classList.add('navinactive');
-                    // Simple check if href matches
-                    if (link.getAttribute('href') === `javascript:loadContent('${route}')`) {
+
+                    // Match by exact href call
+                    if (link.getAttribute('href') === `javascript:loadContent('${route}', '${pageId}')`) {
                         link.classList.add('active', 'navactive');
                         link.classList.remove('navinactive');
                     }
                 });
+
+                // 3. Persist Page State (if pageId provided)
+                if (pageId) {
+                    await fetch('/api/log_page', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ page_id: pageId })
+                    });
+                }
 
             } catch (error) {
                 console.error('Error loading content:', error);
@@ -236,6 +266,7 @@
             });
         }
     </script>
+
 </body>
 
 </html>

@@ -68,6 +68,73 @@ async def favicon():
 
 
 # --- UI Fragment Endpoints ---
+def _generate_right_content(code: str):
+    """
+    Helper to generate the right column HTML for a given ID code.
+    Returns the HTML string or None if failed/empty.
+    """
+    try:
+        paragraphs = paper_display(code)
+        
+        if paragraphs:
+            # Determine target ID for scrolling
+            scroll_script = ""
+            try:
+               import re
+               tokens = re.split(r'[_,.\- :]+', code.strip())
+               if len(tokens) >= 3:
+                   p_id = f"p{tokens[0].zfill(3)}_{tokens[1].zfill(3)}_{tokens[2].zfill(3)}_R"
+                   scroll_script = f"""
+                   <script>
+                       setTimeout(() => {{
+                           const targetId = '{p_id}';
+                           console.log("AutoScroll: Attempting to scroll to", targetId);
+                           const el = document.getElementById(targetId);
+                           console.log("AutoScroll: Element found?", el);
+                           if (el) {{
+                               el.scrollIntoView({{ behavior: 'smooth', block: 'center' }});
+                               el.classList.add('highlight-fade'); 
+                           }} else {{
+                               console.warn("AutoScroll: Target element not found:", targetId);
+                           }}
+                       }}, 500);
+                   </script>
+                   """
+            except:
+               pass
+            
+            template = templates.get_template("paper_table.html")
+            return template.render(paragraphs=paragraphs) + scroll_script
+    except Exception as e:
+        logger.error(f"Error rendering paper table for {code}: {e}")
+    return None
+
+def _generate_fallback_content(code: str) -> str:
+    """
+    Helper to generate fallback content when _generate_right_content fails.
+    """
+    conteudo_dinamico = ""
+    
+    if "NEWTON" in code:
+        conteudo_dinamico = f"""
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Contexto Identificado!</h4>
+                <p>O sistema detectou que você está buscando sobre <strong>Isaac Newton</strong>.</p>
+                <hr>
+                <p class="mb-0">Código interno processado: <code>{code}</code></p>
+            </div>
+            <div class="mt-4">
+                <h3>Conteúdo da Gravidade</h3>
+                <p>Aqui entra o texto completo do artigo...</p>
+            </div>
+        """
+    elif "CTX" in code:
+        conteudo_dinamico = f"<h3>Você clicou em uma pasta.</h3><p>Código: {code}</p>"
+    else:
+        conteudo_dinamico = f"<h3>Conteúdo Genérico</h3><p>Código recebido: {code}</p>"
+    
+    return f"<div class='p-4 fade-in'>{conteudo_dinamico}</div>"
+
 @app.get("/toc")
 async def get_toc_ui(request: Request):
     """
@@ -78,17 +145,27 @@ async def get_toc_ui(request: Request):
     data = get_tree_data()
     
     # 2. Renderiza o template passando 'tree_data'
-    # O template vai usar a macro para desenhar isso
     toc_template = templates.get_template("toc_tree.html")
     left_content = toc_template.render({"request": request, "tree_data": data})
     
-    # 3. Conteúdo da direita (estático ou também dinâmico se quiser)
-    right_content = """
-    <div class="p-5">
-        <h2>Biblioteca Anti-Gravity</h2>
-        <p>Selecione um tópico à esquerda para carregar os dados.</p>
-    </div>
-    """
+    # 3. Conteúdo da direita
+    # Tenta carregar o LastSelectedParagraph
+    from helpers.globals import global_config
+    right_content = None
+    
+    if global_config.LastSelectedParagraph:
+        # Tenta carregar o conteúdo deste parágrafo
+        logger.info(f"Loading LastSelectedParagraph for ToC: {global_config.LastSelectedParagraph}")
+        right_content = _generate_right_content(global_config.LastSelectedParagraph)
+
+    if not right_content:
+        # Fallback default
+        right_content = """
+        <div class="p-5">
+            <h2>Biblioteca Anti-Gravity</h2>
+            <p>Selecione um tópico à esquerda para carregar os dados.</p>
+        </div>
+        """
     
     return {
         "left": left_content,
@@ -101,21 +178,13 @@ async def get_node_content(code: str):
     Recebe a string oculta (ex: REF_NEWTON_V2_2024 or 001.0.0) e gera conteúdo baseado nela.
     """
     
-    # Lógica de Paper (Se começar com 3 dígitos)
-    try:
-        if len(code) >= 3 and code[:3].isdigit():
-            paper_no = int(code[:3])
-            paragraphs = paper_display(paper_no)
-            
-            if paragraphs:
-                template = templates.get_template("paper_table.html")
-                rendered_html = template.render(paragraphs=paragraphs)
-                
-                return {
-                    "right": rendered_html
-                }
-    except Exception as e:
-        logger.error(f"Error rendering paper table: {e}")
+    # Lógica de Paper 
+    rendered_html = _generate_right_content(code)
+    
+    if rendered_html:
+        return {
+            "right": rendered_html
+        }
 
     # Lógica simples baseada na string recebida (Fallback)
     # ...
@@ -302,6 +371,25 @@ async def save_paragraph_endpoint(req: SaveParagraphRequest):
         return JSONResponse(status_code=500, content={'error': str(e)})
 
 
+
+class LogPageRequest(BaseModel):
+    page_id: str
+
+@app.post("/api/log_page")
+async def log_page_endpoint(req: LogPageRequest):
+    from helpers.globals import global_config
+    config = global_config
+    
+    valid_ids = ["indexToc", "indexSubject", "indexStudy", "search"]
+    
+    if req.page_id in valid_ids:
+        if config.LastVisitedPage != req.page_id:
+            config.LastVisitedPage = req.page_id
+            config.save()
+            return {"status": "saved", "page": req.page_id}
+            
+    return {"status": "ignored"}
+
 # --- Endpoints ---
 
 @app.get("/")
@@ -309,40 +397,54 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
     """
     Rota principal que renderiza a página baseada no argumento 'p'.
     """
-    logger.info(f"Rendering page: {p}")
-    
     # Load Config
     from helpers.globals import global_config
     config = global_config
+
+    # Logic to restore last visited page if default is requested
+    # Note: "indexToc" is the default value in Query parameter.
+    # If the user explicitly requests /?p=indexToc, we might still treat it as default or not.
+    # Typically, if accessing root URL "/", p is "indexToc".
+    # We check if p is the default, and if we have a saved page different from default.
+    if p == "indexToc" and config.LastVisitedPage and config.LastVisitedPage != "indexToc":
+        # Check if query param exists in raw url to distinguish explicit vs implicit default is hard with FastAPI params
+        # Simplified approach: If p is indexToc, try to use saved page.
+        if config.LastVisitedPage != "settings":
+             p = config.LastVisitedPage
+
+    logger.info(f"Rendering page: {p}")
     
     # Definição dos itens do menu
     nav_items = [
         {
             "id": "indexToc", 
             "label": "Documentos", 
-            "href": "javascript:loadContent('/toc')"
+            "href": "javascript:loadContent('/toc', 'indexToc')"
         },
         {
             "id": "indexSubject", 
             "label": "Assuntos", 
-            "href": "javascript:loadContent('/subject')"
+            "href": "javascript:loadContent('/subject', 'indexSubject')"
         },
         {
             "id": "indexStudy", 
             "label": "Artigos", 
-            "href": "javascript:loadContent('/articles')"
+            "href": "javascript:loadContent('/articles', 'indexStudy')"
         },
         {
             "id": "search", 
             "label": "Busca", 
-            "href": "javascript:loadContent('/search')" 
+            "href": "javascript:loadContent('/search', 'search')" 
         },
         {
             "id": "settings", 
             "label": "Configurações", 
-            "href": "javascript:loadContent('/settings')"
+            "href": "javascript:loadContent('/settings', 'settings')"
         }
     ]
+
+    # Save LastVisitedPage logic moved to /api/log_page called by frontend
+    # But we still respect the restored 'p' for rendering Main template correctly.
 
     return templates.TemplateResponse("main.html", {
         "request": request,

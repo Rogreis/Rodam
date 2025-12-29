@@ -10,7 +10,7 @@ if __name__ == "__main__":
 
 from helpers.globals import translations_manager, format_table, notes_list
 from helpers.format_table import FormatEntry, ParagraphExportHtmlType
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 
 class FormatParagraph:
@@ -73,9 +73,9 @@ class FormatParagraphRight(FormatParagraph):
         if self.fmt == ParagraphExportHtmlType.BookTitle:
             return f"<h2>{self.text}</h2>"
         elif self.fmt == ParagraphExportHtmlType.PaperTitle:
-            return f"<h3>{self.text}</h3>"
+            return f"<h3>{self.github_link(self.text)}</h3>"
         elif self.fmt == ParagraphExportHtmlType.SectionTitle:
-            return f"<h4>{self.text}</h4>"
+            return f"<h4>{self.github_link(self.text)}</h4>"
         elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
             return self.format()
         elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
@@ -86,8 +86,23 @@ class FormatParagraphRight(FormatParagraph):
             return f"<h5>{self.text}</h5>"
 
 
-def paper_display(paperNo: int) -> Optional[List[Tuple[int, int, int, str, str, int, Optional[FormatEntry]]]]:
-    # 1. Verifica se a tradução solicitada existe (neste caso, usamos a padrão em PT-BR id=2 para validar o índice)
+
+def paper_display(item: Union[int, str]) -> Optional[List[Tuple[str, str]]]:
+    # Resolve PaperNo from item
+    if isinstance(item, int):
+        paperNo = item
+    else:
+        # Temporary logic: extract first number found
+        import re
+        s_item = str(item).strip()
+        # Find first sequence of digits
+        match = re.search(r'^(\d+)', s_item)
+        if match:
+            paperNo = int(match.group(1))
+        else:
+            return None
+
+    # 1. Verifica se a tradução solicitada existe
     # A lógica aqui assume que as traduções estão sincronizadas em estrutura.
     
     # Carrega Inglês (0) e Português (2)
@@ -105,6 +120,29 @@ def paper_display(paperNo: int) -> Optional[List[Tuple[int, int, int, str, str, 
 
     paper_en = tr_en.papers[paperNo]
     paper_pt = tr_pt.papers[paperNo]
+
+    if isinstance(item, str):
+        p_instance_en = paper_en.get_paragraph_from_string(item)
+        p_instance_pt = paper_pt.get_paragraph_from_string(item)
+        
+        if p_instance_en:
+             from helpers.globals import global_config
+             # Save the reference of the selected paragraph to config
+             ref = p_instance_en.reference()
+             
+             if global_config.LastSelectedParagraph != ref:
+                 global_config.LastSelectedParagraph = ref
+                 
+                 # Add to RecentParagraphs
+                 if ref in global_config.RecentParagraphs:
+                     global_config.RecentParagraphs.remove(ref)
+                 global_config.RecentParagraphs.insert(0, ref)
+                 
+                 # Keep only last 20
+                 if len(global_config.RecentParagraphs) > 20:
+                     global_config.RecentParagraphs = global_config.RecentParagraphs[:20]
+                     
+                 global_config.save()
     
     # Garante que estamos olhando para o mesmo Paper (segurança)
     # No json original, dentro de "Paragraphs", o primeiro item é o título do Paper?

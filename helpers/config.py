@@ -36,8 +36,14 @@ class Config:
                  
                  # ToC Configs
                  CurrentPaper: int = 0,
-                 LanguageForToc: int = 0):
+                 LanguageForToc: int = 0,
+                 
+                 # User History
+                 LastSelectedParagraph: str = "",
+                 RecentParagraphs: List[str] = None,
+                 LastVisitedPage: str = "indexToc"):
         
+        self._autosave = False
         self.query = query
         self.LanguageIdToSearch = LanguageIdToSearch
         self.SearchResultsOrder = SearchResultsOrder
@@ -58,6 +64,16 @@ class Config:
         
         self.CurrentPaper = CurrentPaper
         self.LanguageForToc = LanguageForToc
+        
+        self.LastSelectedParagraph = LastSelectedParagraph
+        self.RecentParagraphs = RecentParagraphs
+        self.LastVisitedPage = LastVisitedPage
+        self._autosave = True
+
+    def __setattr__(self, key, value):
+        super().__setattr__(key, value)
+        if getattr(self, '_autosave', False) and key != '_autosave':
+            self.save()
 
     @classmethod
     def load(cls):
@@ -84,7 +100,10 @@ class Config:
                     SearchMaxResults=data.get("SearchMaxResults", 100),
                     SearchItemsToShow=data.get("SearchItemsToShow", 50),
                     CurrentPaper=data.get("CurrentPaper", 0),
-                    LanguageForToc=data.get("LanguageForToc", 0)
+                    LanguageForToc=data.get("LanguageForToc", 0),
+                    LastSelectedParagraph=data.get("LastSelectedParagraph", ""),
+                    RecentParagraphs=data.get("RecentParagraphs", []),
+                    LastVisitedPage=data.get("LastVisitedPage", "indexToc")
                 )
         except Exception as e:
             print(f"Error loading config: {e}")
@@ -107,7 +126,10 @@ class Config:
             "SearchMaxResults": self.SearchMaxResults,
             "SearchItemsToShow": self.SearchItemsToShow,
             "CurrentPaper": self.CurrentPaper,
-            "LanguageForToc": self.LanguageForToc
+            "LanguageForToc": self.LanguageForToc,
+            "LastSelectedParagraph": self.LastSelectedParagraph,
+            "RecentParagraphs": self.RecentParagraphs,
+            "LastVisitedPage": self.LastVisitedPage
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
