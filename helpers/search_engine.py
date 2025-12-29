@@ -49,13 +49,19 @@ class RodamSearch:
         index_path = self.get_index_path(lang)
         schema = self.get_schema(lang)
         
-        # Source ZIP
-        zip_filename = "TR002.zip" if lang == 'pt' else "TR000.zip"
-        zip_path = os.path.join(self.data_dir, zip_filename)
+        # Access global translations
+        from helpers.globals import tr_pt, tr_en
         
-        if not os.path.exists(zip_path):
-            raise FileNotFoundError(f"Source file not found: {zip_path}")
+        if lang == 'pt':
+            source_tr = tr_pt
+        elif lang == 'en':
+            source_tr = tr_en
+        else:
+            source_tr = tr_pt # Default
             
+        if not source_tr:
+             raise ValueError(f"Translation for '{lang}' is not loaded in globals.")
+
         # Create Index Object
         if not os.path.exists(index_path):
             os.makedirs(index_path)
@@ -64,34 +70,28 @@ class RodamSearch:
         writer = ix.writer(limitmb=512)
         
         try:
-            with zipfile.ZipFile(zip_path, 'r') as z:
-                # Assuming translation.json is at root of zip
-                with z.open('translation.json') as f:
-                    data = json.load(f)
-                    
-                    papers = data.get('Papers', [])
-                    for paper in papers:
-                        paper_id = paper.get('PaperIndex', 0)
+            count = 0
+            # Iterate through papers and paragraphs
+            for paper in source_tr.papers:
+                for p in paper.paragraphs:
+                    # p is a Paragraph object
+                    p_text = p.text
+                    if not p_text:
+                        continue
                         
-                        paragraphs = paper.get('Paragraphs', [])
-                        for p in paragraphs:
-                            # Extract Text
-                            p_text = p.get('Text', p.get('Content', ''))
+                    # Use secret() for ID (format PPP_SSS_VVV)
+                    id_str = p.secret()
+                    
+                    # Use reference() for Title (format P:S-V)
+                    ref_str = p.reference()
+                    
+                    writer.add_document(
+                        id=id_str,
+                        content=p_text,
+                        title=ref_str
+                    )
+                    count += 1
                             
-                            # IDs
-                            p_paper = int(p.get('PaperIndex', paper_id))
-                            p_section = int(p.get('SectionIndex', 0))
-                            p_para = int(p.get('ParagraphIndex', 0))
-                            
-                            id_str = f"{str(p_paper).zfill(3)}_{str(p_section).zfill(3)}_{str(p_para).zfill(3)}"
-                            
-                            writer.add_document(
-                                id=id_str,
-                                content=p_text,
-                                title=""
-                            )
-                            
-            count = writer.doc_count()
             writer.commit()
             print(f"Indexing complete for {lang}. Indexed {count} documents.")
             return ix
@@ -135,17 +135,44 @@ class RodamSearch:
                     if len(id_parts) == 3:
                         paper = int(id_parts[0])
                         section = int(id_parts[1])
-                        paragraph = int(id_parts[2])
+                        # paragraph = int(id_parts[2]) # Not used directly if we just return ID
                         
                         results_data.append({
-                            "id": hit['id'],
+                            "id": hit['id'],        # PPP_SSS_VVV
+                            "title": hit.get('title', hit['id']), # Reference P:S-V
+                            "text": hit['content'], # Matched text
+                            # "score": hit.score,   # Optional
                             "paper": paper,
                             "section": section,
-                            "paragraph": paragraph,
-                            "content": hit['content']
+                            "paragraph": int(id_parts[2])
                         })
             return results_data
             
         except Exception as e:
             print(f"Search failed: {e}")
             return []
+
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python helpers/search_engine.py <query>")
+        sys.exit(1)
+        
+    query = sys.argv[1]
+    
+    # Ensure root dir is in path for imports
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(current_dir)
+    if root_dir not in sys.path:
+        sys.path.append(root_dir)
+        
+    print(f"Searching for: '{query}'")
+    
+    # Importing globals triggers translation loading
+    import helpers.globals
+    
+    searcher = RodamSearch()
+    results = searcher.search(query, lang='pt', max_results=15)
+    
+    print(f"\nFound {len(results)} results (showing top 15):")
+    for i, res in enumerate(results):
+        print(f"{i+1}. {res['title']}")

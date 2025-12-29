@@ -1,7 +1,7 @@
 import os
 import sys
 
-# Define resource_path and get_config_dir first as they are fundamental
+# Define resource_path and get_data_dir first as they are fundamental
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
@@ -11,7 +11,7 @@ def resource_path(relative_path):
         base_path = os.path.abspath(".")
     return os.path.join(base_path, relative_path)
 
-def get_config_dir():
+def get_data_dir():
     if sys.platform == 'win32':
         base = os.environ.get('APPDATA')
     elif sys.platform == 'darwin':
@@ -21,13 +21,13 @@ def get_config_dir():
     return os.path.join(base, 'Rodam')
 
 # Global Constants and Paths
-CONFIG_FILE = os.path.join(get_config_dir(), 'Rodam.json')
-TUB_FILES_DIR = os.path.join(get_config_dir(), 'TUB_Files')
+CONFIG_FILE = os.path.join(get_data_dir(), 'Rodam.json')
+TUB_FILES_DIR = os.path.join(get_data_dir(), 'TUB_Files')
 
 # Ensure config dir exists
-if not os.path.exists(get_config_dir()):
+if not os.path.exists(get_data_dir()):
     try:
-        os.makedirs(get_config_dir())
+        os.makedirs(get_data_dir())
     except OSError:
         pass # Handle permission errors or race conditions if necessary
 
@@ -37,8 +37,8 @@ from helpers.translations import TTranslations
 # Global Objects
 translations_manager = TTranslations(TUB_FILES_DIR)
 print(f"Carregando traduções")
-translation = translations_manager.load(0)
-translation = translations_manager.load(2)
+tr_en = translations_manager.load(0)
+tr_pt = translations_manager.load(2)
 print(f"Traduções carregadas")
 
 # Load Global Format Table

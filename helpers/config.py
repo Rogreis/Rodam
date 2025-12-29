@@ -87,7 +87,7 @@ class Config:
                 data = json.load(f)
                 return cls(
                     query=data.get("query", ""),
-                    LanguageIdToSearch=data.get("LanguageIdToSearch", 1),
+                    LanguageIdToSearch=data.get("LanguageIdToSearch", 0),
                     SearchResultsOrder=data.get("SearchResultsOrder", 0),
                     SearchParts=data.get("SearchParts", True),
                     SearchDocuments=data.get("SearchDocuments", False),

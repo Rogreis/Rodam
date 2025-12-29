@@ -9,122 +9,127 @@
                     aria-label="Close"></button>
             </div>
             <div class="modal-body bg-dark text-white">
-                <!-- Search Controls -->
-                <div class="container-fluid mb-3">
-                    <div class="row mb-2">
-                        <div class="col-12">
-                            <div class="input-group">
-                                <input type="text" class="form-control bg-secondary text-white border-secondary"
-                                    id="modalSearchInput" placeholder="Digite sua busca..." aria-label="Search"
-                                    value="{{ config.query }}">
-                                <button class="btn btn-primary" type="button" onclick="performSearch()">Buscar</button>
+                <form id="searchForm">
+                    <!-- Search Controls -->
+                    <div class="container-fluid mb-3">
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-secondary text-white border-secondary"
+                                        id="modalSearchInput" name="query" placeholder="Digite sua busca..."
+                                        aria-label="Search" value="{{ config.query }}">
+                                    <button class="btn btn-primary" type="button"
+                                        onclick="performSearch()">Buscar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Grid -->
+                        <div class="row p-2 border border-secondary rounded bg-dark text-white">
+                            <!-- Column 1: Language & Sorting -->
+                            <div class="col-md-3">
+                                <h6>Idioma</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LanguageIdToSearch" id="langPT"
+                                        value="2" {% if config.LanguageIdToSearch==1 %}checked{% endif %}>
+                                    <label class="form-check-label" for="langPT">Português</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LanguageIdToSearch" id="langEN"
+                                        value="0" {% if config.LanguageIdToSearch==2 %}checked{% endif %}>
+                                    <label class="form-check-label" for="langEN">Inglês</label>
+                                </div>
+                                <hr class="my-2 border-secondary">
+                                <h6>Ordenação</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="SearchResultsOrder" id="sortSeq"
+                                        value="0" {% if config.SearchResultsOrder==0 %}checked{% endif %}>
+                                    <label class="form-check-label" for="sortSeq">Sequencial</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="SearchResultsOrder" id="sortRank"
+                                        value="1" {% if config.SearchResultsOrder==1 %}checked{% endif %}>
+                                    <label class="form-check-label" for="sortRank">Ranking</label>
+                                </div>
+                            </div>
+
+                            <!-- Column 2: Filter Scope -->
+                            <div class="col-md-5">
+                                <h6>Onde buscar?</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scopeType" id="scopeParts"
+                                        value="parts" onchange="toggleSearchScope()" {% if config.SearchParts
+                                        %}checked{% endif %}>
+                                    <label class="form-check-label" for="scopeParts">Por Partes</label>
+                                </div>
+                                <div class="ms-3" id="partsOptions">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox"
+                                            name="SearchIntroduction" id="partIntro" {% if config.SearchIntroduction
+                                            %}checked{% endif %}>
+                                        <label class="form-check-label" for="partIntro">Intr.</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartI"
+                                            id="part1" {% if config.SearchPartI %}checked{% endif %}>
+                                        <label class="form-check-label" for="part1">Pt I</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartII"
+                                            id="part2" {% if config.SearchPartII %}checked{% endif %}>
+                                        <label class="form-check-label" for="part2">Pt II</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartIII"
+                                            id="part3" {% if config.SearchPartIII %}checked{% endif %}>
+                                        <label class="form-check-label" for="part3">Pt III</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartIV"
+                                            id="part4" {% if config.SearchPartIV %}checked{% endif %}>
+                                        <label class="form-check-label" for="part4">Pt IV</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="radio" name="scopeType" id="scopeDocs"
+                                        value="docs" onchange="toggleSearchScope()" {% if config.SearchDocuments
+                                        %}checked{% endif %}>
+                                    <label class="form-check-label" for="scopeDocs">Por Documentos</label>
+                                </div>
+                                <div class="ms-3">
+                                    <input type="text"
+                                        class="form-control form-control-sm bg-secondary text-white border-secondary"
+                                        id="docsInput" name="SearchDocumentsList" placeholder="Ex: 1; 5-10; 100"
+                                        value="{{ config.SearchDocumentsList }}" {% if not config.SearchDocuments
+                                        %}disabled{% endif %}>
+                                </div>
+                            </div>
+
+                            <!-- Column 3: Limits -->
+                            <div class="col-md-4">
+                                <h6>Limites</h6>
+                                <label for="maxResults" class="form-label">Máx. de Resultados: <span
+                                        id="maxResultsVal">{{
+                                        config.SearchMaxResults }}</span></label>
+                                <input type="range" class="form-range" name="SearchMaxResults" min="20" max="300"
+                                    step="10" id="maxResults" value="{{ config.SearchMaxResults }}"
+                                    oninput="document.getElementById('maxResultsVal').innerText = this.value">
+
+                                <div class="mt-2">
+                                    <label for="pageSize" class="form-label">Itens por página</label>
+                                    <select class="form-select form-select-sm bg-secondary text-white border-secondary"
+                                        id="pageSize" name="SearchItemsToShow">
+                                        <option value="20" {% if config.SearchItemsToShow==20 %}selected{% endif %}>20
+                                        </option>
+                                        <option value="50" {% if config.SearchItemsToShow==50 %}selected{% endif %}>50
+                                        </option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- Settings Grid -->
-                    <div class="row p-2 border border-secondary rounded bg-dark text-white">
-                        <!-- Column 1: Language & Sorting -->
-                        <div class="col-md-3">
-                            <h6>Idioma</h6>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="LanguageIdToSearch" id="langPT"
-                                    value="1" {% if config.LanguageIdToSearch==1 %}checked{% endif %}>
-                                <label class="form-check-label" for="langPT">Português</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="LanguageIdToSearch" id="langEN"
-                                    value="2" {% if config.LanguageIdToSearch==2 %}checked{% endif %}>
-                                <label class="form-check-label" for="langEN">Inglês</label>
-                            </div>
-                            <hr class="my-2 border-secondary">
-                            <h6>Ordenação</h6>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="SearchResultsOrder" id="sortSeq"
-                                    value="0" {% if config.SearchResultsOrder==0 %}checked{% endif %}>
-                                <label class="form-check-label" for="sortSeq">Sequencial</label>
-                            </div>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="SearchResultsOrder" id="sortRank"
-                                    value="1" {% if config.SearchResultsOrder==1 %}checked{% endif %}>
-                                <label class="form-check-label" for="sortRank">Ranking</label>
-                            </div>
-                        </div>
-
-                        <!-- Column 2: Filter Scope -->
-                        <div class="col-md-5">
-                            <h6>Onde buscar?</h6>
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="scopeType" id="scopeParts"
-                                    value="parts" onchange="toggleSearchScope()" {% if config.SearchParts %}checked{%
-                                    endif %}>
-                                <label class="form-check-label" for="scopeParts">Por Partes</label>
-                            </div>
-                            <div class="ms-3" id="partsOptions">
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input part-check" type="checkbox" id="partIntro" {% if
-                                        config.SearchIntroduction %}checked{% endif %}>
-                                    <label class="form-check-label" for="partIntro">Intr.</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input part-check" type="checkbox" id="part1" {% if
-                                        config.SearchPartI %}checked{% endif %}>
-                                    <label class="form-check-label" for="part1">Pt I</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input part-check" type="checkbox" id="part2" {% if
-                                        config.SearchPartII %}checked{% endif %}>
-                                    <label class="form-check-label" for="part2">Pt II</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input part-check" type="checkbox" id="part3" {% if
-                                        config.SearchPartIII %}checked{% endif %}>
-                                    <label class="form-check-label" for="part3">Pt III</label>
-                                </div>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input part-check" type="checkbox" id="part4" {% if
-                                        config.SearchPartIV %}checked{% endif %}>
-                                    <label class="form-check-label" for="part4">Pt IV</label>
-                                </div>
-                            </div>
-
-                            <div class="form-check mt-2">
-                                <input class="form-check-input" type="radio" name="scopeType" id="scopeDocs"
-                                    value="docs" onchange="toggleSearchScope()" {% if config.SearchDocuments %}checked{%
-                                    endif %}>
-                                <label class="form-check-label" for="scopeDocs">Por Documentos</label>
-                            </div>
-                            <div class="ms-3">
-                                <input type="text"
-                                    class="form-control form-control-sm bg-secondary text-white border-secondary"
-                                    id="docsInput" placeholder="Ex: 1; 5-10; 100"
-                                    value="{{ config.SearchDocumentsList }}" {% if not config.SearchDocuments
-                                    %}disabled{% endif %}>
-                            </div>
-                        </div>
-
-                        <!-- Column 3: Limits -->
-                        <div class="col-md-4">
-                            <h6>Limites</h6>
-                            <label for="maxResults" class="form-label">Máx. de Resultados: <span id="maxResultsVal">{{
-                                    config.SearchMaxResults }}</span></label>
-                            <input type="range" class="form-range" min="20" max="300" step="10" id="maxResults"
-                                value="{{ config.SearchMaxResults }}"
-                                oninput="document.getElementById('maxResultsVal').innerText = this.value">
-
-                            <div class="mt-2">
-                                <label for="pageSize" class="form-label">Itens por página</label>
-                                <select class="form-select form-select-sm bg-secondary text-white border-secondary"
-                                    id="pageSize">
-                                    <option value="20" {% if config.SearchItemsToShow==20 %}selected{% endif %}>20
-                                    </option>
-                                    <option value="50" {% if config.SearchItemsToShow==50 %}selected{% endif %}>50
-                                    </option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                </form>
 
                 <hr class="border-secondary">
                 <!-- Search Results Output -->

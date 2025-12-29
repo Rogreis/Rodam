@@ -2,40 +2,6 @@
 function showSearchModal() {
     // Check if we are returning from a performed search
     const urlParams = new URLSearchParams(window.location.search); // Note: window.location.search might be empty if hash routing or SPA-like loading.
-    // Our 'loadContent' updates history? No. It just fetches.
-    // The loadContent call was `loadContent('/search?action=perform_search')`.
-    // The fetch URL has the param. The window URL might not.
-    // However, the `SearchFragment` injects `<script>showSearchModal()</script>`.
-
-    // Better approach: Pass an argument to showSearchModal based on context? No, the call is hardcoded in Python.
-
-    // Let's check a global flag or the element state.
-    // Actually, `loadContent` URL is internal.
-    // If the Python code injects the script, it executes.
-
-    // Correct logic:
-    // If we just performed a search, we want to SEE the results (the text in Left/Right columns).
-    // We do NOT want the modal to cover them.
-    // So distinct state is needed.
-
-    // If I modify SearchFragment to conditionally inject the script?
-    // That requires `app.py` to pass the `action` param to `SearchFragment`.
-    // Let's do that. It's robust.
-
-    // But since I am in `js/search_modal.js` instructions here...
-    // I will proceed with the Python fix in the NEXT tool call if this one was intended for JS.
-    // Wait, I can't conditionally execute the tool.
-    // I will assume modifying Python is better.
-
-    // Let's Stick to the requested tool change: JS.
-    // But JS `window.location` might `/?p=indexToc`. `loadContent` doesn't change window URL?
-    // Checking `app.py`, `loadContent` updates history? No "pushState" seen in `main.html`.
-
-    // So `window.location` is useless.
-
-    // Alternative: set a global JS variable before calling loadContent?
-    // In performSearch: `window.justPerformedSearch = true; loadContent(...)`
-    // In showSearchModal: `if (window.justPerformedSearch) { window.justPerformedSearch = false; return; }`
 
     if (window.justPerformedSearch) {
         window.justPerformedSearch = false;
@@ -75,52 +41,36 @@ function toggleSearchScope() {
 }
 
 async function performSearch() {
-    const query = document.getElementById('modalSearchInput').value;
-    if (!query) {
+    const form = document.getElementById('searchForm');
+    if (!form) return;
+
+    // Check query validity
+    const queryInput = document.getElementById('modalSearchInput');
+    if (!queryInput.value.trim()) {
         alert("Por favor, digite algo para buscar.");
         return;
     }
 
-    // New Fields Mapping
-    const LanguageIdToSearch = parseInt(document.querySelector('input[name="LanguageIdToSearch"]:checked').value);
-    const SearchResultsOrder = parseInt(document.querySelector('input[name="SearchResultsOrder"]:checked').value);
+    // Capture Form Data
+    const formData = new FormData(form);
 
-    const scopePartsChecked = document.getElementById('scopeParts').checked;
+    // Explicitly add checkbox values as true/false or similar, 
+    // because FormData only includes checked boxes. Unchecked are missing.
+    // Our Python helper handles missing boolean keys as False (default), 
+    // EXCEPT that we need to transmit 'true' for checked ones.
+    // FormData sends 'on' for checkboxes by default if no value attribute.
+    // Let's create a plain object.
+    const payload = {};
+    formData.forEach((value, key) => {
+        payload[key] = value;
+    });
 
-    // Boolean flags
-    const SearchParts = scopePartsChecked;
-    const SearchDocuments = !scopePartsChecked; // or check scopeDocs.checked
-
-    const SearchIntroduction = document.getElementById('partIntro').checked;
-    const SearchPartI = document.getElementById('part1').checked;
-    const SearchPartII = document.getElementById('part2').checked;
-    const SearchPartIII = document.getElementById('part3').checked;
-    const SearchPartIV = document.getElementById('part4').checked;
-
-    const SearchDocumentsList = document.getElementById('docsInput').value;
-
-    const SearchMaxResults = parseInt(document.getElementById('maxResults').value);
-    const SearchItemsToShow = parseInt(document.getElementById('pageSize').value);
-
-    const payload = {
-        query: query,
-        LanguageIdToSearch: LanguageIdToSearch,
-        SearchResultsOrder: SearchResultsOrder,
-        SearchParts: SearchParts,
-        SearchDocuments: SearchDocuments,
-        SearchIntroduction: SearchIntroduction,
-        SearchPartI: SearchPartI,
-        SearchPartII: SearchPartII,
-        SearchPartIII: SearchPartIII,
-        SearchPartIV: SearchPartIV,
-        SearchDocumentsList: SearchDocumentsList,
-        SearchMaxResults: SearchMaxResults,
-        SearchItemsToShow: SearchItemsToShow
-    };
+    // Handle checkboxes specifically if they need to be explicit booleans?
+    // The Python helper `get_bool` handles 'on' as True.
+    // Missing keys are distinct.
+    // So standard FormData -> Object mapping is sufficient for 'checked=on'.
 
     try {
-        // We only send the payload to save the config.
-        // We ignore the returned results because the requirement is to "return to SearchFragment".
         const response = await fetch('/search', {
             method: 'POST',
             headers: {
@@ -139,8 +89,6 @@ async function performSearch() {
         }
 
         // Trigger reload of the search page.
-        // This causes the SearchFragment to render again.
-        // The SearchFragment will read the updated global_config (saved by /search endpoint).
         window.justPerformedSearch = true;
         loadContent('/search?action=perform_search');
 

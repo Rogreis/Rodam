@@ -17,7 +17,7 @@ from helpers.toc_treeview import get_tree_data
 import logging
 
 # --- Configuration & Paths ---
-from helpers.globals import resource_path, get_config_dir, CONFIG_FILE
+from helpers.globals import resource_path, get_data_dir, CONFIG_FILE
 from helpers.config import Config
 from helpers.paper_format import paper_display
 
@@ -45,7 +45,7 @@ app = FastAPI()
 templates = Jinja2Templates(directory=resource_path("templates"))
 
 # Import isolated Search Engine
-from search_engine import RodamSearch
+from helpers.search_engine import RodamSearch
 
 # Initialize Search Engine
 search_engine = RodamSearch()
@@ -268,64 +268,37 @@ async def get_settings_data():
     return {}
 
 @app.post("/search")
-async def search_endpoint(request: SearchRequest):
-    # Update Global Config and Save
+async def search_endpoint(request: Request):
+    """
+    Receives search form data, updates config via Helper, and performs search.
+    """
     from helpers.globals import global_config
-    
-    global_config.query = "" # Do not save the query to disk generally, or if requested by user logic. User said "fields initialized with this config... saved in config".
-    # Logic: "save values in the same fields of config".
-    # Since config has 'query' field now, maybe we should save it? 
-    # BUT, the prompt said "query: str" in config.py update.
-    # Re-reading: "config.query" IS in config.py.
-    # Ok, I will save it but maybe exclude it if it causes issues.
-    # Actually, let's save everything that comes from the modal.
-    
-    global_config.LanguageIdToSearch = request.LanguageIdToSearch
-    global_config.SearchResultsOrder = request.SearchResultsOrder
-    global_config.SearchParts = request.SearchParts
-    global_config.SearchDocuments = request.SearchDocuments
-    global_config.SearchIntroduction = request.SearchIntroduction
-    global_config.SearchPartI = request.SearchPartI
-    global_config.SearchPartII = request.SearchPartII
-    global_config.SearchPartIII = request.SearchPartIII
-    global_config.SearchPartIV = request.SearchPartIV
-    global_config.SearchDocumentsList = request.SearchDocumentsList
-    global_config.SearchMaxResults = request.SearchMaxResults
-    global_config.SearchItemsToShow = request.SearchItemsToShow
-    
-    # Save the query too if desired, usually distinct from saved preferences, but Config has it now.
-    # "query" field was added to Config.
-    # So we save it.
-    global_config.query = request.query
-    
-    global_config.save()
+    from helpers.search_modal import SearchModalHelper
 
-    # Perform Search
-    if not request.query:
-        return []
+    try:
+        data = await request.json()
+        
+        # 1. Update Config using Helper
+        SearchModalHelper.process_form_data(data, global_config)
+        
+        # 2. Perform Search using values now in valid type in global_config
+        # Note: global_config.query is updated by helper.
+        
+        if not global_config.query:
+            return []
 
-    # Map new parameters to search_engine expectations
-    # search_engine.search(query_str, lang, max_results)
-    # Adjust lang from int to str if needed. 
-    # Assuming search_engine expects 'pt' or 'en'. 
-    # User set LanguageIdToSearch: 1 (PT), 2 (EN?). 
-    # I need to confirm mapping. 
-    # Config default is 1. Standard is usually 1=PT.
-    lang_map = {1: 'pt', 2: 'en'}
-    lang_str = lang_map.get(request.LanguageIdToSearch, 'pt')
-    
-    # Scope logic needs to be handled by search_engine or here?
-    # search_engine.search probably needs updates to handle 'parts' vs 'docs' if it supports it.
-    # For now, I will pass just what search_engine accepts based on previous view: (query_str, lang, max_results).
-    # If search_engine needs scope, I'll update it later or now if I can view it.
-    # Inspecting previous app.py snippet: search_engine.search(query_str, lang, max_results).
-    # I will stick to that interface.
-    
-    return search_engine.search(
-        query_str=request.query,
-        lang=lang_str,
-        max_results=request.SearchMaxResults
-    )
+        lang_map = {1: 'pt', 2: 'en'}
+        lang_str = lang_map.get(global_config.LanguageIdToSearch, 'pt')
+        
+        return search_engine.search(
+            query_str=global_config.query,
+            lang=lang_str,
+            max_results=global_config.SearchMaxResults
+        )
+
+    except Exception as e:
+        logger.error(f"Error in search endpoint: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 @app.post("/save_paragraph")
 async def save_paragraph_endpoint(req: SaveParagraphRequest):
