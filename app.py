@@ -106,6 +106,8 @@ def _generate_right_content(code: str):
             template = templates.get_template("paper_table.html")
             return template.render(paragraphs=paragraphs) + scroll_script
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         logger.error(f"Error rendering paper table for {code}: {e}")
     return None
 

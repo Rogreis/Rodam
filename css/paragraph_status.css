@@ -15,11 +15,13 @@
 
 .parStarted {
     background-color: FloralWhite;
+    color: black;
 }
 
 a.parStarted:link {
     text-decoration: none;
     color: black;
+    padding: 0;
 }
 
 a.parStarted:visited {
@@ -45,6 +47,7 @@ a.parStarted:active {
 a.parWorking:link {
     text-decoration: none;
     color: black;
+    padding: 0;
 }
 
 a.parWorking:visited {
@@ -70,11 +73,13 @@ a.parWorking:active {
 a.parDoubt:link {
     text-decoration: none;
     color: white;
+    padding: 0;
 }
 
 a.parDoubt:visited {
     text-decoration: none;
     color: white;
+    padding: 0;
 }
 
 a.parDoubt:hover {
@@ -94,6 +99,7 @@ a.parDoubt:active {
 a.parOk:link {
     text-decoration: none;
     color: black;
+    padding: 0;
 }
 
 a.parOk:visited {
@@ -119,6 +125,7 @@ a.parOk:active {
 a.parClosed:link {
     text-decoration: none;
     color: var(--bs-body-color);
+    padding: 0;
 }
 
 a.parClosed:visited {
@@ -134,4 +141,10 @@ a.parClosed:hover {
 a.parClosed:active {
     text-decoration: none;
     color: var(--bs-body-color);
+}
+
+blockquote {
+    margin: 0 0 0 1.5cm !important;
+    padding: 0 !important;
+    border: none !important;
 }

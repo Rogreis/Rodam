@@ -12,6 +12,7 @@ from helpers.globals import translations_manager, format_table, notes_list
 from helpers.format_table import FormatEntry, ParagraphExportHtmlType
 from typing import List, Tuple, Optional, Union
 
+SEPARATOR_TEXT= "* * * * * *"
 
 class FormatParagraph:
     def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
@@ -30,27 +31,38 @@ class FormatParagraph:
         self.text= text
         self.fmt= fmt
 
+    def book_title_text(self, id_paragraph, text):
+        return self.format_nolink_text(id_paragraph, f"<h2>{self.text}</h2>")
+
+    def format_nolink_text(self, id_paragraph, text, ident_text= ""):
+        if (ident_text != ""):
+            ident_text= ident_text + " "
+        return f'<div id="{id_paragraph}" class="p-3 mb-2">{ident_text}{text}</div>'
+
 class FormatParagraphLeft(FormatParagraph):
     def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
         super().__init__(paper, section, paragraph, text, fmt)
         self.id_paragraph= self.id_paragraph + "_L"
 
-    def format(self) -> str:
-        return f'<div id="{self.id_paragraph}" class="p-3 mb-2">{self.ident_text} {self.text}</div>'
-
     def html_text(self):
         if self.fmt == ParagraphExportHtmlType.BookTitle:
-            return f"<h2>{self.text}</h2>"
+            return self.format_nolink_text(self.id_paragraph, f"<h2>{self.text}</h2>")
+
         elif self.fmt == ParagraphExportHtmlType.PaperTitle:
-            return f"<h3>{self.text}</h3>"
+            return self.format_nolink_text(self.id_paragraph, f"<h3>{self.text}</h3>")
+
         elif self.fmt == ParagraphExportHtmlType.SectionTitle:
-            return f"<h4>{self.text}</h4>"
+            return self.format_nolink_text(self.id_paragraph, f"<h4>{self.text}</h4>")
+
         elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
-            return self.format()
+            return self.format_nolink_text(self.id_paragraph, f"{self.text}", self.ident_text)
+
         elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
-            return f"<blockquote>{self.format()}</blockquote>"
+            return self.format_nolink_text(self.id_paragraph, f"<blockquote>{self.ident_text} {self.text}</blockquote>")
+
         elif self.fmt == ParagraphExportHtmlType.Separator:
-            return f"<h3 class='text-center'>{self.text}</h3>"
+            return f"<h3>" + SEPARATOR_TEXT + "</h3>"
+
         elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
             return f"<h5>{self.text}</h5>"
 
@@ -60,28 +72,34 @@ class FormatParagraphRight(FormatParagraph):
         self.id_paragraph= self.id_paragraph + "_R"
         self.css_class = notes_list.get_css_class(paper, section, paragraph)
 
-    def github_link(self, display_text: str) -> str:
+    def _generate_github_url(self, display_text: str) -> str:
         url = f"https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc{self.paper_str}/Par_{self.paper_str}_{self.section_str}_{self.par_str}.md"
         return f'<small><a href="{url}" class="{self.css_class}" target="_blank">{display_text}</a></small>'
 
-    def format(self) -> str:
-        link_html = self.github_link(self.ident_text)
-        css_class = notes_list.get_css_class(self.paper, self.section, self.paragraph)
-        return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {css_class}">{link_html} {self.text}</div>'
+    def format_link_text(self, display_text: str, text= "") -> str:
+        if (text != ""):
+            display_text= display_text + " "
+        return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {self.css_class}">{self._generate_github_url(display_text)}{text}</div>'
 
     def html_text(self):
         if self.fmt == ParagraphExportHtmlType.BookTitle:
-            return f"<h2>{self.text}</h2>"
+            return self.format_nolink_text(self.id_paragraph, f"<h2>{self.text}</h2>")
+
         elif self.fmt == ParagraphExportHtmlType.PaperTitle:
-            return f"<h3>{self.github_link(self.text)}</h3>"
+            return self.format_link_text(f"<h3>{self.text}</h3>")
+
         elif self.fmt == ParagraphExportHtmlType.SectionTitle:
-            return f"<h4>{self.github_link(self.text)}</h4>"
+            return self.format_link_text(f"<h4>{self.text}</h4>")
+
         elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
-            return self.format()
+            return self.format_link_text(self.ident_text, self.text)
+
         elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
-            return "<blockquote>" + self.format() + "</blockquote>"
+            return self.format_link_text(f"<blockquote>{self.ident_text} {self.text}</blockquote>")
+
         elif self.fmt == ParagraphExportHtmlType.Separator:
-            return f"<h3 class='text-center'>{self.text}</h3>"
+            return f"<h3>" + SEPARATOR_TEXT + "</h3>"
+            
         elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
             return f"<h5>{self.text}</h5>"
 
@@ -89,6 +107,7 @@ class FormatParagraphRight(FormatParagraph):
 
 def paper_display(item: Union[int, str]) -> Optional[List[Tuple[str, str]]]:
     # Resolve PaperNo from item
+    print(f"DEBUG: paper_display called with item={item!r} type={type(item)}")
     if isinstance(item, int):
         paperNo = item
     else:
@@ -100,8 +119,10 @@ def paper_display(item: Union[int, str]) -> Optional[List[Tuple[str, str]]]:
         if match:
             paperNo = int(match.group(1))
         else:
+            print("DEBUG: paper_display regex match failed")
             return None
-
+    
+    print(f"DEBUG: resolved paperNo={paperNo}")
     # 1. Verifica se a tradução solicitada existe
     # A lógica aqui assume que as traduções estão sincronizadas em estrutura.
     

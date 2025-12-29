@@ -82,20 +82,3 @@
 <div class="list-group list-group-flush user-select-none">
     {{ render_tree(tree_data) }}
 </div>
-
-<script>
-
-    function loadDynamicContent(secretString) {
-        console.log("Enviando segredo:", secretString); // Para debug
-
-        // Chama uma rota específica passando a string como parâmetro
-        fetch(`/get_node_content?code=${encodeURIComponent(secretString)}`)
-            .then(response => response.json())
-            .then(data => {
-                // Atualiza SOMENTE a coluna da direita
-                document.getElementById('rightColumn').innerHTML = data.right;
-            })
-            .catch(error => console.error('Erro:', error));
-    }
-
-</script>

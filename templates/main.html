@@ -265,6 +265,25 @@
                 oldScript.parentNode.replaceChild(newScript, oldScript);
             });
         }
+
+        function loadDynamicContent(secretString) {
+            console.log("Enviando segredo:", secretString);
+
+            // Chama uma rota específica passando a string como parâmetro
+            fetch(`/get_node_content?code=${encodeURIComponent(secretString)}`)
+                .then(response => {
+                    if (!response.ok) throw new Error("Network response was not ok");
+                    return response.json();
+                })
+                .then(data => {
+                    // Atualiza SOMENTE a coluna da direita
+                    const rightCol = document.getElementById('rightColumn');
+                    rightCol.innerHTML = data.right;
+                    // Important: Execute scripts inside the new HTML (e.g. scroll logic)
+                    executeScripts(rightCol);
+                })
+                .catch(error => console.error('Erro na requisição:', error));
+        }
     </script>
 
 </body>
