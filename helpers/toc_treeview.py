@@ -15,9 +15,9 @@ node_id= -1
 
 # Generate the secret code for a node
 def make_code(p_item):
-    _p = str(p_item.get('Paper')).zfill(3)
-    _s = str(p_item.get('Section')).zfill(3)
-    _pn = str(p_item.get('ParagraphNo')).zfill(3)
+    _p = str(p_item.paper).zfill(3)
+    _s = str(p_item.section).zfill(3)
+    _pn = str(p_item.paragraph_no).zfill(3)
     code= f"{_p}_{_s}_{_pn}"
     return code
 
@@ -33,14 +33,16 @@ def fill_paper_entry(paper):
     """
     Processes a Paper object to create a Tree Node (Folder) with Sections (Files).
     """
-    paragraphs = paper.get("Paragraphs", [])
+    paragraphs = paper.paragraphs
 
     # 1. Identify Paper Title (Folder)
     # Usually ParagraphNo=0 and SectionIndex=0
-    p_paper= paragraphs[0].get("Paper", -1)
+    first_p = paragraphs[0]
+    p_paper = first_p.paper
+    
     # Use single quotes inside f-string for compatibility
-    title= f"{p_paper} - {paragraphs[0].get('Text', '<unknown>')}"
-    secret_code= make_code(paragraphs[0])
+    title= f"{p_paper} - {first_p.text}"
+    secret_code= make_code(first_p)
     folder_entry = {
         "id": generate_node_id(),
         "title": title,
@@ -52,9 +54,9 @@ def fill_paper_entry(paper):
     
     # 2. Iterate for Sections (Files) -> ParagraphNo=0 AND SectionIndex > 0
     for p in paragraphs:
-        p_paragraph= p.get("ParagraphNo", -1)
+        p_paragraph= p.paragraph_no
         if (p_paragraph == 0):
-            title= p.get("Text", "<unknown>")
+            title= p.text
             secret_code= make_code(p)
             file_entry = {
                 "id": generate_node_id(),
@@ -107,7 +109,7 @@ def get_tree_data():
             if not node:
                 continue
             
-            p_idx = int(paper.get("Paragraphs")[0].get("Paper", -1))
+            p_idx = int(paper.paragraphs[0].paper)
             if p_idx == 0:
                 content_intro.append(node)
             elif 1 <= p_idx <= 31:

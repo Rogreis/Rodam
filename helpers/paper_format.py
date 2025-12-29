@@ -110,11 +110,11 @@ def paper_display(paperNo: int) -> Optional[List[Tuple[int, int, int, str, str, 
     # No json original, dentro de "Paragraphs", o primeiro item é o título do Paper?
     # Vamos assumir que as listas de parágrafos estão alinhadas.
     
-    paragraphs_en = paper_en.get("Paragraphs", [])
-    paragraphs_pt = paper_pt.get("Paragraphs", [])
+    paragraphs_en = paper_en.paragraphs
+    paragraphs_pt = paper_pt.paragraphs
     
     # Combina os parágrafos
-    # Retorno: Lista de tuplas (Paper, Section, ParagraphNo, Text_Left (EN), Text_Right (PT), Format, FormatEntry)
+    # Retorno: Lista de tuplas (Text_Left_HTML, Text_Right_HTML)
     
     result = []
     
@@ -122,18 +122,19 @@ def paper_display(paperNo: int) -> Optional[List[Tuple[int, int, int, str, str, 
     max_len = max(len(paragraphs_en), len(paragraphs_pt))
     
     for i in range(max_len):
-        p_en = paragraphs_en[i] if i < len(paragraphs_en) else {}
-        p_pt = paragraphs_pt[i] if i < len(paragraphs_pt) else {}
+        p_en = paragraphs_en[i] if i < len(paragraphs_en) else None
+        p_pt = paragraphs_pt[i] if i < len(paragraphs_pt) else None
         
         # Dados de identificação (usamos do EN como base, mas são iguais)
-        paper = p_en.get("Paper", paperNo)
-        section = p_en.get("Section", 0)
-        paragraph = p_en.get("ParagraphNo", 0)
-        text_left = p_en.get("Text", "")
-        text_right = p_pt.get("Text", "")
+        paper = p_en.paper if p_en else paperNo
+        section = p_en.section if p_en else 0
+        paragraph = p_en.paragraph_no if p_en else 0
+        text_left = p_en.text if p_en else ""
+        text_right = p_pt.text if p_pt else ""
 
         # Obtém o formato (inteiro), padrão 0 se não existir
-        fmt = ParagraphExportHtmlType(p_en.get("Format", 0))
+        fmt_val = p_en.format if p_en else 0
+        fmt = ParagraphExportHtmlType(fmt_val)
 
         p_left= FormatParagraphLeft(paper, section, paragraph, text_left, fmt)
         p_right= FormatParagraphRight(paper, section, paragraph, text_right, fmt)
@@ -155,15 +156,14 @@ def main():
             
         print(f"Total items returned: {len(data)}")
         print("-" * 60)
-        print(f"{'Paper':<5} {'Sec':<5} {'Par':<5} {'Format':<6} {'FmtEntry':<30} {'Text Snippet (EN)'}")
+        print(f"{'Text Left (HTML)':<60} | {'Text Right (HTML)':<60}")
         print("-" * 60)
         
-        for i, row in enumerate(data[:20]):
-            # row = (Paper, Section, ParagraphNo, Text_Left, Text_Right, Format, FormatEntry)
-            paper, section, par, text_en, text_pt, fmt, f_entry = row
-            snippet = (text_en[:40] + '...') if len(text_en) > 40 else text_en
-            f_entry_str = str(f_entry) if f_entry else "None"
-            print(f"{paper:<5} {section:<5} {par:<5} {fmt:<6} {f_entry_str:<30} {snippet}")
+        for i, row in enumerate(data[:5]):
+            html_left, html_right = row
+            snippet_left = (html_left[:55] + '...') if len(html_left) > 55 else html_left
+            snippet_right = (html_right[:55] + '...') if len(html_right) > 55 else html_right
+            print(f"{snippet_left:<60} | {snippet_right:<60}")
             
         print("-" * 60)
         

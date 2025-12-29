@@ -6,6 +6,35 @@ from typing import Dict, Any, Optional, List
 from enum import IntEnum
 
 
+
+class Paragraph:
+    def __init__(self, data: Dict[str, Any]):
+        self.translation_id = data.get("TranslationID")
+        self.paper = data.get("Paper")
+        self.pk_seq = data.get("PK_Seq")
+        self.section = data.get("Section")
+        self.paragraph_no = data.get("ParagraphNo")
+        self.page = data.get("Page")
+        self.line = data.get("Line")
+        self.text = data.get("Text")
+        self.format = data.get("Format")
+
+    def __repr__(self):
+        return f"<Paragraph {self.paper}:{self.section}.{self.paragraph_no}>"
+
+class Paper:
+    def __init__(self, data: Dict[str, Any]):
+        self.paragraphs = [Paragraph(p) for p in data.get("Paragraphs", [])]
+
+    def __getitem__(self, item: int) -> Paragraph:
+        return self.paragraphs[item]
+
+    def __len__(self) -> int:
+        return len(self.paragraphs)
+
+    def __repr__(self):
+        return f"<Paper with {len(self.paragraphs)} paragraphs>"
+
 class Translation:
     """
     Represents the translation object structure found in translation.json.
@@ -21,7 +50,7 @@ class Translation:
         self.right_to_left = data.get("RightToLeft")
         self.paper_translation = data.get("PaperTranslation")
         self.introductory_texts = data.get("IntroductoryTexts", [])
-        self.papers = data.get("Papers", [])
+        self.papers = [Paper(p) for p in data.get("Papers", [])]
 
     def __getitem__(self, item):
         return self.data.get(item)
@@ -108,14 +137,12 @@ def main():
         print(json.dumps(item, ensure_ascii=True))
 
     print("\n--- Papers (First 4) ---")
-    # Summarized print of the first 4 items to avoid huge output from Paragraphs content
     for i, paper in enumerate(translation.papers[:4]):
-        # Create a shallow copy to modify for display purposes (showing paragraph count instead of full list)
-        paper_display = paper.copy()
-        if 'Paragraphs' in paper_display:
-            count = len(paper_display['Paragraphs'])
-            paper_display['Paragraphs'] = f"<{count} Paragraphs>"
-        print(f"Paper {i}: {json.dumps(paper_display, ensure_ascii=True)}")
+        print(f"Paper {i}: {paper}")
+        if len(paper) > 0:
+            print(f"  First Paragraph: {paper[0]}")
+            print(f"  Last Paragraph: {paper[-1]}")
+
 
     print("\n--- Testing FormatTable ---")
     
@@ -126,6 +153,7 @@ def main():
     assets_path = os.path.join(root_dir, 'assets', 'FormatTable.json')
     
     print(f"Loading FormatTable from: {assets_path}")
+    from helpers.format_table import FormatTable
     format_table = FormatTable(assets_path)
     
     data = format_table.get_all()
@@ -140,4 +168,8 @@ def main():
         print("FormatTable is empty or failed to load.")
 
 if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(current_dir)
+    if root_dir not in sys.path:
+        sys.path.append(root_dir)
     main()
