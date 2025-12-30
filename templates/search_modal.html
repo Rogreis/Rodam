@@ -31,26 +31,16 @@
                                 <h6>Idioma</h6>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="LanguageIdToSearch" id="langPT"
-                                        value="2" {% if config.LanguageIdToSearch==1 %}checked{% endif %}>
+                                        value="2" {% if config.LanguageIdToSearch==2 %}checked{% endif %}>
                                     <label class="form-check-label" for="langPT">Português</label>
                                 </div>
                                 <div class="form-check">
                                     <input class="form-check-input" type="radio" name="LanguageIdToSearch" id="langEN"
-                                        value="0" {% if config.LanguageIdToSearch==2 %}checked{% endif %}>
+                                        value="0" {% if config.LanguageIdToSearch !=2 %}checked{% endif %}>
                                     <label class="form-check-label" for="langEN">Inglês</label>
                                 </div>
                                 <hr class="my-2 border-secondary">
-                                <h6>Ordenação</h6>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="SearchResultsOrder" id="sortSeq"
-                                        value="0" {% if config.SearchResultsOrder==0 %}checked{% endif %}>
-                                    <label class="form-check-label" for="sortSeq">Sequencial</label>
-                                </div>
-                                <div class="form-check">
-                                    <input class="form-check-input" type="radio" name="SearchResultsOrder" id="sortRank"
-                                        value="1" {% if config.SearchResultsOrder==1 %}checked{% endif %}>
-                                    <label class="form-check-label" for="sortRank">Ranking</label>
-                                </div>
+
                             </div>
 
                             <!-- Column 2: Filter Scope -->

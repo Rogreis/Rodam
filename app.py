@@ -19,7 +19,7 @@ import logging
 # --- Configuration & Paths ---
 from helpers.globals import resource_path, get_data_dir, CONFIG_FILE
 from helpers.config import Config
-from helpers.paper_format import paper_display
+from helpers.paper_format import FormatPaper
 
 # Import UI Fragments
 from ui_fragments import (
@@ -37,6 +37,8 @@ logging.basicConfig(
     datefmt='%H:%M:%S'
 )
 logger = logging.getLogger("Rodam")
+import helpers.globals
+helpers.globals.logger = logger
 
 # --- FastAPI App ---
 app = FastAPI()
@@ -49,6 +51,9 @@ from helpers.search_engine import RodamSearch
 
 # Initialize Search Engine
 search_engine = RodamSearch()
+
+# Initialize FormatPaper
+paper_formatter = FormatPaper()
 
 # Initialize Fragments
 toc_frag = TocFragment()
@@ -74,7 +79,7 @@ def _generate_right_content(code: str):
     Returns the HTML string or None if failed/empty.
     """
     try:
-        paragraphs = paper_display(code)
+        paragraphs = paper_formatter.paper_display(code)
         
         if paragraphs:
             # Determine target ID for scrolling
@@ -226,8 +231,10 @@ async def get_articles_ui():
     return JSONResponse(articles_frag.html())
 
 @app.get("/search")
-async def get_search_ui():
-    return JSONResponse(search_frag.html())
+async def get_search_ui(page: Optional[int] = None):
+    should_open_modal = (page is None)
+    current_page = page if page is not None else 1
+    return JSONResponse(search_frag.html(page=current_page, open_modal=should_open_modal, templates=templates))
 
 @app.get("/settings")
 async def get_settings_ui():

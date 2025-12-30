@@ -26,7 +26,10 @@ class FormatParagraph:
         self.id_paragraph = f"p{self.paper_str}_{self.section_str}_{self.par_str}"
 
         self.format_entry = format_table.get_by_id(paper, section, paragraph)
-        self.ident_text = "<small>" + self.format_entry.identication() + "</small>"
+        if self.format_entry:
+            self.ident_text = "<small>" + self.format_entry.identication() + "</small>"
+        else:
+            self.ident_text = f"<small>{paper}:{section}.{paragraph}</small>"
 
         self.text= text
         self.fmt= fmt
@@ -105,89 +108,81 @@ class FormatParagraphRight(FormatParagraph):
 
 
 
-def paper_display(item: Union[int, str]) -> Optional[List[Tuple[str, str]]]:
-    # Resolve PaperNo from item
-    print(f"DEBUG: paper_display called with item={item!r} type={type(item)}")
-    if isinstance(item, int):
-        paperNo = item
-    else:
-        # Temporary logic: extract first number found
-        import re
-        s_item = str(item).strip()
-        # Find first sequence of digits
-        match = re.search(r'^(\d+)', s_item)
-        if match:
-            paperNo = int(match.group(1))
-        else:
-            print("DEBUG: paper_display regex match failed")
-            return None
-    
-    print(f"DEBUG: resolved paperNo={paperNo}")
-    # 1. Verifica se a tradução solicitada existe
-    # A lógica aqui assume que as traduções estão sincronizadas em estrutura.
-    
-    # Carrega Inglês (0) e Português (2)
-    # Se não estiverem carregadas, o 'load' as carrega. Se já estiverem, retorna do cache.
-    tr_en = translations_manager.load(0)
-    tr_pt = translations_manager.load(2)
-    
-    if not tr_en or not tr_pt:
-        return None # Erro ao carregar traduções
+import re
 
-    # Verifica limites. O array 'papers' geralmente contém 197 papéis (0 a 196)
-    # ATENÇÃO: A estrutura pode variar. Se for uma lista direta:
-    if paperNo < 0 or paperNo >= len(tr_en.papers):
+class FormatPaper:
+    def __init__(self):
+        # Garante a carga das traduções, como solicitado
+        self.tr_en = translations_manager.load(0)
+        self.tr_pt = translations_manager.load(2)
+
+    @staticmethod
+    def extract_code_triplet(code: str) -> Optional[Tuple[int, int, int]]:
+        """
+        Parses a string code, removes letters, splits by separators, 
+        and returns a tuple of 3 integers (Paper, Section, Paragraph).
+        """
+        # Remove letters
+        clean_code = re.sub(r'[a-zA-Z]', '', str(code))
+        
+        # Split using the requested regex
+        tokens = re.split(r'[_,.\- :]+', clean_code.strip())
+        
+        # Filter empty strings resulting from split
+        tokens = [t for t in tokens if t]
+        
+        if len(tokens) >= 3:
+            return (int(tokens[0]), int(tokens[1]), int(tokens[2]))
+        
         return None
 
-    paper_en = tr_en.papers[paperNo]
-    paper_pt = tr_pt.papers[paperNo]
+    def format_paragraph(self, code) -> Tuple[str, str]:
+        """
+        Formats a single paragraph pair (EN/PT) into HTML tuple.
+        Arg code is a reference to a paragraph
+        """
+        # Resolve ID from triplet
+        paper, section, paragraph = 0, 0, 0
+        triplet = FormatPaper.extract_code_triplet(str(code))
+        if triplet:
+            paper, section, paragraph = triplet
+        else:
+            print(f"Código inválido {code}")
+            return ("", "ERRO: Código inválido {code}")
 
-    if isinstance(item, str):
-        p_instance_en = paper_en.get_paragraph_from_string(item)
-        p_instance_pt = paper_pt.get_paragraph_from_string(item)
+        # Load specific paragraph objects
+        # Note: Triplet is 1-indexed or 0-indexed? 
+        # extract_code_triplet parses user strings (usually 1-indexed display?) or internal IDs?
+        # The internal objects use .paper, .section, .paragraph properties.
+        # We need to find the paragraph in the list that matches these numbers.
+        # Accessing by index `papers[paper]` provides the Paper object.
+        # Accessing the specific paragraph inside the paper requires iteration or knowing the index.
+        # Since we have (paper, section, paragraph), we can use `get_paragraph_from_string` logic or similar iteration.
         
-        if p_instance_en:
-             from helpers.globals import global_config
-             # Save the reference of the selected paragraph to config
-             ref = p_instance_en.reference()
-             
-             if global_config.LastSelectedParagraph != ref:
-                 global_config.LastSelectedParagraph = ref
-                 
-                 # Add to RecentParagraphs
-                 if ref in global_config.RecentParagraphs:
-                     global_config.RecentParagraphs.remove(ref)
-                 global_config.RecentParagraphs.insert(0, ref)
-                 
-                 # Keep only last 20
-                 if len(global_config.RecentParagraphs) > 20:
-                     global_config.RecentParagraphs = global_config.RecentParagraphs[:20]
-                     
-                 global_config.save()
-    
-    # Garante que estamos olhando para o mesmo Paper (segurança)
-    # No json original, dentro de "Paragraphs", o primeiro item é o título do Paper?
-    # Vamos assumir que as listas de parágrafos estão alinhadas.
-    
-    paragraphs_en = paper_en.paragraphs
-    paragraphs_pt = paper_pt.paragraphs
-    
-    # Combina os parágrafos
-    # Retorno: Lista de tuplas (Text_Left_HTML, Text_Right_HTML)
-    
-    result = []
-    
-    # Itera pelo maior tamanho para não perder dado, mas idealmente são iguais
-    max_len = max(len(paragraphs_en), len(paragraphs_pt))
-    
-    for i in range(max_len):
-        p_en = paragraphs_en[i] if i < len(paragraphs_en) else None
-        p_pt = paragraphs_pt[i] if i < len(paragraphs_pt) else None
+        # Access Paper Objects
+        if paper < 0 or paper >= len(self.tr_en.papers):
+             return ("", "")
+
+        paper_obj_en = self.tr_en.papers[paper]
+        paper_obj_pt = self.tr_pt.papers[paper]
         
-        # Dados de identificação (usamos do EN como base, mas são iguais)
-        paper = p_en.paper if p_en else paperNo
-        section = p_en.section if p_en else 0
-        paragraph = p_en.paragraph_no if p_en else 0
+        # Find Paragraph Logic
+        # Assuming triplet reflects (P, S, ParaNo) matching properties of objects
+        p_en = None
+        p_pt = None
+        
+        # Optimized search vs Iteration? 
+        # Using `get_paragraph_from_string` logic implemented locally for speed/direct match
+        for p in paper_obj_en.paragraphs:
+            if p.paper == paper and p.section == section and p.paragraph_no == paragraph:
+                p_en = p
+                break
+        
+        for p in paper_obj_pt.paragraphs:
+            if p.paper == paper and p.section == section and p.paragraph_no == paragraph:
+                p_pt = p
+                break
+        
         text_left = p_en.text if p_en else ""
         text_right = p_pt.text if p_pt else ""
 
@@ -198,16 +193,80 @@ def paper_display(item: Union[int, str]) -> Optional[List[Tuple[str, str]]]:
         p_left= FormatParagraphLeft(paper, section, paragraph, text_left, fmt)
         p_right= FormatParagraphRight(paper, section, paragraph, text_right, fmt)
 
-        # Adiciona à lista
-        result.append((p_left.html_text(), p_right.html_text()))
+        return (p_left.html_text(), p_right.html_text())
+
+    def paper_display(self, code) -> Optional[List[Tuple[str, str]]]:
+        # Resolve PaperNo/Triplet from item
+        print(f"DEBUG: paper_display called with item={code!r} type={type(code)}")
         
-    return result
+        result = []  # Returned data collection
+
+        # Extract PaperNo, ignoring Section and Paragraph
+        triplet = FormatPaper.extract_code_triplet(str(code))
+        
+        paperNo = None
+        if triplet:
+            paperNo, _, _ = triplet
+        else:
+            result.append("", f"ERRO: Código inválido {code}")
+            return result
+        
+        # Access translations loaded in __init__
+        if not self.tr_en or not self.tr_pt:
+            result.append("", "ERRO: Erro ao carregar traduções")
+            return result
+
+        # Verifica limites
+        if paperNo is None or paperNo < 0 or paperNo >= len(self.tr_en.papers):
+            result.append("", f"ERRO: Número de documento inválido {paperNo}")
+            return result
+
+        paper_en = self.tr_en.papers[paperNo]
+        paper_pt = self.tr_pt.papers[paperNo]
+
+        if isinstance(code, str):
+            # If we have a full string, try to find the specific paragraph object
+            
+            p_instance_en = paper_en.get_paragraph_from_string(code)
+            
+            if p_instance_en:
+                 from helpers.globals import global_config
+                 # Save the reference of the selected paragraph to config
+                 ref = p_instance_en.reference()
+                 
+                 if global_config.LastSelectedParagraph != ref:
+                     global_config.add_recent_paragraph(ref)
+        
+        paragraphs_en = paper_en.paragraphs
+        paragraphs_pt = paper_pt.paragraphs
+        
+       
+        # Itera pelo maior tamanho
+        max_len = max(len(paragraphs_en), len(paragraphs_pt))
+        
+        for i in range(max_len):
+            p_en = paragraphs_en[i] if i < len(paragraphs_en) else None
+            p_pt = paragraphs_pt[i] if i < len(paragraphs_pt) else None
+            
+            # Construct a code for the current paragraph to match new format_paragraph signature
+            # Use p_en as source of truth for ID, or p_pt if p_en missing
+            current_code = ""
+            if p_en:
+                current_code = f"{p_en.paper}_{p_en.section}_{p_en.paragraph_no}"
+            elif p_pt:
+                current_code = f"{p_pt.paper}_{p_pt.section}_{p_pt.paragraph_no}"
+            
+            if current_code:
+                result.append(self.format_paragraph(current_code))
+            
+        return result
 
 def main():
     print("--- Testing paper_display(1) ---")
     try:
         # Test with Paper 1 (usually "The Universal Father")
-        data = paper_display(1)
+        fmt = FormatPaper()
+        data = fmt.paper_display(1)
         
         if data is None:
             print("Error: paper_display returned None (Check translations loading).")

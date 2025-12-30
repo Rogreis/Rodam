@@ -34,6 +34,13 @@ if not os.path.exists(get_data_dir()):
 # Imports from other helpers
 from helpers.translations import TTranslations
 
+# Global variable for Translations
+tr_pt = None
+tr_en = None
+
+# Global variable for Logger
+logger = None
+
 # Global Objects
 translations_manager = TTranslations(TUB_FILES_DIR)
 print(f"Carregando traduções")

@@ -16,7 +16,7 @@ class Config:
                  # Old params kept for compatibility if needed, but primary focus is new ones
                  query: str = "",
                  # New requested variables
-                 LanguageIdToSearch: int = 1, # 1 for PT, 2 for AR, etc. (assuming 1 is default PT)
+                 LanguageIdToSearch: int = 2, # 2 for PT, 0 for EN
                  SearchResultsOrder: int = 0, # 0 for Sequential, 1 for Ranking
                  
                  # Boolean flags for search scope
@@ -134,12 +134,43 @@ class Config:
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 json.dump(data, f, indent=4)
-            print(f"Config saved to {CONFIG_FILE}")
+            #print(f"Config saved to {CONFIG_FILE}")
         except Exception as e:
             print(f"Error saving config: {e}")
 
+    def add_recent_paragraph(self, ref: str):
+        """
+        Adds a paragraph reference to the RecentParagraphs list.
+        - Adds to the beginning (stack behavior).
+        - Moves to top if already exists (deduplicate).
+        - Limits list to 20 items.
+        """
+        if not ref:
+            return
+
+        # Create a copy to work with, or modify directly. 
+        # Modifying self.RecentParagraphs in place won't trigger __setattr__ if we just .append()
+        # So we want to re-assign it to trigger autosave if enabled.
+        
+        current_list = self.RecentParagraphs if self.RecentParagraphs else []
+        
+        # Remove if exists (start fresh)
+        if ref in current_list:
+            current_list.remove(ref)
+            
+        # Add to beginning
+        current_list.insert(0, ref)
+        
+        # Trim to max 20
+        if len(current_list) > 20:
+            current_list = current_list[:20]
+            
+        # Assign back to trigger save
+        self.RecentParagraphs = current_list
+        self.LastSelectedParagraph = ref
+
     def __repr__(self):
-        return f"Config(lang='{self.lang}', sort='{self.sort}', max_results={self.max_results}, page_size={self.page_size}, ...)"
+        return f"Config(lang='{self.query}', ...)"
 
 def main():
     print("--- Reading Config ---")
