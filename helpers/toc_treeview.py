@@ -9,6 +9,7 @@ if __name__ == "__main__":
         sys.path.append(root_dir)
 
 from helpers.globals import global_config, translations_manager
+from helpers.paragraph_special import SpecialPartsRepository
 import json
 
 node_id= -1
@@ -28,6 +29,14 @@ def generate_node_id():
     else:
         node_id= node_id + 1
     return str(node_id).zfill(4)
+
+def get_paragraph_special():
+    repo = SpecialPartsRepository("assets/intro_texts.json")
+    
+    parts_en = repo.part_titles(0)
+    parts_pt = repo.part_titles(2)
+    
+    return (parts_en, parts_pt)
 
 def fill_paper_entry(paper):
     """
@@ -94,12 +103,36 @@ def get_tree_data():
             "right": ""
         }
 
-    # Buffers for each part
+    # Get the parts titles
+    parts_en, parts_pt= get_paragraph_special()
+
+    # Get the parts titles
+    parts_en, parts_pt = get_paragraph_special()
+    current_parts = parts_en if lang_id == 0 else parts_pt
+
+    # Buffers for each part (Now Nodes)
     content_intro = []
-    content_part_i = []
-    content_part_ii = []
-    content_part_iii = []
-    content_part_iv = []
+    
+    # helper to create part node
+    def create_part_node(title, code_suffix):
+        return {
+            "id": generate_node_id(),
+            "title": title,
+            "type": "folder",
+            "secret_code": f"PART_{code_suffix}",
+            "children": []
+        }
+
+    # Ensure we have titles, fallback if missing
+    t_i   = current_parts[0] if len(current_parts) > 0 else "PART I"
+    t_ii  = current_parts[1] if len(current_parts) > 1 else "PART II"
+    t_iii = current_parts[2] if len(current_parts) > 2 else "PART III"
+    t_iv  = current_parts[3] if len(current_parts) > 3 else "PART IV"
+
+    content_part_i   = create_part_node(t_i, "I")
+    content_part_ii  = create_part_node(t_ii, "II")
+    content_part_iii = create_part_node(t_iii, "III")
+    content_part_iv  = create_part_node(t_iv, "IV")
 
     if tr.papers:
         for paper in tr.papers:
@@ -113,21 +146,21 @@ def get_tree_data():
             if p_idx == 0:
                 content_intro.append(node)
             elif 1 <= p_idx <= 31:
-                content_part_i.append(node)
+                content_part_i["children"].append(node)
             elif 32 <= p_idx <= 56:
-                content_part_ii.append(node)
+                content_part_ii["children"].append(node)
             elif 57 <= p_idx <= 119:
-                content_part_iii.append(node)
+                content_part_iii["children"].append(node)
             elif 120 <= p_idx <= 196:
-                content_part_iv.append(node)
+                content_part_iv["children"].append(node)
 
     documents = []
 
     documents.extend(content_intro)
-    documents.extend(content_part_i)
-    documents.extend(content_part_ii)
-    documents.extend(content_part_iii)
-    documents.extend(content_part_iv)
+    documents.append(content_part_i)
+    documents.append(content_part_ii)
+    documents.append(content_part_iii)
+    documents.append(content_part_iv)
     
     documents_str = json.dumps(documents)
 

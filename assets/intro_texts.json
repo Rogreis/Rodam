@@ -1,0 +1,150 @@
+{
+    "PartsIntroductionForEnglish": [
+        {
+            "Paper": 1,
+            "pk_seq": -3,
+            "Text": "PART I",
+            "Format": 6
+        },
+        {
+            "Paper": 1,
+            "pk_seq": -2,
+            "Text": "The Central and Superuniverses",
+            "Format": 6
+        },
+        {
+            "Paper": 1,
+            "pk_seq": -1,
+            "Text": "<p>Sponsored by a Uversa Corps of Superuniverse Personalities acting by authority of the Orvonton Ancients of Days.</p>",
+            "Format": 6
+        },
+        {
+            "Paper": 32,
+            "pk_seq": -3,
+            "Text": "PART II",
+            "Format": 6
+        },
+        {
+            "Paper": 32,
+            "pk_seq": -2,
+            "Text": "The Local Universe",
+            "Format": 6
+        },
+        {
+            "Paper": 32,
+            "pk_seq": -1,
+            "Text": "<p>Sponsored by a Nebadon Corps of Local Universe Personalities acting by authority of Gabriel of Salvington.</p>",
+            "Format": 6
+        },
+        {
+            "Paper": 57,
+            "pk_seq": -3,
+            "Text": "PART III",
+            "Format": 6
+        },
+        {
+            "Paper": 57,
+            "pk_seq": -2,
+            "Text": "The History of Urantia",
+            "Format": 6
+        },
+        {
+            "Paper": 57,
+            "pk_seq": -1,
+            "Text": "<p>These papers were sponsored by a Corps of Local Universe Personalities acting by authority of Gabriel of Salvington.</p>",
+            "Format": 6
+        },
+        {
+            "Paper": 120,
+            "pk_seq": -3,
+            "Text": "PART IV",
+            "Format": 6
+        },
+        {
+            "Paper": 120,
+            "pk_seq": -2,
+            "Text": "The Life and Teachings of Jesus",
+            "Format": 6
+        },
+        {
+            "Paper": 120,
+            "pk_seq": -1,
+            "Text": "<p>This group of papers was sponsored by a commission of twelve Urantia midwayers acting under the supervision of a Melchizedek revelatory director.</p><p>The basis of this narrative was supplied by a secondary midwayer who was onetime assigned to the superhuman watchcare of the Apostle Andrew.</p>",
+            "Format": 6
+        }
+    ],
+    "PartsIntroductionForPtBr": [
+        {
+            "Paper": 1,
+            "pk_seq": -3,
+            "Text": "PARTE I",
+            "Format": 6
+        },
+        {
+            "Paper": 1,
+            "pk_seq": -2,
+            "Text": "O Universo Central e os Superuniversos",
+            "Format": 6
+        },
+        {
+            "Paper": 1,
+            "pk_seq": -1,
+            "Text": "<p>Patrocinada por um corpo de personalidades de Uversa, atuando por autorização dos Anciãos dos Dias de Orvonton.</p>",
+            "Format": 6
+        },
+        {
+            "Paper": 32,
+            "pk_seq": -3,
+            "Text": "PARTE II",
+            "Format": 6
+        },
+        {
+            "Paper": 32,
+            "pk_seq": -2,
+            "Text": "O Universo Local",
+            "Format": 6
+        },
+        {
+            "Paper": 32,
+            "pk_seq": -1,
+            "Text": "<p>Patrocinada por um Corpo de Personalidades do Universo Local de Nebadon, atuando por autorização de Gabriel de Salvington.</p>",
+            "Format": 6
+        },
+        {
+            "Paper": 57,
+            "pk_seq": -3,
+            "Text": "PARTE III",
+            "Format": 6
+        },
+        {
+            "Paper": 57,
+            "pk_seq": -2,
+            "Text": "A História de Urântia",
+            "Format": 6
+        },
+        {
+            "Paper": 57,
+            "pk_seq": -1,
+            "Text": "<p>Estes documentos foram patrocinados por um Corpo de Personalidades do Universo Local, agindo por autoridade de Gabriel de Sálvington.</p>",
+            "Format": 6
+        },
+        {
+            "Paper": 120,
+            "pk_seq": -3,
+            "Text": "PARTE IV",
+            "Format": 6
+        },
+        {
+            "Paper": 120,
+            "pk_seq": -2,
+            "Text": "A Vida e os Ensinamentos de Jesus",
+            "Format": 6
+        },
+        {
+            "Paper": 120,
+            "pk_seq": -1,
+            "Text": "<p>Esse grupo de documentos foi patrocinado por uma comissão de doze seres intermediários de Urântia, atuando sob a supervisão de um diretor revelador Melquisedeque.</p><p>A base desta narrativa foi fornecida por um ser intermediário secundário que, outrora, foi designado à vigilância super-humana do Apóstolo André.</p>",
+            "Format": 6
+        }
+    ]
+}
