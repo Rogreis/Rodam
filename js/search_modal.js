@@ -79,7 +79,15 @@ async function performSearch() {
             body: JSON.stringify(payload)
         });
 
-        if (!response.ok) throw new Error('Erro ao salvar busca');
+        if (!response.ok) {
+            let errorMsg = 'Erro ao salvar busca';
+            try {
+                const errJson = await response.json();
+                if (errJson.error) errorMsg = errJson.error;
+                else if (errJson.message) errorMsg = errJson.message;
+            } catch (e) { }
+            throw new Error(errorMsg);
+        }
 
         // Hide Modal
         const el = document.getElementById('searchResultsModal');

@@ -62,10 +62,6 @@ class SearchModalHelper:
                 config.SearchDocuments = True
 
         # 4. Booleans (Checkboxes)
-        # In JSON payload from JS, these will be true/false booleans.
-        # If we were using standard form submit, they would be 'on' or missing.
-        # But our JS refactor will use JSON.
-        
         # Helper to safely get bool
         def get_bool(key):
             val = data.get(key)
@@ -75,18 +71,31 @@ class SearchModalHelper:
                 return val.lower() in ('true', '1', 'on', 'yes')
             return False
 
-        if config.SearchParts:
+        # Only update if key allows partial updates or if logic demands presence
+        # For our case, we want partial updates support for sort order change.
+        
+        # Scope Update only if scopeType is present - handled above.
+
+        # Specific Parts Flags - Update only if present in data
+        if "SearchIntroduction" in data:
             config.SearchIntroduction = get_bool("SearchIntroduction")
+            
+        if "SearchPartI" in data:
             config.SearchPartI = get_bool("SearchPartI")
-            config.SearchPartII = get_bool("SearchPartII")
+            
+        if "SearchPartII" in data:
+           config.SearchPartII = get_bool("SearchPartII")
+           
+        if "SearchPartIII" in data:
             config.SearchPartIII = get_bool("SearchPartIII")
+            
+        if "SearchPartIV" in data:
             config.SearchPartIV = get_bool("SearchPartIV")
 
-        # 5. Strings
-        if config.SearchDocuments:
-            if "SearchDocumentsList" in data:
-                config.SearchDocumentsList = data["SearchDocumentsList"]
-
         # Save immediately
+        # Save immediately with safety against autosave thread
+        current_autosave = getattr(config, '_autosave', True)
+        config._autosave = False
         config.save()
+        config._autosave = current_autosave
         logger.info("Search config updated and saved.")

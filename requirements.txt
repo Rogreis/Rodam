@@ -20,6 +20,7 @@ proxy-tools==0.1.0
 pycparser==2.23
 pydantic==2.12.5
 pydantic-core==2.41.5
+pyinstaller
 pythonnet==3.0.5
 pywebview==6.1
 soupsieve==2.8.1

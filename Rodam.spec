@@ -11,18 +11,21 @@ app_name = 'Rodam'
 # (source_folder, dest_folder)
 datas = [
     ('templates', 'templates'),
-    ('static', 'static')
+    ('css', 'css'),
+    ('js', 'js'),
+    ('assets', 'assets'),
+    ('favicon.ico', '.')
 ]
 
 # --- SELEÇÃO DE ÍCONE ---
-# Coloque seus ícones numa pasta 'assets'
-icon_path = None
+# Coloque seus ícones numa pasta 'assets' ou use o favicon da raiz
+icon_path = 'favicon.ico'
 if sys.platform == 'win32':
-    icon_path = 'assets/icon.ico'
+    if os.path.exists('assets/icon.ico'):
+        icon_path = 'assets/icon.ico'
 elif sys.platform == 'darwin':
-    icon_path = 'assets/icon.icns'
-else:
-    icon_path = 'assets/icon.png'
+    if os.path.exists('assets/icon.icns'):
+        icon_path = 'assets/icon.icns'
 
 a = Analysis(
     ['app.py'],

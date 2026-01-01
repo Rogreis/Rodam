@@ -87,7 +87,7 @@ class Paper:
 
 class Translation:
     """
-    Represents the translation object structure found in translation.json.
+    Represents the translation object structure found in translation
     """
     def __init__(self, data: Dict[str, Any]):
         self.data = data

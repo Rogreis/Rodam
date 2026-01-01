@@ -333,6 +333,39 @@ class SearchRequest(BaseModel):
     SearchMaxResults: int = 100
     SearchItemsToShow: int = 50
 
+@app.post("/search")
+async def search_endpoint(request: Request):
+    """
+    Receives search form data, updates config via Helper, and performs search.
+    """
+    from helpers.globals import global_config
+    from helpers.search_modal import SearchModalHelper
+
+    try:
+        data = await request.json()
+        
+        # 1. Update Config using Helper
+        SearchModalHelper.process_form_data(data, global_config)
+        
+        # 2. Perform Search using values now in valid type in global_config
+        # Note: global_config.query is updated by helper.
+        
+        if not global_config.query:
+            return []
+
+        lang_map = {1: 'pt', 2: 'en'}
+        lang_str = lang_map.get(global_config.LanguageIdToSearch, 'pt')
+        
+        return search_engine.search(
+            query_str=global_config.query,
+            lang=lang_str,
+            max_results=global_config.SearchMaxResults
+        )
+
+    except Exception as e:
+        logger.error(f"Error in search endpoint: {e}")
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
 
 
 
@@ -444,4 +477,4 @@ if __name__ == '__main__':
     # 2. O Controle do "Inspecionar Elemento"
     # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.
     # debug=False (Produção): O botão direito é desativado ou não mostra o menu de inspeção. O usuário vê apenas o app, sem saber como ele foi feito.
-    webview.start(debug=True)
+    webview.start(debug=False)
