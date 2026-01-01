@@ -284,12 +284,110 @@
         const savedDarkMode = {{ "true" if config.DarkMode else "false" }};
         const savedShowBg = {{ "true" if config.ShowBgColors else "false" }};
 
+        // Load Initial Recent Paragraphs from Config
+        let recentParagraphs = {{ config.RecentParagraphs | tojson }};
+
+        async function navigateWithCode(code) {
+            if (!code) return;
+
+            // UI Feedback (Optional)
+            document.body.style.cursor = 'wait';
+
+            try {
+                const response = await fetch(`/api/navigate?code=${encodeURIComponent(code)}`);
+                const result = await response.json();
+
+                if (response.ok && result.status === 'success') {
+                    // 1. Update Right Column
+                    const rightCol = document.getElementById('rightColumn');
+                    rightCol.innerHTML = result.right;
+                    executeScripts(rightCol);
+
+                    // 2. Update Local History
+                    const validCode = result.final_code;
+                    document.getElementById('mytrackCombo').value = validCode; // Ensure input is synced
+
+                    // Remove if exists
+                    recentParagraphs = recentParagraphs.filter(item => item !== validCode);
+                    // Add to top
+                    recentParagraphs.unshift(validCode);
+
+                    // Limit to 20
+                    if (recentParagraphs.length > 20) recentParagraphs.pop();
+
+                    // 3. Refresh Combo
+                    updateComboOptions();
+
+                    // Hide Options
+                    const trackOptions = document.getElementById('mytrackComboOptions');
+                    if (trackOptions) trackOptions.style.display = 'none';
+
+                } else {
+                    alert(result.message || "Erro ao navegar.");
+                }
+            } catch (err) {
+                console.error("Navigation error:", err);
+                alert("Erro de conexão ao tentar navegar.");
+            } finally {
+                document.body.style.cursor = 'default';
+            }
+        }
+
+        function updateComboOptions() {
+            const container = document.getElementById('mytrackComboOptions');
+            if (!container) return;
+
+            container.innerHTML = '';
+            recentParagraphs.forEach(text => {
+                const div = document.createElement('div');
+                div.className = 'trackCombo-option';
+                div.textContent = text;
+                div.onclick = function () {
+                    navigateWithCode(text);
+                };
+                container.appendChild(div);
+            });
+        }
+
         // Init logic based on 'p' parameter
         document.addEventListener('DOMContentLoaded', () => {
             // Apply Initial Settings (Immediate)
             toggleDarkMode(savedDarkMode);
             toggleBgColors(savedShowBg);
             setHighlightColor(savedHighlight);
+
+            // Populate Combo
+            updateComboOptions();
+
+            // Setup Combo Box Behavior (Show/Hide)
+            const trackInput = document.getElementById('mytrackCombo');
+            const trackOptions = document.getElementById('mytrackComboOptions');
+
+            if (trackInput && trackOptions) {
+                // Show on focus
+                trackInput.addEventListener('focus', () => {
+                    if (trackOptions.children.length > 0) {
+                        trackOptions.style.display = 'block';
+                    }
+                });
+
+                // Hide on blur (with delay to allow click on option)
+                trackInput.addEventListener('blur', () => {
+                    setTimeout(() => {
+                        trackOptions.style.display = 'none';
+                    }, 200);
+                });
+
+                // Handle Enter Key Navigation
+                trackInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const code = trackInput.value.trim();
+                        navigateWithCode(code);
+                        trackInput.blur();
+                    }
+                });
+            }
 
             // Set UI Control States
             const dmSwitch = document.getElementById('darkModeSwitch');

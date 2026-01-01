@@ -1,27 +1,31 @@
 /* Split Layout Styling */
-html, body {
+html,
+body {
     height: 100%;
     margin: 0;
-    overflow: hidden; /* Prevent body scroll, handled by columns */
+    overflow: hidden;
+    /* Prevent body scroll, handled by columns */
 }
 
 /* Parent container for the split layout */
 .main-row {
     display: flex;
     flex-direction: row;
-    height: calc(100vh - 66px); /* Subtract navbar height (approx 56px + padding/borders if any) */
+    height: calc(100vh - 66px);
+    /* Subtract navbar height (approx 56px + padding/borders if any) */
     width: 100%;
     margin: 0;
     overflow: hidden;
 }
 
 #leftColumn {
-    width: 300px; /* Initial width */
+    width: 300px;
+    /* Initial width */
     min-width: 100px;
     height: 100%;
     overflow-y: auto;
     border-right: 1px solid #ccc;
-    flex-shrink: 0; 
+    flex-shrink: 0;
 }
 
 #divisor {
@@ -36,13 +40,81 @@ html, body {
     justify-content: center;
 }
 
-#divisor:active, #divisor:hover {
+#divisor:active,
+#divisor:hover {
     background-color: #ddd;
 }
 
 #rightColumn {
-    flex-grow: 1; 
+    flex-grow: 1;
     min-width: 200px;
     height: 100%;
     overflow-y: auto;
+}
+
+/* --- Combobox Styling (trackCombo) --- */
+.trackCombo {
+    position: relative;
+    display: inline-block;
+    width: 200px;
+    /* Adjust as needed */
+}
+
+.trackCombo-input-wrapper {
+    width: 100%;
+}
+
+.trackCombo-input {
+    width: 100%;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    /* Bootstrap-like border */
+    border-radius: 4px;
+}
+
+.trackCombo-options {
+    display: none;
+    /* Hidden by default */
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    background-color: #fff;
+    border: 1px solid rgba(0, 0, 0, .15);
+    border-radius: 4px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, .175);
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.trackCombo-option {
+    padding: 6px 12px;
+    cursor: pointer;
+    color: #333;
+}
+
+.trackCombo-option:hover {
+    background-color: #f5f5f5;
+    text-decoration: none;
+}
+
+/* Dark Mode Support for Combo */
+[data-bs-theme="dark"] .trackCombo-options {
+    background-color: #2b3035;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .trackCombo-option {
+    color: #dee2e6;
+}
+
+[data-bs-theme="dark"] .trackCombo-option:hover {
+    background-color: #343a40;
+}
+
+[data-bs-theme="dark"] .trackCombo-input {
+    background-color: #2b3035;
+    border-color: #495057;
+    color: #dee2e6;
 }

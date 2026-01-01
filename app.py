@@ -230,6 +230,57 @@ async def get_subject_ui():
 async def get_articles_ui():
     return JSONResponse(articles_frag.html())
 
+@app.get("/api/navigate")
+async def navigate_to_paragraph(code: str):
+    """
+    Validates the code, updates recent history, and returns content.
+    """
+    try:
+        # 1. Validate using static method
+        triplet = FormatPaper.extract_code_triplet(code)
+        if not triplet:
+             return JSONResponse(status_code=400, content={"status": "error", "message": "Código inválido."})
+             
+        # 2. Update Config
+        # Re-construct canonical reference or just use input? 
+        # Ideally we use the canonical ref, but FormatPaper usually extracts from string.
+        # Let's rely on _generate_right_content logic or custom logic here.
+        
+        # Actually, global_config.add_recent_paragraph handles deduplication and pushing to top.
+        # But we should only add clear, valid refs.
+        # FormatPaper.extract_code_triplet returns (paper, section, paragraph).
+        # We can reconstruct a canonical string like "P:S-Para" or similar if we want standardization,
+        # but the users input might be diverse. Ideally we standardize.
+        
+        # Let's use the triplet to format a standard string for history if possible,
+        # or just pass the raw code if it worked.
+        # Let's use the triplet to be clean: P:S.Para (or whatever Rodam uses commonly).
+        # Rodam.json examples: "1:2-9", "96:5-6". Format seems "Paper:Section-Paragraph".
+        
+        paper, section, paragraph = triplet
+        canonical_ref = f"{paper}:{section}-{paragraph}"
+        
+        # Update Global Config history
+        # Note: add_recent_paragraph handles: remove if exists, insert at 0.
+        global_config.add_recent_paragraph(canonical_ref)
+        
+        # 3. Generate Content
+        right_content = _generate_right_content(canonical_ref)
+        
+        if right_content:
+             return {
+                 "status": "success",
+                 "right": right_content,
+                 "final_code": canonical_ref
+             }
+        else:
+             return JSONResponse(status_code=404, content={"status": "error", "message": "Conteúdo não encontrado."})
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
 class SettingsModel(BaseModel):
     highlight_color: str
     dark_mode: bool
