@@ -11,6 +11,7 @@ jobs:
     name: Build para ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         # Cria 3 máquinas virtuais simultâneas
         include:
@@ -41,7 +42,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev || sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
 
       - name: Instalar Python Requirements
         run: |
@@ -80,7 +81,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          # AQUI ESTÁ O QUE VOCÊ PEDIU:
           # O nome da Release será a Tag (ex: v1.0.2)
           name: Versão ${{ github.ref_name }}
           draft: false
