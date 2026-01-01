@@ -96,7 +96,7 @@ class SearchFragment:
         css_styles = """
         <style>
             .match, .term0, .term1, .term2, .term3 {
-                color: magenta !important;
+                color: var(--highlight-color, magenta) !important;
                 font-weight: bold;
             }
         </style>

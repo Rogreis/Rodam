@@ -37,6 +37,61 @@
     <link href="css/main_layout.css" rel="stylesheet">
     <link href="css/paragraph_status.css" rel="stylesheet">
 
+    <style>
+        @media print {
+
+            /* Hide Navigation, Left Column, Splitter, and Modals */
+            nav,
+            #leftColumn,
+            #divisor,
+            .modal,
+            .trackCombo-options {
+                display: none !important;
+            }
+
+            /* Reset container constraints to allow full-page printing */
+            html,
+            body,
+            .container-fluid,
+            .main-row {
+                width: 100% !important;
+                height: auto !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: visible !important;
+                display: block !important;
+            }
+
+            /* Force Right Column to expand and show all content */
+            #rightColumn {
+                width: 100% !important;
+                height: auto !important;
+                flex: none !important;
+                overflow: visible !important;
+                display: block !important;
+                border: none !important;
+            }
+
+            /* Ensure proper contrast for printing (Force Light Mode-like appearance) */
+            body {
+                background-color: white !important;
+                color: black !important;
+            }
+
+            /* Optional: Preserve highlighting if needed, but ensure readable text */
+            #rightColumn * {
+                color: black;
+                /* Default to black, specific styles can override */
+            }
+
+            /* Preserve specific text colors if they have !important (like search term highlights) */
+
+            @page {
+                size: auto;
+                margin: 2cm;
+            }
+        }
+    </style>
 </head>
 
 <body>
@@ -68,27 +123,24 @@
                         </li>
                         {% endfor %}
 
-                        <li class="nav-item">
-                            <span class="navbar-brand mx-3 titulo">Estudos sobre "O Livro de Urântia"</span>
-                        </li>
+                    </ul>
 
-                        <div class="trackCombo">
+                    <!-- Centered Title -->
+                    <div class="mx-auto">
+                        <span class="navbar-brand titulo">Estudos sobre "O Livro de Urântia"</span>
+                    </div>
+
+                    <div class="navbar-nav ms-auto align-items-center">
+                        <!-- Combo Track Moved Here -->
+                        <div class="trackCombo me-3">
                             <div class="trackCombo-input-wrapper">
                                 <input type="text" class="trackCombo-input" id="mytrackCombo" autocomplete="off"
                                     placeholder="Ir para ex: 1:2.3">
-                                <button class="trackCombo-button" id="mytrackComboButton"></button>
                             </div>
                             <div class="trackCombo-options" id="mytrackComboOptions"></div>
                         </div>
 
-                    </ul>
-
-                    <div class="small-text-container">
-                        <p class="small-text">Texto PT-BR atualizado em: 05/09/2025</p>
-                    </div>
-
-                    <div class="navbar-nav ms-auto">
-                        <button class="btn btn-primary" onclick="window.print()"
+                        <button class="btn btn-primary me-2" onclick="window.print()"
                             title="Imprime o texto do documento selecionado.">Imprimir</button>
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#myModal"
                             title="Clique para entender o significado das cores de fundo de cada parágrafo.">Cores</button>
@@ -129,6 +181,89 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Configurações</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Dark Mode Switch -->
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked
+                            onchange="toggleDarkMode(this.checked)">
+                        <label class="form-check-label" for="darkModeSwitch">Modo Escuro (Dark Mode)</label>
+                    </div>
+
+                    <!-- Background Colors Switch -->
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="bgColorsSwitch"
+                            onchange="toggleBgColors(this.checked)">
+                        <label class="form-check-label" for="bgColorsSwitch">Exibir cores de fundo na tradução em
+                            edição</label>
+                    </div>
+
+                    <!-- Highlight Color Selection -->
+                    <div class="mb-3">
+                        <label class="fw-bold mb-2">Cor de Destaque (Search Highlight)</label>
+
+                        <div class="d-flex flex-column gap-2">
+                            <!-- Helper to render option -->
+                            <!-- Option 1: Magenta -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="highlightColor" id="hlMagenta"
+                                    value="magenta" onchange="setHighlightColor(this.value)">
+                                <label class="form-check-label" for="hlMagenta"
+                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                    Texto normal com <span style="font-weight: bold; color: magenta;">Destaque</span>
+                                </label>
+                            </div>
+
+                            <!-- Option 2: Gold -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="highlightColor" id="hlGold"
+                                    value="gold" onchange="setHighlightColor(this.value)">
+                                <label class="form-check-label" for="hlGold"
+                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                    Texto normal com <span style="font-weight: bold; color: gold;">Destaque</span>
+                                </label>
+                            </div>
+
+                            <!-- Option 3: Cyan -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="highlightColor" id="hlCyan"
+                                    value="cyan" onchange="setHighlightColor(this.value)">
+                                <label class="form-check-label" for="hlCyan"
+                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                    Texto normal com <span style="font-weight: bold; color: cyan;">Destaque</span>
+                                    (Dark)
+                                </label>
+                            </div>
+
+                            <!-- Option 4: DarkOrange -->
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="highlightColor" id="hlDarkOrange"
+                                    value="darkorange" onchange="setHighlightColor(this.value)">
+                                <label class="form-check-label" for="hlDarkOrange"
+                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                    Texto normal com <span style="font-weight: bold; color: darkorange;">Destaque</span>
+                                    (Light)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <!-- <button type="button" class="btn btn-primary">Salvar</button> Not needed for instant toggle -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Search Results Modal (Included from Template) -->
     {% include 'search_modal.html' %}
 
@@ -144,8 +279,35 @@
 -->
 
     <script>
+        // --- Init Configuration from Server ---
+        const savedHighlight = "{{ config.HighlightColor }}";
+        const savedDarkMode = {{ "true" if config.DarkMode else "false" }};
+        const savedShowBg = {{ "true" if config.ShowBgColors else "false" }};
+
         // Init logic based on 'p' parameter
         document.addEventListener('DOMContentLoaded', () => {
+            // Apply Initial Settings (Immediate)
+            toggleDarkMode(savedDarkMode);
+            toggleBgColors(savedShowBg);
+            setHighlightColor(savedHighlight);
+
+            // Set UI Control States
+            const dmSwitch = document.getElementById('darkModeSwitch');
+            if (dmSwitch) dmSwitch.checked = savedDarkMode;
+
+            const bgSwitch = document.getElementById('bgColorsSwitch');
+            if (bgSwitch) bgSwitch.checked = savedShowBg;
+
+            // Set Radio State
+            const hlRadio = document.querySelector(`input[name="highlightColor"][value="${savedHighlight}"]`);
+            if (hlRadio) hlRadio.checked = true;
+
+            // Setup Save on Close
+            const settingsModal = document.getElementById('settingsModal');
+            if (settingsModal) {
+                settingsModal.addEventListener('hidden.bs.modal', saveSettings);
+            }
+
             // Resizer Logic
             const divisor = document.getElementById('divisor');
             const leftColumn = document.getElementById('leftColumn');
@@ -283,6 +445,51 @@
                     executeScripts(rightCol);
                 })
                 .catch(error => console.error('Erro na requisição:', error));
+        }
+
+        // --- Settings Logic ---
+        function openSettingsModal() {
+            var myModal = new bootstrap.Modal(document.getElementById('settingsModal'));
+            myModal.show();
+        }
+
+        function toggleDarkMode(isDark) {
+            document.documentElement.setAttribute('data-bs-theme', isDark ? 'dark' : 'light');
+        }
+
+        function toggleBgColors(show) {
+            if (show) {
+                document.body.classList.add('show-bg-colors');
+            } else {
+                document.body.classList.remove('show-bg-colors');
+            }
+        }
+
+        function setHighlightColor(color) {
+            document.documentElement.style.setProperty('--highlight-color', color);
+        }
+
+        async function saveSettings() {
+            const highlightColor = document.querySelector('input[name="highlightColor"]:checked')?.value || 'magenta';
+            const darkMode = document.getElementById('darkModeSwitch').checked;
+            const showBgColors = document.getElementById('bgColorsSwitch').checked;
+
+            const payload = {
+                highlight_color: highlightColor,
+                dark_mode: darkMode,
+                show_bg_colors: showBgColors
+            };
+
+            try {
+                await fetch('/api/save_settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                console.log("Settings saved.");
+            } catch (error) {
+                console.error("Error saving settings:", error);
+            }
         }
     </script>
 

@@ -17,7 +17,7 @@ from helpers.toc_treeview import get_tree_data
 import logging
 
 # --- Configuration & Paths ---
-from helpers.globals import resource_path, get_data_dir, CONFIG_FILE
+from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config
 from helpers.config import Config
 from helpers.paper_format import FormatPaper
 
@@ -230,6 +230,32 @@ async def get_subject_ui():
 async def get_articles_ui():
     return JSONResponse(articles_frag.html())
 
+class SettingsModel(BaseModel):
+    highlight_color: str
+    dark_mode: bool
+    show_bg_colors: bool
+
+@app.post("/api/save_settings")
+async def save_settings(settings: SettingsModel):
+    try:
+        # Batch update: disable autosave to prevent 3 sequential disk writes
+        current_autosave = getattr(global_config, '_autosave', True)
+        global_config._autosave = False
+        
+        global_config.HighlightColor = settings.highlight_color
+        global_config.DarkMode = settings.dark_mode
+        global_config.ShowBgColors = settings.show_bg_colors
+        
+        global_config._autosave = current_autosave
+        global_config.save() # Explicit save once
+        
+        return {"status": "success"}
+    except Exception as e:
+        import traceback
+        traceback.print_exc() # Print full stack trace to console
+        print(f"Error saving settings: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
 @app.get("/search")
 async def get_search_ui(page: Optional[int] = None):
     should_open_modal = (page is None)
@@ -403,16 +429,16 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
             "label": "Documentos", 
             "href": "javascript:loadContent('/toc', 'indexToc')"
         },
-        {
-            "id": "indexSubject", 
-            "label": "Assuntos", 
-            "href": "javascript:loadContent('/subject', 'indexSubject')"
-        },
-        {
-            "id": "indexStudy", 
-            "label": "Artigos", 
-            "href": "javascript:loadContent('/articles', 'indexStudy')"
-        },
+        # {
+        #     "id": "indexSubject", 
+        #     "label": "Assuntos", 
+        #     "href": "javascript:loadContent('/subject', 'indexSubject')"
+        # },
+        # {
+        #     "id": "indexStudy", 
+        #     "label": "Artigos", 
+        #     "href": "javascript:loadContent('/articles', 'indexStudy')"
+        # },
         {
             "id": "search", 
             "label": "Busca", 
@@ -421,7 +447,7 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         {
             "id": "settings", 
             "label": "Configurações", 
-            "href": "javascript:loadContent('/settings', 'settings')"
+            "href": "javascript:openSettingsModal()"
         }
     ]
 

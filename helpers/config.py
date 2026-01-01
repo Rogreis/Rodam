@@ -41,7 +41,12 @@ class Config:
                  # User History
                  LastSelectedParagraph: str = "",
                  RecentParagraphs: List[str] = None,
-                 LastVisitedPage: str = "indexToc"):
+                 LastVisitedPage: str = "indexToc",
+                 
+                 # UI Settings
+                 HighlightColor: str = "magenta",
+                 DarkMode: bool = True,
+                 ShowBgColors: bool = False):
         
         self._autosave = False
         self.query = query
@@ -68,6 +73,11 @@ class Config:
         self.LastSelectedParagraph = LastSelectedParagraph
         self.RecentParagraphs = RecentParagraphs
         self.LastVisitedPage = LastVisitedPage
+        
+        self.HighlightColor = HighlightColor
+        self.DarkMode = DarkMode
+        self.ShowBgColors = ShowBgColors
+        
         self._autosave = True
 
     def __setattr__(self, key, value):
@@ -103,7 +113,10 @@ class Config:
                     LanguageForToc=data.get("LanguageForToc", 0),
                     LastSelectedParagraph=data.get("LastSelectedParagraph", ""),
                     RecentParagraphs=data.get("RecentParagraphs", []),
-                    LastVisitedPage=data.get("LastVisitedPage", "indexToc")
+                    LastVisitedPage=data.get("LastVisitedPage", "indexToc"),
+                    HighlightColor=data.get("HighlightColor", "magenta"),
+                    DarkMode=data.get("DarkMode", True),
+                    ShowBgColors=data.get("ShowBgColors", False)
                 )
         except Exception as e:
             print(f"Error loading config: {e}")
@@ -129,7 +142,10 @@ class Config:
             "LanguageForToc": self.LanguageForToc,
             "LastSelectedParagraph": self.LastSelectedParagraph,
             "RecentParagraphs": self.RecentParagraphs,
-            "LastVisitedPage": self.LastVisitedPage
+            "LastVisitedPage": self.LastVisitedPage,
+            "HighlightColor": self.HighlightColor,
+            "DarkMode": self.DarkMode,
+            "ShowBgColors": self.ShowBgColors
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:

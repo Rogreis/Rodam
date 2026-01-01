@@ -1,5 +1,6 @@
-/* Paragraphs Styling to represent status*/
+/* Paragraphs Styling to represent status */
 
+/* 1. Base / Common Styles (Default to "Closed" look) */
 .parStarted,
 .parWorking,
 .parDoubt,
@@ -7,142 +8,148 @@
 .parClosed {
     text-align: justify;
     text-justify: inter-word;
-    padding-top: 15px;
-    padding-right: 15px;
-    padding-bottom: 15px;
-    padding-left: 15px;
-}
+    padding: 15px;
 
-.parStarted {
-    background-color: FloralWhite;
-    color: black;
-}
+    /* Setup for Status Badge positioning */
+    position: relative;
 
-a.parStarted:link {
-    text-decoration: none;
-    color: black;
-    padding: 0;
-}
-
-a.parStarted:visited {
-    text-decoration: none;
-    color: black;
-}
-
-a.parStarted:hover {
-    text-decoration: underline;
-    color: black;
-}
-
-a.parStarted:active {
-    text-decoration: none;
-    color: black;
-}
-
-.parWorking {
-    background-color: LemonChiffon;
-    color: black;
-}
-
-a.parWorking:link {
-    text-decoration: none;
-    color: black;
-    padding: 0;
-}
-
-a.parWorking:visited {
-    text-decoration: none;
-    color: black;
-}
-
-a.parWorking:hover {
-    text-decoration: underline;
-    color: black;
-}
-
-a.parWorking:active {
-    text-decoration: none;
-    color: black;
-}
-
-.parDoubt {
-    background-color: FireBrick;
-    color: white;
-}
-
-a.parDoubt:link {
-    text-decoration: none;
-    color: white;
-    padding: 0;
-}
-
-a.parDoubt:visited {
-    text-decoration: none;
-    color: white;
-    padding: 0;
-}
-
-a.parDoubt:hover {
-    text-decoration: underline;
-    color: white;
-}
-
-a.parDoubt:active {
-    text-decoration: none;
-    color: white;
-}
-
-.parOk {
-    background-color: Aquamarine;
-}
-
-a.parOk:link {
-    text-decoration: none;
-    color: black;
-    padding: 0;
-}
-
-a.parOk:visited {
-    text-decoration: none;
-    color: black;
-}
-
-a.parOk:hover {
-    text-decoration: underline;
-    color: black;
-}
-
-a.parOk:active {
-    text-decoration: none;
-    color: black;
-}
-
-.parClosed {
+    /* Default Colors (Equivalent to .parClosed) */
     background-color: var(--bs-body-bg);
     color: var(--bs-body-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+    /* Smooth transition */
 }
 
-a.parClosed:link {
+/* Default Link Styles (Closed look) */
+a.parStarted,
+a.parWorking,
+a.parDoubt,
+a.parOk,
+a.parClosed {
     text-decoration: none;
-    color: var(--bs-body-color);
     padding: 0;
-}
-
-a.parClosed:visited {
-    text-decoration: none;
     color: var(--bs-body-color);
 }
 
+a.parStarted:hover,
+a.parWorking:hover,
+a.parDoubt:hover,
+a.parOk:hover,
 a.parClosed:hover {
     text-decoration: underline;
     color: var(--bs-body-color);
 }
 
-a.parClosed:active {
-    text-decoration: none;
+
+/* 2. Specific Styles (Only active when .show-bg-colors is present) */
+
+/* --- Started --- */
+.show-bg-colors .parStarted {
+    background-color: FloralWhite;
+    color: black;
+}
+
+.show-bg-colors a.parStarted {
+    color: black;
+}
+
+.show-bg-colors a.parStarted:hover {
+    color: black;
+}
+
+/* --- Working --- */
+.show-bg-colors .parWorking {
+    background-color: LemonChiffon;
+    color: black;
+}
+
+.show-bg-colors a.parWorking {
+    color: black;
+}
+
+.show-bg-colors a.parWorking:hover {
+    color: black;
+}
+
+/* --- Doubt --- */
+.show-bg-colors .parDoubt {
+    background-color: FireBrick;
+    color: white;
+}
+
+.show-bg-colors a.parDoubt {
+    color: white;
+}
+
+.show-bg-colors a.parDoubt:hover {
+    color: white;
+}
+
+/* --- Ok --- */
+.show-bg-colors .parOk {
+    background-color: Aquamarine;
+    color: black;
+}
+
+.show-bg-colors a.parOk {
+    color: black;
+}
+
+.show-bg-colors a.parOk:hover {
+    color: black;
+}
+
+
+/* --- Closed (Matches Default) --- */
+.show-bg-colors .parClosed {
+    background-color: var(--bs-body-bg);
     color: var(--bs-body-color);
 }
 
+
+/* 3. Status Badges (Pseudo-elements) */
+/* Only visible when show-bg-colors is Active */
+/* TARGET ONLY DIVs to avoid duplication on links (<a>) */
+
+.show-bg-colors div.parStarted::before,
+.show-bg-colors div.parWorking::before,
+.show-bg-colors div.parDoubt::before,
+.show-bg-colors div.parOk::before,
+.show-bg-colors div.parClosed::before {
+    content: "";
+    /* Default content, overridden below */
+    display: block;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    opacity: 0.8;
+}
+
+/* Define the text for each status */
+.show-bg-colors div.parStarted::before {
+    content: "Iniciado";
+}
+
+.show-bg-colors div.parWorking::before {
+    content: "Em andamento";
+}
+
+.show-bg-colors div.parDoubt::before {
+    content: "Em dúvida";
+}
+
+.show-bg-colors div.parOk::before {
+    content: "Finalizado";
+}
+
+.show-bg-colors div.parClosed::before {
+    content: "Fechado";
+    display: none;
+}
+
+
+/* Blockquotes (Common) */
 blockquote {
     margin: 0 0 0 1.5cm !important;
     padding: 0 !important;
