@@ -122,6 +122,31 @@
                 </form>
 
                 <hr class="border-secondary">
+
+                <!-- Search Syntax Help -->
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle-fill me-2"></i>Dicas de Pesquisa (Sintaxe
+                        Whoosh)</h6>
+                    <small>
+                        <ul class="mb-0 ps-3">
+                            <li><strong>Termos Simples:</strong> <code>amor</code> encontra documentos com "amor".</li>
+                            <li><strong>Operador Padrão (OR):</strong> <code>amor paz</code> encontra documentos com
+                                "amor" <strong>OU</strong> "paz" (padrão).</li>
+                            <li><strong>Operador AND:</strong> <code>amor AND paz</code> encontra documentos que contêm
+                                <strong>AMBOS</strong> "amor" e "paz".</li>
+                            <li><strong>Frases Exatas:</strong> <code>"Espírito da Verdade"</code> encontra a frase
+                                exata.</li>
+                            <li><strong>Curingas:</strong> <code>te*</code> (começa com "te"), <code>*te</code> (termina
+                                com "te"), <code>t?ste</code> (um caractere curinga).</li>
+                            <li><strong>Agrupamento:</strong> <code>(pai OR filho) AND eterno</code> usa parênteses para
+                                agrupar lógica.</li>
+                            <li><strong>Negação:</strong> <code>luz NOT trevas</code> encontra "luz" mas exclui
+                                documentos com "trevas".</li>
+                        </ul>
+                    </small>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
                 <!-- Search Results Output -->
                 <div id="searchResultsList" class="list-group list-group-flush">
                     <!-- Results injected here by JS -->

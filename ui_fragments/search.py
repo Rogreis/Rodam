@@ -41,9 +41,6 @@ class SearchFragment:
         
         # Language ID is used directly now (0=EN, 2=PT)
         # Removed string mapping as search_engine now expects int
-        
-        print(f"Last query {last_query} a ser buscada em ID {lang_id}")
-            
         modal_script = "<script>showSearchModal();</script>" if open_modal else ""
         
         script = f"""
@@ -90,7 +87,6 @@ class SearchFragment:
             else:
                 scope_parts.append("Selected Docs") 
         scope_str = " + ".join(scope_parts) if scope_parts else "All"
-        print(f"scope_str {scope_str}")
 
         # Build Header Info
         css_styles = """
@@ -168,19 +164,16 @@ class SearchFragment:
                             start, end = map(int, p_str_clean.split(':'))
                             # range is exclusive at end, but user notation usually implies inclusive
                             allowed_papers.extend(range(start, end + 1))
-                            print(f"allowed_papers added range {start}-{end}")
                         except: 
-                            print(f"allowed_papers erro parsing range: {p_str}")
+                            helpers.globals.logger.error(f"allowed_papers erro parsing range: {p_str}")
                             pass
                     else:
                         try:
                             allowed_papers.append(int(p_str))
-                            print(f"allowed_papers 2 {allowed_papers}")
                         except: 
-                            print(f"allowed_papers com erro 2")
+                            helpers.globals.logger.error(f"allowed_papers com erro 2")
                             pass
         
-        print(f"allowed_papers {allowed_papers}")
         # Deduplicate and sort
         if allowed_papers:
             allowed_papers = sorted(list(set(allowed_papers)))
@@ -189,13 +182,10 @@ class SearchFragment:
             if len(allowed_papers) >= 197:
                 helpers.globals.logger.debug("Todos os documentos selecionados (197). Filtro desativado para otimização.")
                 allowed_papers = []
-                print("Todos os dpcumentos selecionados")
             else:
                 helpers.globals.logger.debug(f"Filtro de Papers Ativo: {allowed_papers}")
-                print(f"Documentos selecionados {allowed_papers}")
         else:
             helpers.globals.logger.debug("Filtro de Papers: Todos (Lista vazia)")
-            print(f"Filtro de Papers: Todos (Lista vazia)")
         
         # If allowed_papers is empty here, it implies ALL (if SearchParts/SearchDocs were false)
         # OR it implies NONE (if they were true but selected nothing/empty list).
@@ -224,9 +214,6 @@ class SearchFragment:
             # Note: allowed_papers was emptied if it contained ALL (197) in previous block optimization.
             # So this filter runs only if there is a subset restriction.
             results = [r for r in results if r['paper'] in allowed_papers]
-            print(f"VAI FAZER RESTRIÇÂO {len(results)}")
-        else:
-            print("NÃO VAI FAZER RESTRIÇÂO")
         
         total_items = len(results)
         page_results = [] # Initialize to avoid UnboundLocalError
@@ -358,7 +345,6 @@ class SearchFragment:
             
             # paper_display returns List[Tuple[str, str]] -> [(html_left, html_right), ...]
             # We will display the Right column (PT/Content with links)
-            print("Vai formatar o primeiro item: {first_item_id}")
             paper_content = formatter.paper_display(first_item_id)
             
             if paper_content:

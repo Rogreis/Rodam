@@ -15,10 +15,11 @@ from typing import List, Tuple, Optional, Union
 SEPARATOR_TEXT= "* * * * * *"
 
 class FormatParagraph:
-    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
         self.paper = paper
         self.section = section
         self.paragraph = paragraph
+        self.is_highlighted = is_highlighted
 
         self.paper_str = str(self.paper).zfill(3)
         self.section_str = str(self.section).zfill(3)
@@ -40,11 +41,16 @@ class FormatParagraph:
     def format_nolink_text(self, id_paragraph, text, ident_text= ""):
         if (ident_text != ""):
             ident_text= ident_text + " "
-        return f'<div id="{id_paragraph}" class="p-3 mb-2">{ident_text}{text}</div>'
+            
+        style = ""
+        if self.is_highlighted:
+            style = 'style="border: 2px solid var(--highlight-color, magenta); border-radius: 5px;"'
+            
+        return f'<div id="{id_paragraph}" class="p-3 mb-2" {style}>{ident_text}{text}</div>'
 
 class FormatParagraphLeft(FormatParagraph):
-    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
-        super().__init__(paper, section, paragraph, text, fmt)
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
+        super().__init__(paper, section, paragraph, text, fmt, is_highlighted)
         self.id_paragraph= self.id_paragraph + "_L"
 
     def html_text(self):
@@ -70,8 +76,8 @@ class FormatParagraphLeft(FormatParagraph):
             return f"<h5>{self.text}</h5>"
 
 class FormatParagraphRight(FormatParagraph):
-    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int):
-        super().__init__(paper, section, paragraph, text, fmt)
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
+        super().__init__(paper, section, paragraph, text, fmt, is_highlighted)
         self.id_paragraph= self.id_paragraph + "_R"
         self.css_class = notes_list.get_css_class(paper, section, paragraph)
 
@@ -82,7 +88,12 @@ class FormatParagraphRight(FormatParagraph):
     def format_link_text(self, display_text: str, text= "") -> str:
         if (text != ""):
             display_text= display_text + " "
-        return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {self.css_class}">{self._generate_github_url(display_text)}{text}</div>'
+            
+        style = ""
+        if self.is_highlighted:
+            style = 'style="border: 2px solid var(--highlight-color, magenta); border-radius: 5px;"'
+            
+        return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {self.css_class}" {style}>{self._generate_github_url(display_text)}{text}</div>'
 
     def html_text(self):
         if self.fmt == ParagraphExportHtmlType.BookTitle:
@@ -136,7 +147,7 @@ class FormatPaper:
         
         return None
 
-    def format_paragraph(self, code) -> Tuple[str, str]:
+    def format_paragraph(self, code, is_target: bool = False) -> Tuple[str, str]:
         """
         Formats a single paragraph pair (EN/PT) into HTML tuple.
         Arg code is a reference to a paragraph
@@ -190,8 +201,8 @@ class FormatPaper:
         fmt_val = p_en.format if p_en else 0
         fmt = ParagraphExportHtmlType(fmt_val)
 
-        p_left= FormatParagraphLeft(paper, section, paragraph, text_left, fmt)
-        p_right= FormatParagraphRight(paper, section, paragraph, text_right, fmt)
+        p_left= FormatParagraphLeft(paper, section, paragraph, text_left, fmt, is_target)
+        p_right= FormatParagraphRight(paper, section, paragraph, text_right, fmt, is_target)
 
         return (p_left.html_text(), p_right.html_text())
 
@@ -205,8 +216,10 @@ class FormatPaper:
         triplet = FormatPaper.extract_code_triplet(str(code))
         
         paperNo = None
+        target_triplet = None
         if triplet:
-            paperNo, _, _ = triplet
+            paperNo, target_section, target_paragraph = triplet
+            target_triplet = (paperNo, target_section, target_paragraph)
         else:
             result.append("", f"ERRO: Código inválido {code}")
             return result
@@ -251,13 +264,22 @@ class FormatPaper:
             # Construct a code for the current paragraph to match new format_paragraph signature
             # Use p_en as source of truth for ID, or p_pt if p_en missing
             current_code = ""
+            current_triplet = None
+            
             if p_en:
                 current_code = f"{p_en.paper}_{p_en.section}_{p_en.paragraph_no}"
+                current_triplet = (p_en.paper, p_en.section, p_en.paragraph_no)
             elif p_pt:
                 current_code = f"{p_pt.paper}_{p_pt.section}_{p_pt.paragraph_no}"
+                current_triplet = (p_pt.paper, p_pt.section, p_pt.paragraph_no)
             
+            # Determine if this is the target paragraph
+            is_target = False
+            if target_triplet and current_triplet:
+                is_target = (target_triplet == current_triplet)
+
             if current_code:
-                result.append(self.format_paragraph(current_code))
+                result.append(self.format_paragraph(current_code, is_target))
             
         return result
 
