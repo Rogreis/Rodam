@@ -21,6 +21,7 @@ def get_data_dir():
     return os.path.join(base, 'Rodam')
 
 # Global Constants and Paths
+TUB_FILES='TUB_Files'
 CONFIG_FILE = os.path.join(get_data_dir(), 'Rodam.json')
 TUB_FILES_DIR = os.path.join(get_data_dir(), 'TUB_Files')
 
@@ -40,6 +41,8 @@ tr_en = None
 
 # Global variable for Logger
 logger = None
+
+TTranslations.check_files(TUB_FILES_DIR)
 
 # Global Objects
 translations_manager = TTranslations(TUB_FILES_DIR)
