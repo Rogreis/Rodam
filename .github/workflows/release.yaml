@@ -50,7 +50,7 @@ jobs:
       - name: Instalar Python Requirements
         run: |
           pip install -r requirements.txt
-          pip install pyinstaller
+          pip install pyinstaller Pillow
 
       # Compilar com PyInstaller
       - name: Build com PyInstaller
