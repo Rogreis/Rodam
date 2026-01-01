@@ -115,11 +115,13 @@ def get_tree_data():
     
     # helper to create part node
     def create_part_node(title, code_suffix):
+        # Ensure unique web-safe ID
+        safe_suffix = code_suffix.lower().strip().replace(" ", "")
         return {
-            "id": generate_node_id(),
+            "id": generate_node_id(), 
             "title": title,
             "type": "folder",
-            "secret_code": f"PART_{code_suffix}",
+            "secret_code": f"tree_part_{safe_suffix}",
             "children": []
         }
 

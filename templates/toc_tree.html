@@ -47,19 +47,20 @@
 
 {% for item in items %}
 
-{% set unique_id = "node-" ~ item.secret_code %}
+{% set unique_id = "node-" ~ item.id %}
 
 <div class="list-group-item border-0 p-0 bg-transparent">
 
     {% if item.type == 'folder' %}
-    <div role="button" class="tree-link" style="padding-left: {{ padding_left }}px;" data-bs-toggle="collapse"
-        data-bs-target="#collapse-{{ unique_id }}" aria-expanded="false">
+    <a href="#collapse-{{ unique_id }}" class="tree-link" style="padding-left: {{ padding_left }}px;"
+        data-bs-toggle="collapse" aria-expanded="false" role="button"
+        onclick="console.log('DEBUG: Clicked trigger for #collapse-{{ unique_id }}', 'Exists:', !!document.getElementById('collapse-{{ unique_id }}'))">
 
         <i class="bi bi-caret-right-fill tree-caret"></i>
 
 
         <span class="fw-medium">{{ item.title }}</span>
-    </div>
+    </a>
 
     <div class="collapse" id="collapse-{{ unique_id }}">
         {{ render_tree(item.children, level + 1) }}

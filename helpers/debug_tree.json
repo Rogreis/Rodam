@@ -89,7 +89,7 @@
         "id": "0000",
         "title": "PART I",
         "type": "folder",
-        "secret_code": "PART_I",
+        "secret_code": "tree_part_i",
         "children": [
             {
                 "id": "0018",
@@ -1911,7 +1911,7 @@
         "id": "0001",
         "title": "PART II",
         "type": "folder",
-        "secret_code": "PART_II",
+        "secret_code": "tree_part_ii",
         "children": [
             {
                 "id": "0310",
@@ -3535,7 +3535,7 @@
         "id": "0002",
         "title": "PART III",
         "type": "folder",
-        "secret_code": "PART_III",
+        "secret_code": "tree_part_iii",
         "children": [
             {
                 "id": "0571",
@@ -7317,7 +7317,7 @@
         "id": "0003",
         "title": "PART IV",
         "type": "folder",
-        "secret_code": "PART_IV",
+        "secret_code": "tree_part_iv",
         "children": [
             {
                 "id": "1179",
