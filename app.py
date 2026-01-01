@@ -65,7 +65,6 @@ settings_frag = SettingsFragment()
 # Static Mounts
 app.mount("/css", StaticFiles(directory=resource_path("css")), name="css")
 app.mount("/js", StaticFiles(directory=resource_path("js")), name="js")
-app.mount("/content", StaticFiles(directory=resource_path("content")), name="content")
 
 @app.get('/favicon.ico', include_in_schema=False)
 async def favicon():
@@ -334,100 +333,7 @@ class SearchRequest(BaseModel):
     SearchMaxResults: int = 100
     SearchItemsToShow: int = 50
 
-class SaveParagraphRequest(BaseModel):
-    paper: int
-    section: int
-    paragraph: int
-    text: str
 
-# Renamed API endpoint to avoid conflict
-@app.get("/api/settings")
-async def get_settings_data():
-    if os.path.exists(CONFIG_FILE):
-        try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except:
-            return {}
-    return {}
-
-@app.post("/search")
-async def search_endpoint(request: Request):
-    """
-    Receives search form data, updates config via Helper, and performs search.
-    """
-    from helpers.globals import global_config
-    from helpers.search_modal import SearchModalHelper
-
-    try:
-        data = await request.json()
-        
-        # 1. Update Config using Helper
-        SearchModalHelper.process_form_data(data, global_config)
-        
-        # 2. Perform Search using values now in valid type in global_config
-        # Note: global_config.query is updated by helper.
-        
-        if not global_config.query:
-            return []
-
-        lang_map = {1: 'pt', 2: 'en'}
-        lang_str = lang_map.get(global_config.LanguageIdToSearch, 'pt')
-        
-        return search_engine.search(
-            query_str=global_config.query,
-            lang=lang_str,
-            max_results=global_config.SearchMaxResults
-        )
-
-    except Exception as e:
-        logger.error(f"Error in search endpoint: {e}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
-
-@app.post("/save_paragraph")
-async def save_paragraph_endpoint(req: SaveParagraphRequest):
-    # Construct Filename
-    filename = f"Doc{str(req.paper).zfill(3)}.html"
-    filepath = resource_path(os.path.join('content', filename))
-    
-    if not os.path.exists(filepath):
-        return JSONResponse(status_code=404, content={'error': 'File not found'})
-        
-    try:
-        with open(filepath, 'r', encoding='utf-8') as f:
-            content = f.read()
-            
-        soup = BeautifulSoup(content, 'html.parser')
-        
-        id_str = f"p{str(req.paper).zfill(3)}_{str(req.section).zfill(3)}_{str(req.paragraph).zfill(3)}"
-        
-        # Locating logic logic (same as legacy)
-        div_en = soup.find('div', id=id_str)
-        if not div_en:
-             return JSONResponse(status_code=404, content={'error': 'Paragraph ID not found'})
-             
-        td_en = div_en.find_parent('td')
-        tr = td_en.find_parent('tr')
-        td_pt = tr.find_all('td')[1]
-        div_pt = td_pt.find('div')
-        
-        anchor = div_pt.find('a')
-        
-        if anchor:
-            anchor_soup = BeautifulSoup(str(anchor), 'html.parser').body.next
-            div_pt.clear()
-            div_pt.append(anchor_soup)
-            div_pt.append("  " + req.text)
-        else:
-            div_pt.string = req.text
-            
-        with open(filepath, 'w', encoding='utf-8') as f:
-            f.write(str(soup))
-            
-        return {'status': 'success'}
-        
-    except Exception as e:
-        return JSONResponse(status_code=500, content={'error': str(e)})
 
 
 
