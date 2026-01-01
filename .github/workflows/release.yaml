@@ -10,6 +10,9 @@ jobs:
   create-release:
     name: Build para ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
+    # Permissão explícita para criar releases
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
@@ -35,7 +38,7 @@ jobs:
       - name: Configurar Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: '3.12'
 
       # Dependências de sistema para o Linux (necessário para pywebview)
       - name: Instalar Deps Linux
