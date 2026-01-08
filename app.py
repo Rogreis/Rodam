@@ -175,7 +175,8 @@ async def get_toc_ui(request: Request):
     
     return {
         "left": left_content,
-        "right": right_content
+        "right": right_content,
+        "current_query": global_config.query
     }
 
 @app.get("/get_node_content")
@@ -188,8 +189,10 @@ async def get_node_content(code: str):
     rendered_html = _generate_right_content(code)
     
     if rendered_html:
+        from helpers.globals import global_config
         return {
-            "right": rendered_html
+            "right": rendered_html,
+            "current_query": global_config.query
         }
 
     # Lógica simples baseada na string recebida (Fallback)
@@ -216,8 +219,10 @@ async def get_node_content(code: str):
         conteudo_dinamico = f"<h3>Conteúdo Genérico</h3><p>Código recebido: {code}</p>"
 
     # Retorna o JSON para atualizar a direita
+    from helpers.globals import global_config
     return {
-        "right": f"<div class='p-4 fade-in'>{conteudo_dinamico}</div>"
+        "right": f"<div class='p-4 fade-in'>{conteudo_dinamico}</div>",
+        "current_query": global_config.query
     }
 
 
@@ -270,7 +275,8 @@ async def navigate_to_paragraph(code: str):
              return {
                  "status": "success",
                  "right": right_content,
-                 "final_code": canonical_ref
+                 "final_code": canonical_ref,
+                 "current_query": global_config.query  # Pass current query for highlighting
              }
         else:
              return JSONResponse(status_code=404, content={"status": "error", "message": "Conteúdo não encontrado."})
@@ -477,4 +483,4 @@ if __name__ == '__main__':
     # 2. O Controle do "Inspecionar Elemento"
     # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.
     # debug=False (Produção): O botão direito é desativado ou não mostra o menu de inspeção. O usuário vê apenas o app, sem saber como ele foi feito.
-    webview.start(debug=False)
+    webview.start(debug=True)

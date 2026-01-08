@@ -82,6 +82,15 @@
                 margin: 2cm;
             }
         }
+
+        /* Search Highlight Style */
+        .search-highlight {
+            background-color: var(--highlight-color, magenta);
+            color: black !important;
+            font-weight: bold;
+            border-radius: 2px;
+            padding: 0 2px;
+        }
     </style>
 </head>
 
@@ -130,6 +139,12 @@
                             </div>
                             <div class="trackCombo-options" id="mytrackComboOptions"></div>
                         </div>
+
+                        <!-- Toggle Highlight Button -->
+                        <button id="btnHighlight" class="btn btn-outline-warning me-2" onclick="toggleHighlight()"
+                            title="Ligar/Desligar destaque de termos da busca">
+                            <i class="bi bi-highlighter"></i>
+                        </button>
 
                         <button class="btn btn-primary me-2" onclick="window.print()"
                             title="Imprime o texto do documento selecionado.">Imprimir</button>
@@ -276,6 +291,168 @@
         // Load Initial Recent Paragraphs from Config
         let recentParagraphs = {{ config.RecentParagraphs | tojson }};
 
+        // --- Search Highlight Logic ---
+        let currentSearchTerm = "{{ config.query | default('') }}"; // Initialize if possible
+        let isHighlightingEnabled = localStorage.getItem('isHighlightingEnabled') === 'true'; // Default off unless saved
+
+        function toggleHighlight() {
+            isHighlightingEnabled = !isHighlightingEnabled;
+            localStorage.setItem('isHighlightingEnabled', isHighlightingEnabled);
+
+            updateHighlightButtonState();
+
+            if (isHighlightingEnabled) {
+                applyHighlightState();
+            } else {
+                cleanHighlights();
+            }
+        }
+
+        function updateHighlightButtonState() {
+            const btn = document.getElementById('btnHighlight');
+            if (isHighlightingEnabled) {
+                btn.classList.remove('btn-outline-warning');
+                btn.classList.add('btn-warning');
+            } else {
+                btn.classList.remove('btn-warning');
+                btn.classList.add('btn-outline-warning');
+            }
+        }
+
+        function applyHighlightState() {
+            if (isHighlightingEnabled && currentSearchTerm) {
+                const terms = extractSearchTerms(currentSearchTerm);
+                if (terms.length > 0) {
+                    highlightTerms(terms);
+                } else {
+                    cleanHighlights();
+                }
+            } else {
+                cleanHighlights();
+            }
+        }
+
+        // New Helper: Extracts relevant terms from Whoosh query syntax
+        function extractSearchTerms(query) {
+            if (!query) return [];
+            console.log("Extracting terms from:", query);
+
+            // 1. Remove standard boolean operators
+            let cleaned = query.replace(/\b(AND|OR|NOT)\b/gi, ' ');
+
+            // 2. Remove special syntax characters
+            cleaned = cleaned.replace(/[\(\)\+\-\:\^\~\[\]\{\}\!\*\?]/g, ' ');
+
+            // 3. Handle Phrases in Quotes
+            const phrases = [];
+            cleaned = cleaned.replace(/"([^"]+)"/g, (m, p1) => {
+                if (p1 && p1.trim().length > 0) phrases.push(p1.trim());
+                return ' ';
+            });
+
+            // 4. Split remaining text
+            const words = cleaned.split(/\s+/).filter(w => w.trim().length > 2);
+
+            const allTerms = [...phrases, ...words];
+            console.log("Extracted terms:", allTerms);
+            return allTerms;
+        }
+
+        function highlightTerms(terms) {
+            cleanHighlights(); // Clean first
+            if (!terms || terms.length === 0) return;
+
+            const rightColumn = document.getElementById('rightColumn');
+            if (!rightColumn) return;
+
+            // Create a single composite Regex
+            const escapedTerms = terms.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+            const pattern = `(${escapedTerms.join('|')})`;
+            const regex = new RegExp(pattern, 'gi');
+
+            console.log("Composite Highlight Regex:", regex);
+
+            function traverse(node) {
+                if (node.nodeType === 3) { // Text Node
+                    const text = node.nodeValue;
+                    if (regex.test(text)) {
+                        const fragment = document.createDocumentFragment();
+                        let lastIdx = 0;
+                        text.replace(regex, (match, p1, offset) => {
+                            const before = text.slice(lastIdx, offset);
+                            if (before.length > 0) fragment.appendChild(document.createTextNode(before));
+
+                            const span = document.createElement('span');
+                            span.className = 'search-highlight';
+                            span.textContent = match;
+                            fragment.appendChild(span);
+
+                            lastIdx = offset + match.length;
+                            return match;
+                        });
+                        const remaining = text.slice(lastIdx);
+                        if (remaining.length > 0) fragment.appendChild(document.createTextNode(remaining));
+                        node.parentNode.replaceChild(fragment, node);
+                    }
+                } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE' && !node.classList.contains('search-highlight')) {
+                    Array.from(node.childNodes).forEach(traverse);
+                }
+            }
+
+            traverse(rightColumn);
+        }
+
+        function cleanHighlights() {
+            // Find all .search-highlight and replace with inner text
+            const marks = document.querySelectorAll('span.search-highlight');
+            marks.forEach(mark => {
+                const parent = mark.parentNode;
+                parent.replaceChild(document.createTextNode(mark.textContent), mark);
+                parent.normalize(); // Merge text nodes
+            });
+        }
+
+        function highlightText(term) {
+            cleanHighlights(); // Clean previous first
+            if (!term) return;
+
+            const rightColumn = document.getElementById('rightColumn');
+            if (!rightColumn) return;
+
+            const regex = new RegExp(`(${term})`, 'gi');
+
+            // Helper to traverse text nodes
+            function traverse(node) {
+                if (node.nodeType === 3) { // Text Node
+                    const text = node.nodeValue;
+                    if (regex.test(text)) {
+                        const fragment = document.createDocumentFragment();
+                        let lastIdx = 0;
+                        text.replace(regex, (match, p1, offset) => {
+                            // Text before match
+                            fragment.appendChild(document.createTextNode(text.slice(lastIdx, offset)));
+
+                            // Match
+                            const span = document.createElement('span');
+                            span.className = 'search-highlight';
+                            span.textContent = match;
+                            fragment.appendChild(span);
+
+                            lastIdx = offset + match.length;
+                        });
+                        // Remaining text
+                        fragment.appendChild(document.createTextNode(text.slice(lastIdx)));
+                        node.parentNode.replaceChild(fragment, node);
+                    }
+                } else if (node.nodeType === 1 && node.nodeName !== 'SCRIPT' && node.nodeName !== 'STYLE' && !node.classList.contains('search-highlight')) {
+                    // Element Node, recurse
+                    Array.from(node.childNodes).forEach(traverse);
+                }
+            }
+
+            traverse(rightColumn);
+        }
+
         async function navigateWithCode(code) {
             if (!code) return;
 
@@ -287,6 +464,12 @@
                 const result = await response.json();
 
                 if (response.ok && result.status === 'success') {
+                    // Update Query Term
+                    if (result.current_query) {
+                        console.log("Navigation updated query term:", result.current_query);
+                        currentSearchTerm = result.current_query;
+                    }
+
                     // 1. Update Right Column
                     const rightCol = document.getElementById('rightColumn');
                     rightCol.innerHTML = result.right;
@@ -344,6 +527,9 @@
             toggleDarkMode(savedDarkMode);
             toggleBgColors(savedShowBg);
             setHighlightColor(savedHighlight);
+
+            // Apply Highlight Button State
+            updateHighlightButtonState();
 
             // Populate Combo
             updateComboOptions();
@@ -466,6 +652,12 @@
                 if (!response.ok) throw new Error('Network response was not ok');
                 const data = await response.json();
 
+                // Update Query Term if present
+                if (data.current_query) {
+                    console.log("Load Content updated query term:", data.current_query);
+                    currentSearchTerm = data.current_query;
+                }
+
                 const leftDiv = document.getElementById('leftColumn');
                 const rightDiv = document.getElementById('rightColumn');
 
@@ -473,7 +665,7 @@
                     leftDiv.innerHTML = data.left;
                     executeScripts(leftDiv);
                 }
-                if (rightDiv) {
+                if (rightDiv && data.right) {
                     rightDiv.innerHTML = data.right;
                     executeScripts(rightDiv);
                 }
@@ -513,6 +705,11 @@
                 newScript.textContent = oldScript.textContent;
                 oldScript.parentNode.replaceChild(newScript, oldScript);
             });
+            // Apply highlights after scripts (like scrolling) have run
+            if (container.id === 'rightColumn' || container.querySelector('#rightColumn')) {
+                // Wait slightly for any other render
+                setTimeout(applyHighlightState, 100);
+            }
         }
 
         function loadDynamicContent(secretString) {
@@ -525,6 +722,12 @@
                     return response.json();
                 })
                 .then(data => {
+                    // Update Query Term
+                    if (data.current_query) {
+                        console.log("Dynamic Content updated query term:", data.current_query);
+                        currentSearchTerm = data.current_query;
+                    }
+
                     // Atualiza SOMENTE a coluna da direita
                     const rightCol = document.getElementById('rightColumn');
                     rightCol.innerHTML = data.right;
@@ -579,7 +782,6 @@
             }
         }
     </script>
-
 </body>
 
 </html>
