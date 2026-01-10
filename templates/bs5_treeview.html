@@ -1,0 +1,101 @@
+<!-- Controls for testing
+<div class="input-group mb-3">
+    <input type="text" id="nodeIdInput" class="form-control" placeholder="Node ID (e.g., 1.1)" value="005_001_000">
+    <button class="btn btn-outline-secondary" type="button" onclick="toggleNodeById()">Locate Node</button>
+</div> -->
+
+<!-- Treeview Container -->
+<div id="treeview"></div>
+
+<script>
+    var treeData = {{ data | tojson | safe }};
+
+    // Globalize or hoisting safe
+    function initTreeview() {
+        try {
+            $('#treeview').treeview({
+                data: treeData,
+                levels: 2,
+                showBorder: false,
+                expandIcon: 'bi bi-chevron-right',
+                collapseIcon: 'bi bi-chevron-down',
+                emptyIcon: 'bi bi-dot',
+                onNodeSelected: function (event, data) {
+                    // Navigate to content when node is selected
+                    if (data.href && window.navigateWithCode) {
+                        // Converter ID interno (000_000_000) para referência de navegação (0:0-0)
+                        // A função ExtractCodeTriplet ou similar no backend espera algo parseável
+                        // Mas navigateWithCode chame /api/navigate que usa FormatPaper.extract_code_triplet
+                        // Vamos converter '_' para separadores aceitos
+
+                        let parts = data.href.split('_');
+                        if (parts.length === 3) {
+                            let cleanRef = `${parseInt(parts[0])}:${parseInt(parts[1])}-${parseInt(parts[2])}`;
+                            console.log("Navigating to from Tree:", cleanRef);
+                            window.navigateWithCode(cleanRef);
+                        }
+                    }
+                }
+            });
+        } catch (err) {
+            console.error("Ainda há um erro: ", err);
+            document.getElementById('treeview').innerHTML =
+                '<div class="alert alert-danger">Erro ao carregar o componente Treeview.</div>';
+        }
+    }
+
+    // Retry mechanism to ensure jQuery and treeview are loaded
+    var retryCount = 0;
+    function checkAndInit() {
+        if ($.fn.treeview) {
+            initTreeview();
+        } else {
+            retryCount++;
+            if (retryCount < 10) {
+                console.warn("Treeview plugin not yet loaded. Retrying...");
+                setTimeout(checkAndInit, 100);
+            } else {
+                console.error("Treeview plugin failed to load after multiple attempts.");
+                document.getElementById('treeview').innerHTML = '<div class="alert alert-danger">Plugin Treeview não disponível.</div>';
+            }
+        }
+    }
+    checkAndInit();
+
+    function toggleNodeById(secret_code) {
+        // const secret_code = document.getElementById('nodeIdInput').value;
+        if (!secret_code) return;
+
+        const tree = $('#treeview').treeview('getEnabled');
+
+        console.log("Procurando por URL:", secret_code);
+
+        // A biblioteca preserva a propriedade 'href' que enviamos do Python
+        const targetNode = tree.find(n => n.href === secret_code);
+
+        if (targetNode) {
+            // A biblioteca gera um 'nodeId' interno (numérico) que precisamos para os métodos
+            const internalNodeId = targetNode.nodeId;
+
+            // 'revealNode' expande a árvore até ao nó
+            $('#treeview').treeview('revealNode', [internalNodeId, { silent: false }]);
+
+            // 'expandNode' abre o próprio nó (caso seja uma pasta)
+            $('#treeview').treeview('expandNode', [internalNodeId, { levels: 1, silent: false }]);
+
+            // 'selectNode' seleciona o nó visualmente
+            $('#treeview').treeview('selectNode', [internalNodeId, { silent: false }]);
+
+            // Rolar até o elemento
+            const element = document.querySelector(`li[data-nodeid="${internalNodeId}"]`);
+            if (element) element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+        } else {
+            alert("Nó não encontrado: " + secret_code);
+            console.error("Nó não encontrado. Primeiros 40 itens disponíveis:");
+            const debugList = tree.slice(0, 40).map(n => `id: ${n.nodeId} | href: ${n.href}`);
+            console.log(debugList.join("\n"));
+        }
+    }
+
+</script>

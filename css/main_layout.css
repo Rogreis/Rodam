@@ -118,3 +118,26 @@ body {
     border-color: #495057;
     color: #dee2e6;
 }
+
+/* Treeview Hover & Selection Fixes for BS5 Dark Mode */
+#treeview .list-group-item {
+    cursor: pointer;
+    background-color: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-border-color);
+}
+
+#treeview .list-group-item:hover {
+    background-color: var(--bs-secondary-bg) !important;
+    color: var(--bs-body-color) !important;
+}
+
+#treeview .list-group-item.node-selected {
+    background-color: var(--bs-primary) !important;
+    color: var(--bs-light) !important;
+}
+
+/* Ensure icons inherit color properly */
+#treeview .list-group-item i {
+    color: inherit;
+}

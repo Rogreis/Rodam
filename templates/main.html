@@ -13,6 +13,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
+
     <!-- Mermaid JS -->
     <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
 
@@ -22,6 +23,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Lato:wght@100;300;400;700&display=swap" rel="stylesheet">
 
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.1/dist/jquery.min.js"></script>
+    <!-- Bootstrap 5 TreeView JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-treeview@1.2.0/dist/bootstrap-treeview.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" crossorigin="anonymous"></script>
 
     <script src="js/search_modal.js"></script> <!-- Added Search Modal Logic -->
@@ -476,6 +479,36 @@
                     const rightCol = document.getElementById('rightColumn');
                     rightCol.innerHTML = result.right;
                     executeScripts(rightCol);
+
+                    // 1b. Update Left Column (ToC) if updated_toc is present
+                    // This happens when the underlying paper changes
+                    const secretCode = result.final_code_secret || result.final_code;
+                    console.log("TRACE: Navigation success. Secret:", secretCode);
+
+                    if (result.updated_toc) {
+                        const leftCol = document.getElementById('leftColumn');
+                        if (leftCol) {
+                            console.log("TRACE: Updating ToC due to paper change.");
+                            leftCol.innerHTML = result.updated_toc;
+                            executeScripts(leftCol);
+
+                            // Wait for treeview to init then select node
+                            console.log("TRACE: Waiting for treeview init to select:", secretCode);
+                            setTimeout(() => {
+                                if (typeof toggleNodeById === 'function') {
+                                    toggleNodeById(secretCode);
+                                } else {
+                                    console.warn("TRACE: toggleNodeById not found after delay.");
+                                }
+                            }, 500);
+                        }
+                    } else {
+                        // ToC didn't change, but we should still update selection
+                        console.log("TRACE: ToC stable. Selecting node:", secretCode);
+                        if (typeof toggleNodeById === 'function') {
+                            toggleNodeById(secretCode);
+                        }
+                    }
 
                     // 2. Update Local History
                     const validCode = result.final_code;

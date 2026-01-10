@@ -1,1 +1,2 @@
+clear
 python app.py

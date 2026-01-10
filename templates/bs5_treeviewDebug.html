@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BS5 Treeview Test</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <!-- jQuery (Required for bootstrap-treeview) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap 5 TreeView JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap-treeview@1.2.0/dist/bootstrap-treeview.min.js"></script>
+</head>
+
+<body>
+    <div class="container mt-4">
+        <h2>BS5 Treeview Debug</h2>
+
+        <!-- Controls for testing -->
+        <div class="input-group mb-3">
+            <input type="text" id="nodeIdInput" class="form-control" placeholder="Node ID (e.g., 1.1)"
+                value="005_001_000">
+            <button class="btn btn-outline-secondary" type="button" onclick="toggleNodeById()">Locate Node</button>
+        </div>
+
+        <!-- Treeview Container -->
+        <div id="treeview"></div>
+    </div>
+
+    <script>
+        // Dados injetados pelo Flask
+        const treeData = {{ data | tojson | safe }};
+
+        $(document).ready(function () {
+            // Inicialização manual para garantir o carregamento
+            try {
+                $('#treeview').treeview({
+                    data: treeData,
+                    levels: 2,
+                    showBorder: false,
+                    expandIcon: 'bi bi-chevron-right',
+                    collapseIcon: 'bi bi-chevron-down',
+                    emptyIcon: 'bi bi-dot',
+                    onNodeSelected: function (event, data) {
+                        console.log("Selected Node Data:", data.href);
+                    }
+                });
+            } catch (err) {
+                console.error("Ainda há um erro: ", err);
+                document.getElementById('treeview').innerHTML =
+                    '<div class="alert alert-danger">Erro ao carregar o componente Treeview.</div>';
+            }
+        });
+
+        function toggleNodeById() {
+            const secret_code = document.getElementById('nodeIdInput').value;
+            if (!secret_code) return;
+
+            // Obter todos os nós habilitados (a biblioteca retorna uma lista com os nós originais + metadados)
+            const tree = $('#treeview').treeview('getEnabled');
+
+            // Debug: Mostrar o que temos na árvore
+            console.log("Procurando por URL:", secret_code);
+            // console.log("URLs disponíveis:", tree.map(n => n.href));
+
+            // A biblioteca preserva a propriedade 'href' que enviamos do Python
+            const targetNode = tree.find(n => n.href === secret_code);
+
+            if (targetNode) {
+                // A biblioteca gera um 'nodeId' interno (numérico) que precisamos para os métodos
+                const internalNodeId = targetNode.nodeId;
+
+                // 'revealNode' expande a árvore até ao nó
+                $('#treeview').treeview('revealNode', [internalNodeId, { silent: false }]);
+
+                // 'expandNode' abre o próprio nó (caso seja uma pasta)
+                $('#treeview').treeview('expandNode', [internalNodeId, { levels: 1, silent: false }]);
+
+                // 'selectNode' seleciona o nó visualmente
+                $('#treeview').treeview('selectNode', [internalNodeId, { silent: false }]);
+
+                // Rolar até o elemento
+                const element = document.querySelector(`li[data-nodeid="${internalNodeId}"]`);
+                if (element) element.scrollIntoView({ behavior: "smooth", block: "center" });
+
+            } else {
+                alert("Nó não encontrado: " + secret_code);
+                console.error("Nó não encontrado. Primeiros 40 itens disponíveis:");
+                const debugList = tree.slice(0, 40).map(n => `id: ${n.nodeId} | href: ${n.href}`);
+                console.log(debugList.join("\n"));
+            }
+        }
+    </script>
+</body>
+
+</html>

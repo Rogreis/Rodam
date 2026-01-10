@@ -13,17 +13,17 @@ from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List, Optional
 from bs4 import BeautifulSoup
-from helpers.toc_treeview import get_tree_data
 import logging
 
 # --- Configuration & Paths ---
 from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config
 from helpers.config import Config
 from helpers.paper_format import FormatPaper
+from helpers.bs5_treeview import GenerateTreeView
 
 # Import UI Fragments
 from ui_fragments import (
-    TocFragment,
+
     SubjectFragment,
     ArticlesFragment,
     SearchFragment,
@@ -56,7 +56,7 @@ search_engine = RodamSearch()
 paper_formatter = FormatPaper()
 
 # Initialize Fragments
-toc_frag = TocFragment()
+
 subject_frag = SubjectFragment()
 articles_frag = ArticlesFragment()
 search_frag = SearchFragment()
@@ -148,12 +148,18 @@ async def get_toc_ui(request: Request):
     """
     
     # 1. Obtém os dados estruturados
-    data = get_tree_data()
+    # data = get_tree_data()
     
     # 2. Renderiza o template passando 'tree_data'
-    toc_template = templates.get_template("toc_tree.html")
-    left_content = toc_template.render({"request": request, "tree_data": data})
-    
+    # toc_template = templates.get_template("bs5_treeview.html")
+    # left_content = toc_template.render({"request": request, "tree_data": data})
+    print("Generating ToC")
+    left_content = GenerateTreeView().generate()
+    print("ToC generated")
+    if left_content:
+        print(f"DEBUG app.py line 159 - left_content start: {left_content[:500]}")
+    else:
+        print("DEBUG app.py line 159 - left_content is empty or None")
     # 3. Conteúdo da direita
     # Tenta carregar o LastSelectedParagraph
     from helpers.globals import global_config
@@ -235,9 +241,10 @@ async def get_articles_ui():
     return JSONResponse(articles_frag.html())
 
 @app.get("/api/navigate")
-async def navigate_to_paragraph(code: str):
+async def navigate_to_paragraph(code: str, request: Request):
     """
     Validates the code, updates recent history, and returns content.
+    Updates ToC if the paper ID changes.
     """
     try:
         # 1. Validate using static method
@@ -245,42 +252,56 @@ async def navigate_to_paragraph(code: str):
         if not triplet:
              return JSONResponse(status_code=400, content={"status": "error", "message": "Código inválido."})
              
-        # 2. Update Config
-        # Re-construct canonical reference or just use input? 
-        # Ideally we use the canonical ref, but FormatPaper usually extracts from string.
-        # Let's rely on _generate_right_content logic or custom logic here.
+        # Import config inside
+        from helpers.globals import global_config
         
-        # Actually, global_config.add_recent_paragraph handles deduplication and pushing to top.
-        # But we should only add clear, valid refs.
-        # FormatPaper.extract_code_triplet returns (paper, section, paragraph).
-        # We can reconstruct a canonical string like "P:S-Para" or similar if we want standardization,
-        # but the users input might be diverse. Ideally we standardize.
+        # Detect if paper changed
+        paper_id_str = triplet[0]
+        try:
+            new_paper_id = int(paper_id_str)
+        except:
+             new_paper_id = 0
+
+        updated_toc_html = None
         
-        # Let's use the triplet to format a standard string for history if possible,
-        # or just pass the raw code if it worked.
-        # Let's use the triplet to be clean: P:S.Para (or whatever Rodam uses commonly).
-        # Rodam.json examples: "1:2-9", "96:5-6". Format seems "Paper:Section-Paragraph".
-        
+        # Check if paper changed
+        if new_paper_id != global_config.CurrentPaper:
+            print(f"Paper changed from {global_config.CurrentPaper} to {new_paper_id}. Updating ToC.")
+            global_config.CurrentPaper = new_paper_id
+            global_config.save()
+            
+            # Regenerate ToC
+            # Regenerate ToC
+            updated_toc_html = GenerateTreeView().generate()
+
+        # 2. Update Config (Recent History)
         paper, section, paragraph = triplet
         canonical_ref = f"{paper}:{section}-{paragraph}"
         
-        # Update Global Config history
-        # Note: add_recent_paragraph handles: remove if exists, insert at 0.
         global_config.add_recent_paragraph(canonical_ref)
         
-        # 3. Generate Content
+        # 3. Generate Right Content
         right_content = _generate_right_content(canonical_ref)
         
         if right_content:
-             return {
-                 "status": "success",
-                 "right": right_content,
-                 "final_code": canonical_ref,
-                 "current_query": global_config.query  # Pass current query for highlighting
-             }
+            # Create Code Secret for TreeView (format 000_000_000)
+            # Always force 000 for paragraph part to match TreeView nodes (Section granularity)
+            code_secret = f"{str(paper).zfill(3)}_{str(section).zfill(3)}_000"
+
+            return {
+                "status": "success",
+                "right": right_content,
+                "final_code": canonical_ref,
+                "final_code_secret": code_secret,
+                "current_query": global_config.query,
+                "updated_toc": updated_toc_html # May be None or HTML string
+            }
         else:
              return JSONResponse(status_code=404, content={"status": "error", "message": "Conteúdo não encontrado."})
-
+             
+    except Exception as e:
+        logger.error(f"Error navigating: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
     except Exception as e:
         import traceback
         traceback.print_exc()
