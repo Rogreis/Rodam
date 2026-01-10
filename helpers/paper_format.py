@@ -83,17 +83,15 @@ class FormatParagraphRight(FormatParagraph):
 
     def _generate_github_url(self, display_text: str) -> str:
         url = f"https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc{self.paper_str}/Par_{self.paper_str}_{self.section_str}_{self.par_str}.md"
-        return f'<small><a href="{url}" class="{self.css_class}" target="_blank">{display_text}</a></small>'
+        return f'<small><a href="{url}" class="{self.css_class}" target="_blank" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
 
     def format_link_text(self, display_text: str, text= "") -> str:
-        if (text != ""):
-            display_text= display_text + " "
             
         style = ""
         if self.is_highlighted:
             style = 'style="border: 2px solid var(--highlight-color, magenta); border-radius: 5px;"'
             
-        return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {self.css_class}" {style}>{self._generate_github_url(display_text)}{text}</div>'
+        return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {self.css_class}" {style}>{self._generate_github_url(display_text)} {text}</div>'
 
     def html_text(self):
         if self.fmt == ParagraphExportHtmlType.BookTitle:

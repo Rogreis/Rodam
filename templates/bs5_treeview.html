@@ -37,6 +37,15 @@
                     }
                 }
             });
+
+            // Auto-select initial node if provided (from Jinja variable)
+            const initialNode = "{{ initial_node }}";
+            if (initialNode && initialNode !== "None") {
+                console.log("Auto-selecting initial node from server:", initialNode);
+                // Give a small delay for the tree to fully render
+                setTimeout(() => toggleNodeById(initialNode), 500);
+            }
+
         } catch (err) {
             console.error("Ainda há um erro: ", err);
             document.getElementById('treeview').innerHTML =

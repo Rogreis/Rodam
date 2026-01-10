@@ -121,12 +121,13 @@ class GenerateTreeView:
             node.add_child(self._generate_paper_nodes(node, paper))
 
 
-    def generate(self, template_name_override: Optional[str] = None):
+    def generate(self, template_name_override: Optional[str] = None, initial_node=None):
         if not self.translation:
             return f"<div class='alert alert-warning'>Translation ID {self.lang_id} not loaded.</div>"
 
         # Buffers for each part (Now Nodes)
         content_intro = []
+        template_name = "bs5_treeview.html"
 
         self._generate_root_part_nodes()
         content_intro.append(self.content_part_i)
@@ -147,7 +148,7 @@ class GenerateTreeView:
         
         # Using Jinja2Templates from FastAPI to render string (not response)
         t = templates.get_template(target_template)
-        return t.render({"data": tree_data})
+        return t.render({"data": tree_data, "initial_node": initial_node})
 
 
 if __name__ == '__main__':

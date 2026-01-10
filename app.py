@@ -100,9 +100,9 @@ def get_application_title(context_code: str = None) -> str:
         if paper:
             paper.extract_title()
             if lang_id == 0:
-                return f"Paper: {paper.title}"
+                return f"Paper {paper.title}"
             else:
-                return f"Documento: {paper.title}"
+                return f"Documento {paper.title}"
         else:
             return 'Rodam'
     except Exception as e:
@@ -193,7 +193,26 @@ async def get_toc_ui(request: Request):
     # toc_template = templates.get_template("bs5_treeview.html")
     # left_content = toc_template.render({"request": request, "tree_data": data})
     print("Generating ToC")
-    left_content = GenerateTreeView().generate()
+    # Determine initial node from LastSelectedParagraph
+    from helpers.globals import global_config
+    initial_node = None
+    if global_config.LastSelectedParagraph:
+        # We likely want to select the Paper node, typically XXX_000_000
+        # Parsing logic:
+        try:
+             # Using same logic as extract_code_triplet, simplified or reused
+             # We can use the Paper class method if available or simple split
+             # Assuming '56:1-2', splitting by non-digits
+             import re
+             tokens = re.split(r'[_,.\- :]+', global_config.LastSelectedParagraph.strip())
+             if len(tokens) >= 1:
+                 p_id = int(tokens[0])
+                 # Construct valid href for Paper Node: e.g. 056_000_000
+                 initial_node = f"{p_id:03d}_000_000"
+        except:
+             pass
+
+    left_content = GenerateTreeView().generate(initial_node=initial_node)
     print("ToC generated")
     if left_content:
         print(f"DEBUG app.py line 159 - left_content start: {left_content[:500]}")
@@ -493,26 +512,31 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         {
             "id": "indexToc", 
             "label": "Documentos", 
+            "title": "Abre o recurso de navegação por documentos", 
             "href": "javascript:loadContent('/toc', 'indexToc')"
         },
         # {
         #     "id": "indexSubject", 
         #     "label": "Assuntos", 
+        #     "title": "Abre o recurso de navegação por assuntos", 
         #     "href": "javascript:loadContent('/subject', 'indexSubject')"
         # },
         # {
         #     "id": "indexStudy", 
         #     "label": "Artigos", 
+        #     "title": "Abre o recurso de navegação por artigos", 
         #     "href": "javascript:loadContent('/articles', 'indexStudy')"
         # },
         {
             "id": "search", 
             "label": "Busca", 
+            "title": "Abre o recurso de busca", 
             "href": "javascript:loadContent('/search', 'search')" 
         },
         {
             "id": "settings", 
             "label": "Configurações", 
+            "title": "Abre o recurso de configurações", 
             "href": "javascript:openSettingsModal()"
         }
     ]
@@ -557,4 +581,4 @@ if __name__ == '__main__':
     # 2. O Controle do "Inspecionar Elemento"
     # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.
     # debug=False (Produção): O botão direito é desativado ou não mostra o menu de inspeção. O usuário vê apenas o app, sem saber como ele foi feito.
-    webview.start(debug=True)
+    webview.start(debug=False)
