@@ -297,8 +297,27 @@ async def get_subject_ui():
 
 @app.get("/articles")
 async def get_articles_ui():
-    return JSONResponse(articles_frag.html())
-
+    from helpers.articles import ArticlesManager
+    import os
+    
+    # Locate 'artigos' directory
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    articles_path = os.path.join(current_dir, 'artigos')
+    print("Articles path:", articles_path)
+    
+    manager = ArticlesManager()
+    articles_left_path = os.path.join(current_dir, 'artigos', 'README.md')
+    articles_right_path = os.path.join(current_dir, 'artigos', 'Theology', 'moral.md')
+    
+    articles_right = manager.render_file(articles_right_path)
+    articles_left = manager.render_file(articles_left_path)
+    
+    return {
+        "left": articles_left,
+        "right": articles_right,
+        "navbar_title": "Artigos"
+    }
+ 
 @app.get("/api/navigate")
 async def navigate_to_paragraph(code: str, request: Request):
     """
@@ -521,12 +540,12 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         #     "title": "Abre o recurso de navegação por assuntos", 
         #     "href": "javascript:loadContent('/subject', 'indexSubject')"
         # },
-        # {
-        #     "id": "indexStudy", 
-        #     "label": "Artigos", 
-        #     "title": "Abre o recurso de navegação por artigos", 
-        #     "href": "javascript:loadContent('/articles', 'indexStudy')"
-        # },
+        {
+            "id": "indexStudy", 
+            "label": "Artigos", 
+            "title": "Abre o recurso de navegação por artigos", 
+            "href": "javascript:loadContent('/articles', 'indexStudy')"
+        },
         {
             "id": "search", 
             "label": "Busca", 
