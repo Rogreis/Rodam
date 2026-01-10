@@ -130,7 +130,7 @@
 
                     <!-- Centered Title -->
                     <div class="mx-auto">
-                        <span class="navbar-brand titulo">Estudos sobre "O Livro de Urântia"</span>
+                        <span class="navbar-brand titulo" id="navbarTitle">{{ initial_title | default('Rodam') }}</span>
                     </div>
 
                     <div class="navbar-nav ms-auto align-items-center">
@@ -204,6 +204,12 @@
                         <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked
                             onchange="toggleDarkMode(this.checked)">
                         <label class="form-check-label" for="darkModeSwitch">Modo Escuro (Dark Mode)</label>
+                    </div>
+
+                    <!-- Language ToC Switch -->
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="langTocSwitch" onchange="saveSettings()">
+                        <label class="form-check-label" for="langTocSwitch">Índice em Português</label>
                     </div>
 
                     <!-- Background Colors Switch -->
@@ -292,6 +298,8 @@
         const savedHighlight = "{{ config.HighlightColor }}";
         const savedDarkMode = {{ "true" if config.DarkMode else "false" }};
         const savedShowBg = {{ "true" if config.ShowBgColors else "false" }};
+        const savedSplitterPosition = {{ config.SplitterPosition }};
+        let savedLanguageForToc = {{ config.LanguageForToc }};
 
         // Load Initial Recent Paragraphs from Config
         let recentParagraphs = {{ config.RecentParagraphs | tojson }};
@@ -475,6 +483,12 @@
                         currentSearchTerm = result.current_query;
                     }
 
+                    // Update Navbar Title
+                    if (result.navbar_title) {
+                        const titleEl = document.getElementById('navbarTitle');
+                        if (titleEl) titleEl.innerHTML = result.navbar_title;
+                    }
+
                     // 1. Update Right Column
                     const rightCol = document.getElementById('rightColumn');
                     rightCol.innerHTML = result.right;
@@ -603,6 +617,9 @@
             const dmSwitch = document.getElementById('darkModeSwitch');
             if (dmSwitch) dmSwitch.checked = savedDarkMode;
 
+            const langTocSwitch = document.getElementById('langTocSwitch');
+            if (langTocSwitch) langTocSwitch.checked = (savedLanguageForToc === 2);
+
             const bgSwitch = document.getElementById('bgColorsSwitch');
             if (bgSwitch) bgSwitch.checked = savedShowBg;
 
@@ -621,6 +638,12 @@
             const leftColumn = document.getElementById('leftColumn');
             const rightColumn = document.getElementById('rightColumn');
             const container = document.querySelector('.main-row'); // Parent flex container
+
+            // Restore Splitter Position
+            if (savedSplitterPosition && leftColumn) {
+                leftColumn.style.width = `${savedSplitterPosition}px`;
+                leftColumn.style.flex = `0 0 ${savedSplitterPosition}px`;
+            }
 
             let isResizing = false;
 
@@ -659,6 +682,7 @@
                     divisor.classList.remove('resizing');
                     document.body.style.cursor = 'default';
                     document.body.style.userSelect = 'text';
+                    saveSettings(); // Save new position
                 }
             });
 
@@ -691,6 +715,12 @@
                 if (data.current_query) {
                     console.log("Load Content updated query term:", data.current_query);
                     currentSearchTerm = data.current_query;
+                }
+
+                // Update Navbar Title
+                if (data.navbar_title) {
+                    const titleEl = document.getElementById('navbarTitle');
+                    if (titleEl) titleEl.innerHTML = data.navbar_title;
                 }
 
                 const leftDiv = document.getElementById('leftColumn');
@@ -798,20 +828,61 @@
             const highlightColor = document.querySelector('input[name="highlightColor"]:checked')?.value || 'magenta';
             const darkMode = document.getElementById('darkModeSwitch').checked;
             const showBgColors = document.getElementById('bgColorsSwitch').checked;
+            const langTocVal = document.getElementById('langTocSwitch')?.checked ? 2 : 0;
+
+            // Get current splitter width
+            const leftCol = document.getElementById('leftColumn');
+            let splitPos = null;
+            if (leftCol) {
+                splitPos = Math.round(leftCol.getBoundingClientRect().width);
+            }
 
             const payload = {
                 highlight_color: highlightColor,
                 dark_mode: darkMode,
-                show_bg_colors: showBgColors
+                show_bg_colors: showBgColors,
+                splitter_position: splitPos,
+                language_for_toc: langTocVal
             };
 
             try {
-                await fetch('/api/save_settings', {
+                const response = await fetch('/api/save_settings', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
-                console.log("Settings saved.");
+
+                // If language changed, reload to update ToC
+                // We use the initial value 'savedLanguageForToc' to compare
+                // If language changed, reload ToC content only (keeps modal open)
+                if (langTocVal !== savedLanguageForToc) {
+                    console.log("Language changed, updating ToC...");
+
+                    fetch('/toc')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.left) {
+                                const leftDiv = document.getElementById('leftColumn');
+                                if (leftDiv) {
+                                    leftDiv.innerHTML = data.left;
+                                    executeScripts(leftDiv);
+                                }
+                                // Update Navbar Title
+                                if (data.navbar_title) {
+                                    const titleEl = document.getElementById('navbarTitle');
+                                    if (titleEl) titleEl.innerHTML = data.navbar_title;
+                                }
+                                // Update local state
+                                savedLanguageForToc = langTocVal;
+                                console.log("ToC updated successfully.");
+                            }
+                        })
+                        .catch(err => console.error("Error updating ToC:", err));
+
+                } else {
+                    console.log("Settings saved.");
+                }
+
             } catch (error) {
                 console.error("Error saving settings:", error);
             }

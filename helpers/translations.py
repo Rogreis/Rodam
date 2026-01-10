@@ -50,13 +50,25 @@ class Paragraph:
 class Paper:
     def __init__(self, data: Dict[str, Any]):
         self.paragraphs = [Paragraph(p) for p in data.get("Paragraphs", [])]
+        self.title = self.extract_title()
 
-    def get_paragraph_from_string(self, ref_string: str) -> Optional[Paragraph]:
+    def extract_title(self) -> str:
+        """Extracts the title from the paragraph where Section=0 and ParagraphNo=0."""
+        for p in self.paragraphs:
+            if p.section == 0 and p.paragraph_no == 0:
+                title= f"{p.paper} - {p.text}"
+                return title
+        return ""
+
+    @staticmethod
+    def extract_code_triplet(ref_string: str):
         """
-        Parses a string containing paper, section, and paragraph numbers 
-        separated by { '_', ',', '-', '.', ' ', ':'} and returns the 
-        corresponding Paragraph object.
+        Static helper to parse any reference string into (paper, section, paragraph).
+        Returns Tuple[int, int, int] or None.
         """
+        if not ref_string:
+            return None
+            
         # Split by the defined separators
         tokens = re.split(r'[_,.\- :]+', ref_string.strip())
         # Filter empty strings
@@ -69,8 +81,21 @@ class Paper:
             target_paper = int(tokens[0])
             target_section = int(tokens[1])
             target_paragraph = int(tokens[2])
+            return (target_paper, target_section, target_paragraph)
         except ValueError:
             return None
+
+    def get_paragraph_from_string(self, ref_string: str) -> Optional[Paragraph]:
+        """
+        Parses a string containing paper, section, and paragraph numbers 
+        separated by { '_', ',', '-', '.', ' ', ':'} and returns the 
+        corresponding Paragraph object.
+        """
+        triplet = Paper.extract_code_triplet(ref_string)
+        if not triplet:
+            return None
+            
+        target_paper, target_section, target_paragraph = triplet
             
         for p in self.paragraphs:
             if (p.paper == target_paper and 

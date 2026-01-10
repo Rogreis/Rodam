@@ -145,8 +145,6 @@ class GenerateTreeView:
         # Priority: Override > Global var > Default
         target_template = template_name_override if template_name_override else template_name
         
-        print(f"Rendering template: {target_template}")
-        
         # Using Jinja2Templates from FastAPI to render string (not response)
         t = templates.get_template(target_template)
         return t.render({"data": tree_data})

@@ -46,7 +46,8 @@ class Config:
                  # UI Settings
                  HighlightColor: str = "magenta",
                  DarkMode: bool = True,
-                 ShowBgColors: bool = False):
+                 ShowBgColors: bool = False,
+                 SplitterPosition: int = 300):
         
         self._autosave = False
         self.query = query
@@ -77,6 +78,7 @@ class Config:
         self.HighlightColor = HighlightColor
         self.DarkMode = DarkMode
         self.ShowBgColors = ShowBgColors
+        self.SplitterPosition = SplitterPosition
         
         self._autosave = True
 
@@ -116,7 +118,8 @@ class Config:
                     LastVisitedPage=data.get("LastVisitedPage", "indexToc"),
                     HighlightColor=data.get("HighlightColor", "magenta"),
                     DarkMode=data.get("DarkMode", True),
-                    ShowBgColors=data.get("ShowBgColors", False)
+                    ShowBgColors=data.get("ShowBgColors", False),
+                    SplitterPosition=data.get("SplitterPosition", 300)
                 )
         except Exception as e:
             print(f"Error loading config: {e}")
@@ -145,7 +148,8 @@ class Config:
             "LastVisitedPage": self.LastVisitedPage,
             "HighlightColor": self.HighlightColor,
             "DarkMode": self.DarkMode,
-            "ShowBgColors": self.ShowBgColors
+            "ShowBgColors": self.ShowBgColors,
+            "SplitterPosition": self.SplitterPosition
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:

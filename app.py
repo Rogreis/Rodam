@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 import logging
 
 # --- Configuration & Paths ---
-from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config
+from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config, translations_manager
 from helpers.config import Config
 from helpers.paper_format import FormatPaper
 from helpers.bs5_treeview import GenerateTreeView
@@ -72,6 +72,44 @@ async def favicon():
 
 
 # --- UI Fragment Endpoints ---
+
+def get_application_title(context_code: str = None) -> str:
+    """
+    Retorna o título para a barra de navegação.
+    Pode ser customizado com base no contexto (código do parágrafo, etc).
+    """
+    import helpers.globals
+    from helpers.translations import Paper
+    print("get_application_title Context code: ", context_code)
+
+    if not context_code:
+        return 'Rodam'
+
+    try:
+        # 1. Extract Paper ID using new static method
+        triplet = Paper.extract_code_triplet(context_code)
+        if not triplet: return 'Rodam'
+        paper_id, _, _ = triplet
+        lang_id = getattr(global_config, 'LanguageForToc', 0)
+        translation = translations_manager.get(lang_id)
+        if not translation: return 'Rodam'
+        if paper_id < 0 or paper_id >= len(translation.papers):
+            return 'Rodam'
+      
+        paper = translation.papers[paper_id]
+        if paper:
+            paper.extract_title()
+            if lang_id == 0:
+                return f"Paper: {paper.title}"
+            else:
+                return f"Documento: {paper.title}"
+        else:
+            return 'Rodam'
+    except Exception as e:
+        print(f"Error generating title: {e}")
+        return 'Rodam'
+
+
 def _generate_right_content(code: str):
     """
     Helper to generate the right column HTML for a given ID code.
@@ -84,10 +122,11 @@ def _generate_right_content(code: str):
             # Determine target ID for scrolling
             scroll_script = ""
             try:
-               import re
-               tokens = re.split(r'[_,.\- :]+', code.strip())
-               if len(tokens) >= 3:
-                   p_id = f"p{tokens[0].zfill(3)}_{tokens[1].zfill(3)}_{tokens[2].zfill(3)}_R"
+               from helpers.translations import Paper
+               triplet = Paper.extract_code_triplet(code)
+               if triplet:
+                   p0, p1, p2 = triplet
+                   p_id = f"p{str(p0).zfill(3)}_{str(p1).zfill(3)}_{str(p2).zfill(3)}_R"
                    scroll_script = f"""
                    <script>
                        setTimeout(() => {{
@@ -182,6 +221,7 @@ async def get_toc_ui(request: Request):
     return {
         "left": left_content,
         "right": right_content,
+        "navbar_title": get_application_title(global_config.LastSelectedParagraph),
         "current_query": global_config.query
     }
 
@@ -294,7 +334,8 @@ async def navigate_to_paragraph(code: str, request: Request):
                 "final_code": canonical_ref,
                 "final_code_secret": code_secret,
                 "current_query": global_config.query,
-                "updated_toc": updated_toc_html # May be None or HTML string
+                "updated_toc": updated_toc_html, # May be None or HTML string
+                "navbar_title": get_application_title(canonical_ref)
             }
         else:
              return JSONResponse(status_code=404, content={"status": "error", "message": "Conteúdo não encontrado."})
@@ -311,6 +352,8 @@ class SettingsModel(BaseModel):
     highlight_color: str
     dark_mode: bool
     show_bg_colors: bool
+    splitter_position: Optional[int] = None
+    language_for_toc: Optional[int] = None
 
 @app.post("/api/save_settings")
 async def save_settings(settings: SettingsModel):
@@ -322,6 +365,12 @@ async def save_settings(settings: SettingsModel):
         global_config.HighlightColor = settings.highlight_color
         global_config.DarkMode = settings.dark_mode
         global_config.ShowBgColors = settings.show_bg_colors
+        
+        if settings.language_for_toc is not None:
+             global_config.LanguageForToc = settings.language_for_toc
+        
+        if settings.splitter_position is not None:
+            global_config.SplitterPosition = settings.splitter_position
         
         global_config._autosave = current_autosave
         global_config.save() # Explicit save once
@@ -471,11 +520,15 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
     # Save LastVisitedPage logic moved to /api/log_page called by frontend
     # But we still respect the restored 'p' for rendering Main template correctly.
 
+    # Calculate Initial Title
+    initial_title = get_application_title(config.LastSelectedParagraph)
+
     return templates.TemplateResponse("main.html", {
         "request": request,
         "current_page": p,
         "nav_items": nav_items,
-        "config": config
+        "config": config,
+        "initial_title": initial_title
     })
 
 # --- Server Start ---
