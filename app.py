@@ -565,6 +565,30 @@ def start_server():
     #uvicorn.run(app, host="127.0.0.1", port=54321, log_config=None)
 
 if __name__ == '__main__':
+    from helpers.github_requests import GitHubRequests
+    from helpers.globals import TUB_FILES_DIR
+    import os
+    import sys
+
+    print("Checking critical data files...")
+    downloader = GitHubRequests()
+    downloader.sync_data_files()
+    
+    # Verify critical files exist
+    required_files = ["FormatTable.gz", "TR000.zip", "TR002.zip"]
+    missing_files = []
+    
+    for f in required_files:
+        if not os.path.exists(os.path.join(TUB_FILES_DIR, f)):
+            missing_files.append(f)
+            
+    if missing_files:
+        print(f"CRITICAL ERROR: The following required files are missing in {TUB_FILES_DIR}:")
+        for f in missing_files:
+            print(f" - {f}")
+        print("Application cannot start. Please check your internet connection and try again.")
+        sys.exit(1)
+
     print("Starting Rodam (FastAPI + Whoosh)...")
     
     # Start Server Thread

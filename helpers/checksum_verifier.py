@@ -3,6 +3,14 @@ import json
 import hashlib
 from typing import Tuple, Dict
 
+import sys
+# Fix path to run directly if executed as main script
+if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(current_dir)
+    if root_dir not in sys.path:
+        sys.path.append(root_dir)
+
 # Assuming helpers.globals is available in sys.path
 from helpers.globals import TUB_FILES_DIR
 

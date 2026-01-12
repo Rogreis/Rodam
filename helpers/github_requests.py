@@ -1,6 +1,15 @@
 import os
 import requests
+import sys
+
+# Fix path to run directly if executed as main script
+if __name__ == "__main__":
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    root_dir = os.path.dirname(current_dir)
+    if root_dir not in sys.path:
+        sys.path.append(root_dir)
 from helpers.globals import TUB_FILES_DIR
+from helpers.checksum_verifier import ChecksumVerifier
 
 class GitHubRequests:
     BASE_URL = "https://raw.githubusercontent.com/Rogreis/TUB_Files/main"
@@ -51,7 +60,7 @@ class GitHubRequests:
         
         return False
 
-    def download_rodam_available(self):
+    def _download_rodam_available(self):
         """
         Baixa o arquivo 'rodam_available.json' para o diretório de dados da aplicação.
         """
@@ -60,8 +69,62 @@ class GitHubRequests:
         
         return self._download_file(target_file, destination_path)
 
+    def sync_data_files(self):
+        """
+        Sincroniza os arquivos de dados (manifesto e zips) com o GitHub.
+        1. Baixa o manifesto.
+        2. Verifica integridade (checksum).
+        3. Baixa arquivos desatualizados.
+           - Se o arquivo já existe localmente (update), baixa em background (thread).
+           - Se o arquivo NÃO existe (instalação), baixa bloqueando a execução.
+        """
+        import threading
+
+        print("--- Iniciando Sincronização ---")
+        
+        # 1. Download Manifest (Always blocking as it's small and crucial)
+        if not self._download_rodam_available():
+            print("Falha crítica: Não foi possível baixar o manifesto.")
+            return
+
+        # 2. Verify Files
+        verifier = ChecksumVerifier(self.download_dir)
+        valid_format, valid_tr000, valid_tr002 = verifier.verify_files()
+        
+        print(f"Status da Verificação: FormatTable={valid_format}, TR000={valid_tr000}, TR002={valid_tr002}")
+
+        def download_task(filename):
+             self._download_file(filename, os.path.join(self.download_dir, filename))
+
+        # Helper to decide sync vs async
+        def manage_download(filename, is_valid):
+            if is_valid:
+                print(f"{filename} está atualizado.")
+                return
+
+            full_path = os.path.join(self.download_dir, filename)
+            exists = os.path.exists(full_path)
+            
+            if exists:
+                print(f"Atualizando {filename} em background...")
+                # Threaded download (Silent update)
+                t = threading.Thread(target=download_task, args=(filename,))
+                t.daemon = True # Daemon thread exits when main program exits
+                t.start()
+            else:
+                print(f"Baixando {filename} (Bloqueante)...")
+                # Synchronous download (First install / Missing file)
+                self._download_file(filename, full_path)
+
+        # 3. Download Missing/Invalid Files
+        manage_download("FormatTable.gz", valid_format)
+        manage_download("TR000.zip", valid_tr000)
+        manage_download("TR002.zip", valid_tr002)
+            
+        print("--- Sincronização Concluída (Threads podem estar rodando) ---")
+
 # --- Exemplo de Uso ---
 if __name__ == "__main__":
     downloader = GitHubRequests()
     print(f"Diretório de destino Configurado: {downloader.download_dir}")
-    downloader.download_rodam_available()
+    downloader.sync_data_files()
