@@ -72,15 +72,38 @@
     checkAndInit();
 
     function toggleNodeById(secret_code) {
-        // const secret_code = document.getElementById('nodeIdInput').value;
         if (!secret_code) return;
+
+        // Check format: 0:0-1 (digits : digits - digits)
+        // Regex: ^(\d+)[:\.](\d+)[\-\.]\d+ (Assuming paragraph part is irrelevant for TreeView node matching, usually nodes are Paper or Section)
+        // Only Paper and Section nodes exist in TreeView? If paragraphs exist as nodes, we need full conversion.
+        // Assuming Tree Nodes are structured as: Paper_Section_000 (000 for paragraph unless tree goes deeper)
+
+        let targetHref = secret_code;
+
+        // Conversion Logic: 
+        // 120:3-4 -> 120, 3, 4 -> 120_003_000 (Ignore paragraph for node selection if tree only shows sections?)
+        // Or 120_003_004 if tree shows paragraphs.
+
+        // Let's implement robust parsing similar to backend
+        const tripletMatch = secret_code.match(/^(\d+)[\.:](\d+)(?:[\-\.:](\d+))?$/);
+
+        if (tripletMatch) {
+            const p = parseInt(tripletMatch[1]).toString().padStart(3, '0');
+            const s = parseInt(tripletMatch[2]).toString().padStart(3, '0');
+            // The third part (paragraph) is usually 000 for tree nodes unless tree goes down to paragraph level
+            // Based on app.py GenerateTreeView logic, let's assume section level granularity 000
+            // But if user clicks a specific paragraph, we want the Section Node to open.
+            targetHref = `${p}_${s}_000`;
+            console.log(`Converted ${secret_code} to tree ID: ${targetHref}`);
+        }
 
         const tree = $('#treeview').treeview('getEnabled');
 
-        console.log("Procurando por URL:", secret_code);
+        console.log("Procurando por URL:", targetHref);
 
         // A biblioteca preserva a propriedade 'href' que enviamos do Python
-        const targetNode = tree.find(n => n.href === secret_code);
+        const targetNode = tree.find(n => n.href === targetHref);
 
         if (targetNode) {
             // A biblioteca gera um 'nodeId' interno (numérico) que precisamos para os métodos
@@ -100,10 +123,10 @@
             if (element) element.scrollIntoView({ behavior: "smooth", block: "center" });
 
         } else {
-            alert("Nó não encontrado (1): " + secret_code);
+            //alert("Nó não encontrado (1): " + secret_code);
             console.error("Nó não encontrado. Primeiros 40 itens disponíveis:");
-            const debugList = tree.slice(0, 40).map(n => `id: ${n.nodeId} | href: ${n.href}`);
-            console.log(debugList.join("\n"));
+            //const debugList = tree.slice(0, 40).map(n => `id: ${n.nodeId} | href: ${n.href}`);
+            //console.log(debugList.join("\n"));
         }
     }
 

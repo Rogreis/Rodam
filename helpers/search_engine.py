@@ -8,6 +8,9 @@ from whoosh.fields import Schema, TEXT, ID, STORED
 from whoosh.qparser import QueryParser
 from whoosh.analysis import StemmingAnalyzer, StandardAnalyzer
 from whoosh.query import Or, Prefix
+import logging
+
+logger = logging.getLogger("Rodam")
 
 class RodamSearch:
     def __init__(self):
@@ -48,7 +51,7 @@ class RodamSearch:
         return os.path.join(self.index_base_dir, f"index_{lang_str}")
 
     def build_index(self, lang: int):
-        helpers.globals.logger.debug(f"Indexing content for language ID: {lang}...")
+        logger.debug(f"Indexing content for language ID: {lang}...")
         index_path = self.get_index_path(lang)
         schema = self.get_schema(lang)
         
@@ -104,7 +107,7 @@ class RodamSearch:
                     count += 1
                             
             writer.commit()
-            helpers.globals.logger.debug(f"Indexing complete for {lang}. Indexed {count} documents.")
+            logger.debug(f"Indexing complete for {lang}. Indexed {count} documents.")
             return ix
             
         except Exception as e:
@@ -120,10 +123,10 @@ class RodamSearch:
                 if ix.doc_count() > 0:
                     return ix
                 else:
-                    helpers.globals.logger.debug(f"Index for {lang} is empty/corrupt. Rebuilding...")
+                    logger.debug(f"Index for {lang} is empty/corrupt. Rebuilding...")
                     ix.close()
             except Exception as e:
-                helpers.globals.logger.debug(f"Error opening index {lang}: {e}. Rebuilding...")
+                logger.debug(f"Error opening index {lang}: {e}. Rebuilding...")
         
         return self.build_index(lang)
 
@@ -174,7 +177,7 @@ class RodamSearch:
             return results_data
             
         except Exception as e:
-            helpers.globals.logger.debug(f"Search failed: {e}")
+            logger.debug(f"Search failed: {e}")
             return []
 
 if __name__ == "__main__":
