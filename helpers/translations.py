@@ -179,50 +179,71 @@ class TTranslations:
 
     @staticmethod
     def check_files(tub_files_dir: str):
-        print("Downloading control files")
-        
-        # 1. rodam_available.json
-        ra_name = "rodam_available.json"
-        ra_path = os.path.join(tub_files_dir, ra_name)
-        ra_url = TTranslations.make_github_url(ra_name)
-        TTranslations._download_static(ra_url, ra_path)
-        
-        # Read rodam_available.json to get checksums
-        available_data = {}
-        if os.path.exists(ra_path):
-            try:
-                with open(ra_path, 'r', encoding='utf-8') as f:
-                    available_data = json.load(f)
-            except Exception as e:
-                print(f"Error reading {ra_name}: {e}")
-        
-        # Iterate and Validate/Download
-        for filename, expected_hash in available_data.items():
-            file_path = os.path.join(tub_files_dir, filename)
-            
-            # Check existence and hash
-            should_download = False
-            if not os.path.exists(file_path):
-                print(f"File missing: {filename}")
-                should_download = True
-            else:
-                existing_hash = TTranslations._calculate_sha256(file_path)
-                if existing_hash.lower() != expected_hash.lower():
-                    print(f"Checksum mismatch for {filename}. Local: {existing_hash}, Expected: {expected_hash}")
-                    should_download = True
-            
-            if should_download:
-                url = TTranslations.make_github_url(filename)
-                success = TTranslations._download_static(url, file_path)
-                if success:
-                    print(f"Downloaded updated {filename}")
-                else:
-                    print(f"Failed to download {filename}")
-            else:
-                # print(f"File {filename} is up to date.") 
-                pass
 
-        print("Control files validation complete.")
+        from helpers.github_requests import GitHubRequests
+        from helpers.globals import TUB_FILES_DIR
+        
+        print("Checking critical data files...")
+        downloader = GitHubRequests()
+        downloader.sync_data_files()
+        
+        # Verify critical files exist
+        required_files = ["FormatTable.gz", "TR000.zip", "TR002.zip"]
+        missing_files = []
+        
+        for f in required_files:
+            if not os.path.exists(os.path.join(TUB_FILES_DIR, f)):
+                missing_files.append(f)
+                
+        if missing_files:
+            print(f"CRITICAL ERROR: The following required files are missing in {TUB_FILES_DIR}:")
+            for f in missing_files:
+                print(f" - {f}")
+            print("Application cannot start. Please check your internet connection and try again.")
+            sys.exit(1)
+
+        # # 1. rodam_available.json
+        # ra_name = "rodam_available.json"
+        # ra_path = os.path.join(tub_files_dir, ra_name)
+        # ra_url = TTranslations.make_github_url(ra_name)
+        # TTranslations._download_static(ra_url, ra_path)
+        
+        # # Read rodam_available.json to get checksums
+        # available_data = {}
+        # if os.path.exists(ra_path):
+        #     try:
+        #         with open(ra_path, 'r', encoding='utf-8') as f:
+        #             available_data = json.load(f)
+        #     except Exception as e:
+        #         print(f"Error reading {ra_name}: {e}")
+        
+        # # Iterate and Validate/Download
+        # for filename, expected_hash in available_data.items():
+        #     file_path = os.path.join(tub_files_dir, filename)
+            
+        #     # Check existence and hash
+        #     should_download = False
+        #     if not os.path.exists(file_path):
+        #         print(f"File missing: {filename}")
+        #         should_download = True
+        #     else:
+        #         existing_hash = TTranslations._calculate_sha256(file_path)
+        #         if existing_hash.lower() != expected_hash.lower():
+        #             print(f"Checksum mismatch for {filename}. Local: {existing_hash}, Expected: {expected_hash}")
+        #             should_download = True
+            
+        #     if should_download:
+        #         url = TTranslations.make_github_url(filename)
+        #         success = TTranslations._download_static(url, file_path)
+        #         if success:
+        #             print(f"Downloaded updated {filename}")
+        #         else:
+        #             print(f"Failed to download {filename}")
+        #     else:
+        #         # print(f"File {filename} is up to date.") 
+        #         pass
+
+        # print("Control files validation complete.")
 
     def load(self, language_id: int) -> Optional[Translation]:
         """

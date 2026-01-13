@@ -97,7 +97,7 @@
     </style>
 </head>
 
-<body>
+<body onload="onMainWindowLoad()">
     <div class="container-fluid p-0">
         <nav class="navbar navbar-expand-lg navbar-light bg-primary">
             <!-- Navbar Content Preserved -->
@@ -797,7 +797,6 @@
                 .then(data => {
                     // Update Query Term
                     if (data.current_query) {
-                        console.log("Dynamic Content updated query term:", data.current_query);
                         currentSearchTerm = data.current_query;
                     }
 
@@ -808,6 +807,58 @@
                     executeScripts(rightCol);
                 })
                 .catch(error => console.error('Erro na requisição:', error));
+        }
+
+        function onMainWindowLoad() {
+            console.log("Main Window Loaded - notifying backend.");
+            fetch('/api/window_loaded', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    console.log("Backend response:", data);
+
+                    if (data.status === "ack") {
+                        // Simple ack, likely no content or handled differently
+                        if (data.left && data.right) {
+                            // Apply content
+                            const leftCol = document.getElementById('leftColumn');
+                            const rightCol = document.getElementById('rightColumn');
+
+                            if (leftCol) {
+                                leftCol.innerHTML = data.left;
+                                executeScripts(leftCol);
+                            }
+                            if (rightCol) {
+                                rightCol.innerHTML = data.right;
+                                executeScripts(rightCol);
+                            }
+
+                            if (data.navbar_title) {
+                                document.getElementById('navbarTitle').innerHTML = data.navbar_title;
+                            }
+
+                            // Initialize logic if needed (e.g. select node)
+                            // Extract secret if available or infer from LastSelectedParagraph logic
+                        }
+                    } else {
+                        // Fallback structure if response format is direct
+                        const leftCol = document.getElementById('leftColumn');
+                        const rightCol = document.getElementById('rightColumn');
+
+                        if (data.left && leftCol) {
+                            leftCol.innerHTML = data.left;
+                            executeScripts(leftCol);
+                        }
+                        if (data.right && rightCol) {
+                            rightCol.innerHTML = data.right;
+                            executeScripts(rightCol);
+                        }
+                        if (data.navbar_title) {
+                            const el = document.getElementById('navbarTitle');
+                            if (el) el.innerHTML = data.navbar_title;
+                        }
+                    }
+                })
+                .catch(e => console.error("Init error:", e));
         }
 
         // --- Settings Logic ---

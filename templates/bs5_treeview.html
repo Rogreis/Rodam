@@ -100,7 +100,7 @@
             if (element) element.scrollIntoView({ behavior: "smooth", block: "center" });
 
         } else {
-            alert("Nó não encontrado: " + secret_code);
+            alert("Nó não encontrado (1): " + secret_code);
             console.error("Nó não encontrado. Primeiros 40 itens disponíveis:");
             const debugList = tree.slice(0, 40).map(n => `id: ${n.nodeId} | href: ${n.href}`);
             console.log(debugList.join("\n"));

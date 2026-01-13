@@ -71,7 +71,7 @@ class ChecksumVerifier:
         target_files = ["FormatTable.gz", "TR000.zip", "TR002.zip"]
         
         for filename in target_files:
-            expected_checksum = manifest_data.get(filename)
+            expected_checksum = manifest_data.get(filename.replace('.', ''))
             
             if not expected_checksum:
                 print(f"Checksum for {filename} not found in manifest.")

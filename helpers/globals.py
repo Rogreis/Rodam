@@ -21,6 +21,7 @@ def get_data_dir():
     return os.path.join(base, 'Rodam')
 
 # Global Constants and Paths
+# Global Constants and Paths
 TUB_FILES='TUB_Files'
 CONFIG_FILE = os.path.join(get_data_dir(), 'Rodam.json')
 TUB_FILES_DIR = os.path.join(get_data_dir(), 'TUB_Files')
@@ -32,6 +33,12 @@ if not os.path.exists(get_data_dir()):
     except OSError:
         pass # Handle permission errors or race conditions if necessary
 
+# --- Load Config Early ---
+# Import Config after defining paths to avoid circular issues
+# But we need to load it before other potentially dependent operations
+from helpers.config import Config
+global_config = Config.load()
+
 # Imports from other helpers
 from helpers.translations import TTranslations
 
@@ -42,6 +49,7 @@ tr_en = None
 # Global variable for Logger
 logger = None
 
+# Check files (Download/Verify)
 TTranslations.check_files(TUB_FILES_DIR)
 
 # Global Objects
@@ -52,7 +60,6 @@ tr_pt = translations_manager.load(2)
 print(f"Traduções carregadas")
 
 # Load Global Format Table
-from helpers.translations import TTranslations
 from helpers.format_table import FormatTable
 from helpers.notes import NotesList
 
@@ -63,17 +70,3 @@ print(f"Tabela de Formatos carregada de: {FORMAT_TABLE_FILE}")
 NOTES_FILE = resource_path(os.path.join('assets', 'notes.json'))
 notes_list = NotesList(NOTES_FILE)
 print(f"Lista de Notas carregada de: {NOTES_FILE}")
-
-# Import Config after defining paths to avoid circular issues, though Config is independent mostly.
-# Note: helpers.config imports CONFIG_FILE from here, so we must be careful.
-# Ideally, we import Config here but Config needs CONFIG_FILE from here.
-# Config.py has 'from helpers.globals import CONFIG_FILE'.
-# So if we import Config here, it's circular.
-# However, Python handles this if done inside functions or carefully.
-# But Config class is at top level.
-# To break circle, we can use a getter or deferred import.
-# Actually, the user asked to "force read in globals.py".
-# Let's import it inside the file but after definitions.
-
-from helpers.config import Config
-global_config = Config.load()

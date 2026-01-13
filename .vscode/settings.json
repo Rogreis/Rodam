@@ -1,0 +1,4 @@
+{
+    "python.defaultInterpreterPath": "Rodam/Scripts/python.exe",
+    "python.terminal.activateEnvInCurrentTerminal": true
+}

@@ -39,7 +39,7 @@ class Config:
                  LanguageForToc: int = 0,
                  
                  # User History
-                 LastSelectedParagraph: str = "",
+                 LastSelectedParagraph: str = "0:0-1",
                  RecentParagraphs: List[str] = None,
                  LastVisitedPage: str = "indexToc",
                  
@@ -47,7 +47,10 @@ class Config:
                  HighlightColor: str = "magenta",
                  DarkMode: bool = True,
                  ShowBgColors: bool = False,
-                 SplitterPosition: int = 300):
+                 SplitterPosition: int = 300,
+                 
+                 # System State
+                 IsInicialization: bool = True):
         
         self._autosave = False
         self.query = query
@@ -80,6 +83,8 @@ class Config:
         self.ShowBgColors = ShowBgColors
         self.SplitterPosition = SplitterPosition
         
+        self.IsInicialization = IsInicialization
+        
         self._autosave = True
 
     def __setattr__(self, key, value):
@@ -91,8 +96,10 @@ class Config:
     def load(cls):
         """Loads configuration from the Rodam.json file."""
         if not os.path.exists(CONFIG_FILE):
-            print(f"Config file not found at {CONFIG_FILE}, returning defaults.")
-            return cls()
+            print(f"Config file not found at {CONFIG_FILE}, creating with defaults.")
+            default_config = cls()
+            default_config.save()
+            return default_config
         
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
@@ -113,13 +120,14 @@ class Config:
                     SearchItemsToShow=data.get("SearchItemsToShow", 50),
                     CurrentPaper=data.get("CurrentPaper", 0),
                     LanguageForToc=data.get("LanguageForToc", 0),
-                    LastSelectedParagraph=data.get("LastSelectedParagraph", ""),
+                    LastSelectedParagraph=(data.get("LastSelectedParagraph") or "0:0-1"),
                     RecentParagraphs=data.get("RecentParagraphs", []),
                     LastVisitedPage=data.get("LastVisitedPage", "indexToc"),
                     HighlightColor=data.get("HighlightColor", "magenta"),
                     DarkMode=data.get("DarkMode", True),
                     ShowBgColors=data.get("ShowBgColors", False),
-                    SplitterPosition=data.get("SplitterPosition", 300)
+                    SplitterPosition=data.get("SplitterPosition", 300),
+                    IsInicialization=data.get("IsInicialization", True)
                 )
         except Exception as e:
             print(f"Error loading config: {e}")
@@ -149,7 +157,8 @@ class Config:
             "HighlightColor": self.HighlightColor,
             "DarkMode": self.DarkMode,
             "ShowBgColors": self.ShowBgColors,
-            "SplitterPosition": self.SplitterPosition
+            "SplitterPosition": self.SplitterPosition,
+            "IsInicialization": self.IsInicialization
         }
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:

@@ -20,6 +20,7 @@ from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_con
 from helpers.config import Config
 from helpers.paper_format import FormatPaper
 from helpers.bs5_treeview import GenerateTreeView
+from helpers.html_content_generator import HtmlContentGenerator
 
 # Import UI Fragments
 from ui_fragments import (
@@ -154,31 +155,7 @@ def _generate_right_content(code: str):
         logger.error(f"Error rendering paper table for {code}: {e}")
     return None
 
-def _generate_fallback_content(code: str) -> str:
-    """
-    Helper to generate fallback content when _generate_right_content fails.
-    """
-    conteudo_dinamico = ""
-    
-    if "NEWTON" in code:
-        conteudo_dinamico = f"""
-            <div class="alert alert-info">
-                <h4 class="alert-heading">Contexto Identificado!</h4>
-                <p>O sistema detectou que você está buscando sobre <strong>Isaac Newton</strong>.</p>
-                <hr>
-                <p class="mb-0">Código interno processado: <code>{code}</code></p>
-            </div>
-            <div class="mt-4">
-                <h3>Conteúdo da Gravidade</h3>
-                <p>Aqui entra o texto completo do artigo...</p>
-            </div>
-        """
-    elif "CTX" in code:
-        conteudo_dinamico = f"<h3>Você clicou em uma pasta.</h3><p>Código: {code}</p>"
-    else:
-        conteudo_dinamico = f"<h3>Conteúdo Genérico</h3><p>Código recebido: {code}</p>"
-    
-    return f"<div class='p-4 fade-in'>{conteudo_dinamico}</div>"
+
 
 @app.get("/toc")
 async def get_toc_ui(request: Request):
@@ -212,30 +189,8 @@ async def get_toc_ui(request: Request):
         except:
              pass
 
-    left_content = GenerateTreeView().generate(initial_node=initial_node)
-    print("ToC generated")
-    if left_content:
-        print(f"DEBUG app.py line 159 - left_content start: {left_content[:500]}")
-    else:
-        print("DEBUG app.py line 159 - left_content is empty or None")
-    # 3. Conteúdo da direita
-    # Tenta carregar o LastSelectedParagraph
-    from helpers.globals import global_config
-    right_content = None
-    
-    if global_config.LastSelectedParagraph:
-        # Tenta carregar o conteúdo deste parágrafo
-        logger.info(f"Loading LastSelectedParagraph for ToC: {global_config.LastSelectedParagraph}")
-        right_content = _generate_right_content(global_config.LastSelectedParagraph)
-
-    if not right_content:
-        # Fallback default
-        right_content = """
-        <div class="p-5">
-            <h2>Biblioteca Anti-Gravity</h2>
-            <p>Selecione um tópico à esquerda para carregar os dados.</p>
-        </div>
-        """
+    left_content, right_content = HtmlContentGenerator.webview_page(initial_node)
+ 
     
     return {
         "left": left_content,
@@ -483,29 +438,53 @@ async def log_page_endpoint(req: LogPageRequest):
             
     return {"status": "ignored"}
 
+@app.post("/api/window_loaded")
+async def window_loaded():
+    """
+    Called by the frontend when the main window/local is fully loaded.
+    """
+    print("»»» Frontend reports: Window Loaded")
+    logger.info("Frontend reports: Window Loaded")
+    from helpers.globals import global_config
+    
+    # Placeholder for future logic
+    if global_config.IsInicialization:
+        logger.info("Executing Initialization Logic...")
+        global_config.IsInicialization = False
+        global_config.save()
+    
+    left_content, right_content = HtmlContentGenerator.webview_page(global_config.LastSelectedParagraph)
+ 
+    return {
+        "left": left_content,
+        "right": right_content,
+        "navbar_title": get_application_title(global_config.LastSelectedParagraph),
+        "current_query": global_config.query
+    }
+
+
 # --- Endpoints ---
 
 @app.get("/")
 async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
     """
     Rota principal que renderiza a página baseada no argumento 'p'.
+    Executa na inicialização ou reload.
+    Verifica LastVisitedPage e LastSelectedParagraph para restaurar o estado anterior.
     """
     # Load Config
     from helpers.globals import global_config
     config = global_config
 
-    # Logic to restore last visited page if default is requested
-    # Note: "indexToc" is the default value in Query parameter.
-    # If the user explicitly requests /?p=indexToc, we might still treat it as default or not.
-    # Typically, if accessing root URL "/", p is "indexToc".
-    # We check if p is the default, and if we have a saved page different from default.
-    if p == "indexToc" and config.LastVisitedPage and config.LastVisitedPage != "indexToc":
-        # Check if query param exists in raw url to distinguish explicit vs implicit default is hard with FastAPI params
-        # Simplified approach: If p is indexToc, try to use saved page.
-        if config.LastVisitedPage != "settings":
+    # 1. Verificar LastVisitedPage para restaurar a última página visitada
+    # Se o usuário acessou a raiz (p="indexToc"), tentamos restaurar o estado salvo.
+    print(f"»»»» LastVisitedPage: {p}")
+    if p == "indexToc":
+        if config.LastVisitedPage and config.LastVisitedPage != "settings":
+             # Restaura a página salva (ex: "indexToc", "indexSubject", "search")
              p = config.LastVisitedPage
 
-    logger.info(f"Rendering page: {p}")
+    logger.info(f"Rendering page: {p} (LastVisited: {config.LastVisitedPage})")
     
     # Definição dos itens do menu
     nav_items = [
@@ -541,11 +520,13 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         }
     ]
 
-    # Save LastVisitedPage logic moved to /api/log_page called by frontend
-    # But we still respect the restored 'p' for rendering Main template correctly.
-
-    # Calculate Initial Title
+    # 2. Verificar LastSelectedParagraph para definir o título e contexto inicial
+    # O "jump" para o parágrafo ocorre no carregamento assíncrono do conteúdo (via /toc -> _generate_right_content)
     initial_title = get_application_title(config.LastSelectedParagraph)
+
+    if config.IsInicialization:
+        config.IsInicialization = False
+        await get_toc_ui(request)
 
     return templates.TemplateResponse("main.html", {
         "request": request,
@@ -565,29 +546,8 @@ def start_server():
     #uvicorn.run(app, host="127.0.0.1", port=54321, log_config=None)
 
 if __name__ == '__main__':
-    from helpers.github_requests import GitHubRequests
-    from helpers.globals import TUB_FILES_DIR
     import os
     import sys
-
-    print("Checking critical data files...")
-    downloader = GitHubRequests()
-    downloader.sync_data_files()
-    
-    # Verify critical files exist
-    required_files = ["FormatTable.gz", "TR000.zip", "TR002.zip"]
-    missing_files = []
-    
-    for f in required_files:
-        if not os.path.exists(os.path.join(TUB_FILES_DIR, f)):
-            missing_files.append(f)
-            
-    if missing_files:
-        print(f"CRITICAL ERROR: The following required files are missing in {TUB_FILES_DIR}:")
-        for f in missing_files:
-            print(f" - {f}")
-        print("Application cannot start. Please check your internet connection and try again.")
-        sys.exit(1)
 
     print("Starting Rodam (FastAPI + Whoosh)...")
     
