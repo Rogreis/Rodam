@@ -326,6 +326,7 @@ class SettingsModel(BaseModel):
     highlight_color: str
     dark_mode: bool
     show_bg_colors: bool
+    show_semantics: bool
     splitter_position: Optional[int] = None
     language_for_toc: Optional[int] = None
 
@@ -339,6 +340,7 @@ async def save_settings(settings: SettingsModel):
         global_config.HighlightColor = settings.highlight_color
         global_config.DarkMode = settings.dark_mode
         global_config.ShowBgColors = settings.show_bg_colors
+        global_config.ShowSemantics = settings.show_semantics
         
         if settings.language_for_toc is not None:
              global_config.LanguageForToc = settings.language_for_toc
@@ -526,18 +528,20 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
             "title": "Abre o recurso de navegação por documentos", 
             "href": "javascript:loadContent('/toc', 'indexToc')"
         },
-        # {
-        #     "id": "indexSubject", 
-        #     "label": "Assuntos", 
-        #     "title": "Abre o recurso de navegação por assuntos", 
-        #     "href": "javascript:loadContent('/subject', 'indexSubject')"
-        # },
-        # {
-        #     "id": "indexStudy", 
-        #     "label": "Artigos", 
-        #     "title": "Abre o recurso de navegação por artigos", 
-        #     "href": "javascript:loadContent('/articles', 'indexStudy')"
-        # },
+        {
+            "id": "indexSemantic", 
+            "label": "Assuntos", 
+            "title": "Abre o recurso de navegação por assuntos", 
+            "href": "javascript:loadContent('/subject', 'indexSemantic')",
+            "visible": config.ShowSemantics
+        },
+        {
+            "id": "indexArticles", 
+            "label": "Artigos", 
+            "title": "Abre o recurso de navegação por artigos", 
+            "href": "javascript:loadContent('/articles', 'indexArticles')",
+            "visible": False
+        },
         {
             "id": "search", 
             "label": "Busca", 

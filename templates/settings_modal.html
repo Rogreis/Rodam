@@ -1,0 +1,95 @@
+<!-- Settings Modal -->
+<div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configurações</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Dark Mode Switch -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked
+                        onchange="toggleDarkMode(this.checked)">
+                    <label class="form-check-label" for="darkModeSwitch">Modo Escuro (Dark Mode)</label>
+                </div>
+
+                <!-- Language ToC Switch -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="langTocSwitch" onchange="saveSettings()">
+                    <label class="form-check-label" for="langTocSwitch">Índice em Português</label>
+                </div>
+
+                <!-- Background Colors Switch -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="bgColorsSwitch"
+                        onchange="toggleBgColors(this.checked)">
+                    <label class="form-check-label" for="bgColorsSwitch">Exibir status do parágrafo em
+                        edição</label>
+                </div>
+
+                <!-- Semantics Switch -->
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="semanticsSwitch"
+                        onchange="toggleSemantics(this.checked)">
+                    <label class="form-check-label" for="semanticsSwitch">Exibir Semântica</label>
+                </div>
+
+                <!-- Highlight Color Selection -->
+                <div class="mb-3">
+                    <label class="fw-bold mb-2">Cor de Destaque (Search Highlight)</label>
+
+                    <div class="d-flex flex-column gap-2">
+                        <!-- Helper to render option -->
+                        <!-- Option 1: Magenta -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="highlightColor" id="hlMagenta"
+                                value="magenta" onchange="setHighlightColor(this.value)">
+                            <label class="form-check-label" for="hlMagenta"
+                                style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                Texto normal com <span style="font-weight: bold; color: magenta;">Destaque</span>
+                            </label>
+                        </div>
+
+                        <!-- Option 2: Gold -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="highlightColor" id="hlGold" value="gold"
+                                onchange="setHighlightColor(this.value)">
+                            <label class="form-check-label" for="hlGold"
+                                style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                Texto normal com <span style="font-weight: bold; color: gold;">Destaque</span>
+                            </label>
+                        </div>
+
+                        <!-- Option 3: Cyan -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="highlightColor" id="hlCyan" value="cyan"
+                                onchange="setHighlightColor(this.value)">
+                            <label class="form-check-label" for="hlCyan"
+                                style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                Texto normal com <span style="font-weight: bold; color: cyan;">Destaque</span>
+                                (Dark)
+                            </label>
+                        </div>
+
+                        <!-- Option 4: DarkOrange -->
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="highlightColor" id="hlDarkOrange"
+                                value="darkorange" onchange="setHighlightColor(this.value)">
+                            <label class="form-check-label" for="hlDarkOrange"
+                                style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
+                                Texto normal com <span style="font-weight: bold; color: darkorange;">Destaque</span>
+                                (Light)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                <!-- <button type="button" class="btn btn-primary">Salvar</button> Not needed for instant toggle -->
+            </div>
+        </div>
+    </div>
+</div>

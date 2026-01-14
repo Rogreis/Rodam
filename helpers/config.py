@@ -47,6 +47,7 @@ class Config:
                  HighlightColor: str = "magenta",
                  DarkMode: bool = True,
                  ShowBgColors: bool = False,
+                 ShowSemantics: bool = False,
                  SplitterPosition: int = 300,
                  
                  # System State
@@ -81,6 +82,7 @@ class Config:
         self.HighlightColor = HighlightColor
         self.DarkMode = DarkMode
         self.ShowBgColors = ShowBgColors
+        self.ShowSemantics = ShowSemantics
         self.SplitterPosition = SplitterPosition
         
         self.IsInicialization = IsInicialization
@@ -126,6 +128,7 @@ class Config:
                     HighlightColor=data.get("HighlightColor", "magenta"),
                     DarkMode=data.get("DarkMode", True),
                     ShowBgColors=data.get("ShowBgColors", False),
+                    ShowSemantics=data.get("ShowSemantics", False),
                     SplitterPosition=data.get("SplitterPosition", 300),
                     IsInicialization=data.get("IsInicialization", True)
                 )
@@ -157,6 +160,7 @@ class Config:
             "HighlightColor": self.HighlightColor,
             "DarkMode": self.DarkMode,
             "ShowBgColors": self.ShowBgColors,
+            "ShowSemantics": self.ShowSemantics,
             "SplitterPosition": self.SplitterPosition,
             "IsInicialization": self.IsInicialization
         }

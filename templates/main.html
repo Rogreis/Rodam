@@ -118,7 +118,8 @@
                         </li>
 
                         {% for item in nav_items %}
-                        <li class="nav-item bg-primary">
+                        <li class="nav-item bg-primary {{ 'd-none' if item.visible == False else '' }}"
+                            id="nav-item-{{ item.id }}">
                             <a class="nav-link {{ 'active navactive' if current_page == item.id else 'navinactive' }}"
                                 aria-current="{{ 'page' if current_page == item.id else 'false' }}"
                                 href="{{ item.href }}" title="{{ item.title }}">
@@ -179,113 +180,10 @@
     </div>
 
     <!-- Modals (Preserved) -->
-    <!-- Colors Modal -->
-    <div class="modal fade" id="colorsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Definição de Cores</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Aqui você poderá configurar as cores da interface (Em breve).</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    <button type="button" class="btn btn-primary">Salvar</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Settings Modal -->
-    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Configurações</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Dark Mode Switch -->
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked
-                            onchange="toggleDarkMode(this.checked)">
-                        <label class="form-check-label" for="darkModeSwitch">Modo Escuro (Dark Mode)</label>
-                    </div>
 
-                    <!-- Language ToC Switch -->
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="langTocSwitch" onchange="saveSettings()">
-                        <label class="form-check-label" for="langTocSwitch">Índice em Português</label>
-                    </div>
-
-                    <!-- Background Colors Switch -->
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="bgColorsSwitch"
-                            onchange="toggleBgColors(this.checked)">
-                        <label class="form-check-label" for="bgColorsSwitch">Exibir status do parágrafo em
-                            edição</label>
-                    </div>
-
-                    <!-- Highlight Color Selection -->
-                    <div class="mb-3">
-                        <label class="fw-bold mb-2">Cor de Destaque (Search Highlight)</label>
-
-                        <div class="d-flex flex-column gap-2">
-                            <!-- Helper to render option -->
-                            <!-- Option 1: Magenta -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlMagenta"
-                                    value="magenta" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlMagenta"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: magenta;">Destaque</span>
-                                </label>
-                            </div>
-
-                            <!-- Option 2: Gold -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlGold"
-                                    value="gold" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlGold"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: gold;">Destaque</span>
-                                </label>
-                            </div>
-
-                            <!-- Option 3: Cyan -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlCyan"
-                                    value="cyan" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlCyan"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: cyan;">Destaque</span>
-                                    (Dark)
-                                </label>
-                            </div>
-
-                            <!-- Option 4: DarkOrange -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlDarkOrange"
-                                    value="darkorange" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlDarkOrange"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: darkorange;">Destaque</span>
-                                    (Light)
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    <!-- <button type="button" class="btn btn-primary">Salvar</button> Not needed for instant toggle -->
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Settings Modal (Included from Template) -->
+    {% include 'settings_modal.html' %}
 
     <!-- Search Results Modal (Included from Template) -->
     {% include 'search_modal.html' %}
@@ -306,6 +204,7 @@
         const savedHighlight = "{{ config.HighlightColor }}";
         const savedDarkMode = {{ "true" if config.DarkMode else "false" }};
         const savedShowBg = {{ "true" if config.ShowBgColors else "false" }};
+        const savedShowSemantics = {{ "true" if config.ShowSemantics else "false" }};
         const savedSplitterPosition = {{ config.SplitterPosition }};
         let savedLanguageForToc = {{ config.LanguageForToc }};
 
@@ -665,6 +564,9 @@
             const bgSwitch = document.getElementById('bgColorsSwitch');
             if (bgSwitch) bgSwitch.checked = savedShowBg;
 
+            const semSwitch = document.getElementById('semanticsSwitch');
+            if (semSwitch) semSwitch.checked = savedShowSemantics;
+
             // Set Radio State
             const hlRadio = document.querySelector(`input[name="highlightColor"][value="${savedHighlight}"]`);
             if (hlRadio) hlRadio.checked = true;
@@ -732,8 +634,8 @@
             const currentPage = "{{ current_page }}";
             const pageRoutes = {
                 'indexToc': '/toc',
-                'indexSubject': '/subject',
-                'indexStudy': '/articles',
+                'indexSemantic': '/subject',
+                'indexArticles': '/articles',
                 'search': '/search',
                 'settings': '/settings'
             };
@@ -951,6 +853,19 @@
             }
         }
 
+        function toggleSemantics(show) {
+            console.log("Semantics toggled:", show);
+            const navItem = document.getElementById('nav-item-indexSemantic');
+            if (navItem) {
+                if (show) {
+                    navItem.classList.remove('d-none');
+                } else {
+                    navItem.classList.add('d-none');
+                }
+            }
+            saveSettings();
+        }
+
         function setHighlightColor(color) {
             document.documentElement.style.setProperty('--highlight-color', color);
         }
@@ -965,6 +880,7 @@
             const highlightColor = document.querySelector('input[name="highlightColor"]:checked')?.value || 'magenta';
             const darkMode = document.getElementById('darkModeSwitch').checked;
             const showBgColors = document.getElementById('bgColorsSwitch').checked;
+            const showSemantics = document.getElementById('semanticsSwitch').checked;
             const langTocVal = document.getElementById('langTocSwitch')?.checked ? 2 : 0;
 
             // Get current splitter width
@@ -978,6 +894,7 @@
                 highlight_color: highlightColor,
                 dark_mode: darkMode,
                 show_bg_colors: showBgColors,
+                show_semantics: showSemantics,
                 splitter_position: splitPos,
                 language_for_toc: langTocVal
             };
