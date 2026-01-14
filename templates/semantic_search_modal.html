@@ -1,0 +1,154 @@
+<!-- Semantic Search Results Modal -->
+<div class="modal fade" id="semanticSearchResultModal" tabindex="-1" aria-hidden="true" data-bs-keyboard="false"
+    data-bs-backdrop="static">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header bg-secondary text-white border-bottom-0">
+                <h5 class="modal-title">Busca por assuntos</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                    aria-label="Close"></button>
+            </div>
+            <div class="modal-body bg-dark text-white">
+                <form id="semanticForm">
+                    <!-- Search Controls -->
+                    <div class="container-fluid mb-3">
+                        <div class="row mb-2">
+                            <div class="col-12">
+                                <div class="input-group">
+                                    <input type="text" class="form-control bg-secondary text-white border-secondary"
+                                        id="modalSemanticInput" name="query" placeholder="Digite sua busca..."
+                                        aria-label="Search" value="{{ config.SemanticQuery }}">
+                                    <button class="btn btn-primary" type="button"
+                                        onclick="performSemanticSearch()">Buscar</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Settings Grid -->
+                        <div class="row p-2 border border-secondary rounded bg-dark text-white">
+                            <!-- Column 1: Language & Sorting -->
+                            <div class="col-md-3">
+                                <h6>Idioma</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LanguageIdToSearch"
+                                        id="semLangPT" value="2" disabled>
+                                    <label class="form-check-label" for="semLangPT">Português</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="LanguageIdToSearch"
+                                        id="semLangEN" value="0" checked disabled>
+                                    <label class="form-check-label" for="semLangEN">Inglês</label>
+                                </div>
+                                <hr class="my-2 border-secondary">
+
+                            </div>
+
+                            <!-- Column 2: Filter Scope -->
+                            <div class="col-md-5">
+                                <h6>Onde buscar?</h6>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="scopeType" id="semScopeParts"
+                                        value="parts" onchange="toggleSemanticScope()" {% if config.SemanticSearchParts
+                                        %}checked{% endif %}>
+                                    <label class="form-check-label" for="semScopeParts">Por Partes</label>
+                                </div>
+                                <div class="ms-3" id="semPartsOptions">
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox"
+                                            name="SearchIntroduction" id="semPartIntro" {% if
+                                            config.SemanticSearchIntroduction %}checked{% endif %}>
+                                        <label class="form-check-label" for="semPartIntro">Intr.</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartI"
+                                            id="semPart1" {% if config.SemanticSearchPartI %}checked{% endif %}>
+                                        <label class="form-check-label" for="semPart1">Pt I</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartII"
+                                            id="semPart2" {% if config.SemanticSearchPartII %}checked{% endif %}>
+                                        <label class="form-check-label" for="semPart2">Pt II</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartIII"
+                                            id="semPart3" {% if config.SemanticSearchPartIII %}checked{% endif %}>
+                                        <label class="form-check-label" for="semPart3">Pt III</label>
+                                    </div>
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartIV"
+                                            id="semPart4" {% if config.SemanticSearchPartIV %}checked{% endif %}>
+                                        <label class="form-check-label" for="semPart4">Pt IV</label>
+                                    </div>
+                                </div>
+
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="radio" name="scopeType" id="semScopeDocs"
+                                        value="docs" onchange="toggleSemanticScope()" {% if
+                                        config.SemanticSearchDocuments %}checked{% endif %}>
+                                    <label class="form-check-label" for="semScopeDocs">Por Documentos</label>
+                                </div>
+                                <div class="ms-3">
+                                    <input type="text"
+                                        class="form-control form-control-sm bg-secondary text-white border-secondary"
+                                        id="semDocsInput" name="SearchDocumentsList" placeholder="Ex: 1; 5-10; 100"
+                                        value="{{ config.SemanticSearchDocumentsList }}" {% if not
+                                        config.SemanticSearchDocuments %}disabled{% endif %}>
+                                </div>
+                            </div>
+
+                            <!-- Column 3: Limits -->
+                            <div class="col-md-4">
+                                <h6>Limites</h6>
+                                <label for="semMaxResults" class="form-label">Máx. de Resultados: <span
+                                        id="semMaxResultsVal">{{
+                                        config.SemanticSearchMaxResults }}</span></label>
+                                <input type="range" class="form-range" name="SearchMaxResults" min="20" max="300"
+                                    step="10" id="semMaxResults" value="{{ config.SemanticSearchMaxResults }}"
+                                    oninput="document.getElementById('semMaxResultsVal').innerText = this.value">
+
+                                <div class="mt-2">
+                                    <label for="semPageSize" class="form-label">Itens por página</label>
+                                    <select class="form-select form-select-sm bg-secondary text-white border-secondary"
+                                        id="semPageSize" name="SearchItemsToShow">
+                                        <option value="20" {% if config.SemanticSearchItemsToShow==20 %}selected{% endif
+                                            %}>20
+                                        </option>
+                                        <option value="50" {% if config.SemanticSearchItemsToShow==50 %}selected{% endif
+                                            %}>50
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <hr class="border-secondary">
+
+                <!-- Search Syntax Help -->
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle-fill me-2"></i>Dicas de Pesquisa</h6>
+                    <small>
+                        <p>Uma busca por 'lucifer rebellion' vai apresentar resultados como:</p>
+                        <ul class="mb-0 ps-3">
+                            <li>lucifer rebellion about</li>
+                            <li>rebellion lucifer about</li>
+                            <li>lucifer rebellion in satania</li>
+                            <li>battle of the lucifer rebellion</li>
+                            <li>problem of the lucifer rebellion</li>
+                        </ul>
+                    </small>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+
+                <!-- Search Results Output -->
+                <div id="semanticSearchResultsList" class="list-group list-group-flush">
+                    <!-- Results injected here by JS -->
+                </div>
+            </div>
+            <div class="modal-footer bg-secondary border-top-0">
+                <button type="button" class="btn btn-dark border-secondary" data-bs-dismiss="modal">Fechar</button>
+            </div>
+        </div>
+    </div>
+</div>

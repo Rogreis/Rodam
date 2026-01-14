@@ -188,6 +188,9 @@
     <!-- Search Results Modal (Included from Template) -->
     {% include 'search_modal.html' %}
 
+    <!-- Semantic Search Results Modal (Included from Template) -->
+    {% include 'semantic_search_modal.html' %}
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
         crossorigin="anonymous"></script>
@@ -639,6 +642,69 @@
                 'search': '/search',
                 'settings': '/settings'
             };
+
+            window.openSemanticModal = function () {
+                console.log("Opening Semantic Modal...");
+                var modalEl = document.getElementById('semanticSearchResultModal');
+                if (modalEl) {
+                    var searchModal = new bootstrap.Modal(modalEl);
+                    searchModal.show();
+                } else {
+                    console.error("Semantic Modal element not found!");
+                }
+            };
+
+            function toggleSemanticScope() {
+                const scopeType = document.querySelector('#semanticForm input[name="scopeType"]:checked').value;
+                const partsOptions = document.getElementById('semPartsOptions');
+                const docsInput = document.getElementById('semDocsInput');
+                // Parts checkboxes
+                const partChecks = partsOptions.querySelectorAll('.part-check');
+
+                if (scopeType === 'parts') {
+                    // Enable parts, disable docs
+                    partChecks.forEach(cb => {
+                        cb.disabled = false;
+                        cb.parentElement.classList.remove('text-muted');
+                    });
+                    // Disable docs
+                    docsInput.disabled = true;
+
+                } else {
+                    // Disable parts, enable docs
+                    partChecks.forEach(cb => {
+                        cb.disabled = true;
+                        cb.parentElement.classList.add('text-muted');
+                    });
+                    // Enable docs
+                    docsInput.disabled = false;
+                }
+            }
+
+            async function performSemanticSearch() {
+                const form = document.getElementById('semanticForm');
+                const formData = new FormData(form);
+                const searchData = {};
+
+                // Manually handle checkboxes and inputs
+                searchData['query'] = document.getElementById('modalSemanticInput').value;
+
+                const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    searchData[cb.name] = cb.checked;
+                });
+
+                searchData['scopeType'] = document.querySelector('#semanticForm input[name="scopeType"]:checked').value;
+                searchData['SearchDocumentsList'] = document.getElementById('semDocsInput').value;
+
+                // Limits
+                searchData['SearchMaxResults'] = document.getElementById('semMaxResults').value;
+                searchData['SearchItemsToShow'] = document.getElementById('semPageSize').value;
+
+                // TODO: Use a dedicated endpoint or flag for semantic search
+                console.log("Semantic Search Data:", searchData);
+                alert("Dados da busca semântica capturados (ver console). Endpoint pendente.");
+            }
 
             if (pageRoutes[currentPage]) {
                 // Load initial content without saving (it was just restored)

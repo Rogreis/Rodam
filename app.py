@@ -532,7 +532,7 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
             "id": "indexSemantic", 
             "label": "Assuntos", 
             "title": "Abre o recurso de navegação por assuntos", 
-            "href": "javascript:loadContent('/subject', 'indexSemantic')",
+            "href": "javascript:openSemanticModal()",
             "visible": config.ShowSemantics
         },
         {

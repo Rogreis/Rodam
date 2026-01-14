@@ -34,6 +34,19 @@ class Config:
                  SearchMaxResults: int = 100,
                  SearchItemsToShow: int = 50,
                  
+                 # Semantic
+                 SemanticQuery: str = "",
+                 SemanticSearchParts: bool = True,
+                 SemanticSearchDocuments: bool = False,
+                 SemanticSearchIntroduction: bool = True,
+                 SemanticSearchPartI: bool = True,
+                 SemanticSearchPartII: bool = True,
+                 SemanticSearchPartIII: bool = True,
+                 SemanticSearchPartIV: bool = True,
+                 SemanticSearchDocumentsList: str = "",
+                 SemanticSearchMaxResults: int = 100,
+                 SemanticSearchItemsToShow: int = 50,
+                 
                  # ToC Configs
                  CurrentPaper: int = 0,
                  LanguageForToc: int = 0,
@@ -71,6 +84,21 @@ class Config:
         
         self.SearchMaxResults = SearchMaxResults
         self.SearchItemsToShow = SearchItemsToShow
+        
+        # --- Semantic Search Config ---
+        self.SemanticQuery = SemanticQuery
+        self.SemanticSearchParts = SemanticSearchParts
+        self.SemanticSearchDocuments = SemanticSearchDocuments
+        
+        self.SemanticSearchIntroduction = SemanticSearchIntroduction
+        self.SemanticSearchPartI = SemanticSearchPartI
+        self.SemanticSearchPartII = SemanticSearchPartII
+        self.SemanticSearchPartIII = SemanticSearchPartIII
+        self.SemanticSearchPartIV = SemanticSearchPartIV
+        
+        self.SemanticSearchDocumentsList = SemanticSearchDocumentsList
+        self.SemanticSearchMaxResults = SemanticSearchMaxResults
+        self.SemanticSearchItemsToShow = SemanticSearchItemsToShow
         
         self.CurrentPaper = CurrentPaper
         self.LanguageForToc = LanguageForToc
@@ -120,6 +148,20 @@ class Config:
                     SearchDocumentsList=data.get("SearchDocumentsList", ""),
                     SearchMaxResults=data.get("SearchMaxResults", 100),
                     SearchItemsToShow=data.get("SearchItemsToShow", 50),
+                    
+                    # Semantic
+                    SemanticQuery=data.get("SemanticQuery", ""),
+                    SemanticSearchParts=data.get("SemanticSearchParts", True),
+                    SemanticSearchDocuments=data.get("SemanticSearchDocuments", False),
+                    SemanticSearchIntroduction=data.get("SemanticSearchIntroduction", True),
+                    SemanticSearchPartI=data.get("SemanticSearchPartI", True),
+                    SemanticSearchPartII=data.get("SemanticSearchPartII", True),
+                    SemanticSearchPartIII=data.get("SemanticSearchPartIII", True),
+                    SemanticSearchPartIV=data.get("SemanticSearchPartIV", True),
+                    SemanticSearchDocumentsList=data.get("SemanticSearchDocumentsList", ""),
+                    SemanticSearchMaxResults=data.get("SemanticSearchMaxResults", 100),
+                    SemanticSearchItemsToShow=data.get("SemanticSearchItemsToShow", 50),
+                    
                     CurrentPaper=data.get("CurrentPaper", 0),
                     LanguageForToc=data.get("LanguageForToc", 0),
                     LastSelectedParagraph=(data.get("LastSelectedParagraph") or "0:0-1"),
@@ -152,6 +194,31 @@ class Config:
             "SearchDocumentsList": self.SearchDocumentsList,
             "SearchMaxResults": self.SearchMaxResults,
             "SearchItemsToShow": self.SearchItemsToShow,
+            
+            "SemanticQuery": self.SemanticQuery,
+            "SemanticSearchParts": self.SemanticSearchParts,
+            "SemanticSearchDocuments": self.SemanticSearchDocuments,
+            "SemanticSearchIntroduction": self.SemanticSearchIntroduction,
+            "SemanticSearchPartI": self.SemanticSearchPartI,
+            "SemanticSearchPartII": self.SemanticSearchPartII,
+            "SemanticSearchPartIII": self.SemanticSearchPartIII,
+            "SemanticSearchPartIV": self.SemanticSearchPartIV,
+            "SemanticSearchDocumentsList": self.SemanticSearchDocumentsList,
+            "SemanticSearchMaxResults": self.SemanticSearchMaxResults,
+            "SemanticSearchItemsToShow": self.SemanticSearchItemsToShow,
+            
+            "SemanticQuery": self.SemanticQuery,
+            "SemanticSearchParts": self.SemanticSearchParts,
+            "SemanticSearchDocuments": self.SemanticSearchDocuments,
+            "SemanticSearchIntroduction": self.SemanticSearchIntroduction,
+            "SemanticSearchPartI": self.SemanticSearchPartI,
+            "SemanticSearchPartII": self.SemanticSearchPartII,
+            "SemanticSearchPartIII": self.SemanticSearchPartIII,
+            "SemanticSearchPartIV": self.SemanticSearchPartIV,
+            "SemanticSearchDocumentsList": self.SemanticSearchDocumentsList,
+            "SemanticSearchMaxResults": self.SemanticSearchMaxResults,
+            "SemanticSearchItemsToShow": self.SemanticSearchItemsToShow,
+
             "CurrentPaper": self.CurrentPaper,
             "LanguageForToc": self.LanguageForToc,
             "LastSelectedParagraph": self.LastSelectedParagraph,
