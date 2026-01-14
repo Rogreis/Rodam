@@ -142,7 +142,7 @@
                                     title="Digite a identificação de um parágrafo e tecle enter&#10;Para separar, use qualquer combinação de ; . - : ou espaço&#10;Exemplos: 10 2 3 120:0-4 120:0:4 120.0.4"
                                     placeholder="Ir para ex: 1:2.3">
                             </div>
-                            <div class="trackCombo-options" id="mytrackComboOptions"></div>
+                            <div class="trackCombo-options" id="comboParagraphTrack"></div>
                         </div>
 
                         <!-- Open in Browser Button -->
@@ -474,6 +474,40 @@
             traverse(rightColumn);
         }
 
+        async function openGithubLink(p, s, par) {
+            // 1. Construir URL do GitHub
+            // Formato esperado: https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc001/Par_001_000_000.md
+            const url = `https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc${p}/Par_${p}_${s}_${par}.md`;
+
+            // 2. Abrir link em nova aba
+            window.open(url, '_blank');
+
+            // 2. Formatar código para UI (ex: 1:2.3)
+            // Temos paper/section/paragraph puros do backend
+            const code = `${parseInt(p)}:${parseInt(s)}.${parseInt(par)}`;
+            console.log("GitHub Link Clicked. Code:", code);
+
+            // 3. Atualizar UI Local (Combo)
+            document.getElementById('mytrackCombo').value = code;
+
+            // Atualizar lista recente
+            recentParagraphs = recentParagraphs.filter(item => item !== code);
+            recentParagraphs.unshift(code);
+            if (recentParagraphs.length > 20) recentParagraphs.pop();
+            updateComboParagraphTrack();
+
+            // 4. Callback para Backend salvar persistencia
+            try {
+                await fetch('/api/log_paragraph_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+            } catch (err) {
+                console.error("Error logging paragraph click:", err);
+            }
+        }
+
         async function navigateWithCode(code) {
             if (!code) return;
 
@@ -545,10 +579,10 @@
                     if (recentParagraphs.length > 20) recentParagraphs.pop();
 
                     // 3. Refresh Combo
-                    updateComboOptions();
+                    updateComboParagraphTrack();
 
                     // Hide Options
-                    const trackOptions = document.getElementById('mytrackComboOptions');
+                    const trackOptions = document.getElementById('comboParagraphTrack');
                     if (trackOptions) trackOptions.style.display = 'none';
 
                 } else {
@@ -562,8 +596,8 @@
             }
         }
 
-        function updateComboOptions() {
-            const container = document.getElementById('mytrackComboOptions');
+        function updateComboParagraphTrack() {
+            const container = document.getElementById('comboParagraphTrack');
             if (!container) return;
 
             container.innerHTML = '';
@@ -589,11 +623,11 @@
             updateHighlightButtonState();
 
             // Populate Combo
-            updateComboOptions();
+            updateComboParagraphTrack();
 
             // Setup Combo Box Behavior (Show/Hide)
             const trackInput = document.getElementById('mytrackCombo');
-            const trackOptions = document.getElementById('mytrackComboOptions');
+            const trackOptions = document.getElementById('comboParagraphTrack');
 
             if (trackInput && trackOptions) {
                 // Show on focus

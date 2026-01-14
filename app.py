@@ -438,6 +438,38 @@ async def log_page_endpoint(req: LogPageRequest):
             
     return {"status": "ignored"}
 
+class LogParagraphRequest(BaseModel):
+    code: str
+
+@app.post("/api/log_paragraph_click")
+async def log_paragraph_click_endpoint(req: LogParagraphRequest):
+    """
+    Salva o parágrafo no histórico recente sem gerar conteúdo HTML HTML.
+    """
+    try:
+        from helpers.globals import global_config
+        from helpers.paper_format import FormatPaper
+        
+        # Validar formato
+        triplet = FormatPaper.extract_code_triplet(req.code)
+        if triplet:
+            paper, section, paragraph = triplet
+            canonical_ref = f"{paper}:{section}-{paragraph}"
+            
+            # Adicionar ao histórico
+            global_config.add_recent_paragraph(canonical_ref)
+            
+            # Atualiza o último selecionado também (para persistência entre sessões)
+            global_config.LastSelectedParagraph = canonical_ref
+            global_config.save()
+            
+            return {"status": "success", "canonical_code": canonical_ref}
+            
+        return {"status": "error", "message": "Invalid code"}
+    except Exception as e:
+        logger.error(f"Error logging paragraph: {e}")
+        return {"status": "error", "message": str(e)}
+
 @app.post("/api/window_loaded")
 async def window_loaded():
     """

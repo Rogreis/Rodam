@@ -82,8 +82,7 @@ class FormatParagraphRight(FormatParagraph):
         self.css_class = notes_list.get_css_class(paper, section, paragraph)
 
     def _generate_github_url(self, display_text: str) -> str:
-        url = f"https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc{self.paper_str}/Par_{self.paper_str}_{self.section_str}_{self.par_str}.md"
-        return f'<small><a href="{url}" class="{self.css_class}" target="_blank" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
+        return f'<small><a href="javascript:void(0)" onclick="openGithubLink(\'{self.paper_str}\', \'{self.section_str}\', \'{self.par_str}\')" class="{self.css_class}" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
 
     def format_link_text(self, display_text: str, text= "") -> str:
             
