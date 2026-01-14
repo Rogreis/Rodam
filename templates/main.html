@@ -839,6 +839,44 @@
                     rightCol.innerHTML = data.right;
                     // Important: Execute scripts inside the new HTML (e.g. scroll logic)
                     executeScripts(rightCol);
+
+                    // --- ATUALIZAÇÃO DO COMBO (Novo) ---
+                    // Tenta detectar se é um parágrafo (ex: contém números e separadores)
+                    // Como não temos validação estrita aqui, assumimos que se gerou conteúdo na direita, vale o registro.
+                    // Para ficar mais limpo, apenas se parecer um código curto.
+                    if (secretString && secretString.length < 20) {
+                        // --- Lógica de Formatação (ex: 056_001_000 -> 56:1.0) ---
+                        let displayCode = secretString;
+
+                        // Tenta parsear formato interno (xxx_xxx_xxx) ou misto
+                        // Regex flexível: pega 3 grupos de digitos separados por _ . : ou -
+                        const match = secretString.match(/(\d+)[\._:\-](\d+)[\._:\-](\d+)/);
+
+                        if (match) {
+                            const p = parseInt(match[1], 10);
+                            const s = parseInt(match[2], 10);
+                            const par = parseInt(match[3], 10);
+                            displayCode = `${p}:${s}.${par}`;
+                            console.log(`Formatando ${secretString} -> ${displayCode}`);
+                        }
+
+                        // Atualizar Input
+                        document.getElementById('mytrackCombo').value = displayCode;
+
+                        // Atualizar Lista (usando o código formatado)
+                        recentParagraphs = recentParagraphs.filter(item => item !== displayCode);
+                        recentParagraphs.unshift(displayCode);
+                        if (recentParagraphs.length > 20) recentParagraphs.pop();
+                        updateComboParagraphTrack();
+
+                        // Persistir no Backend via API criada anteriormente
+                        // Enviamos 'displayCode' que é o formato canônico que o backend espera (P:S.Par)
+                        fetch('/api/log_paragraph_click', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ code: displayCode })
+                        }).catch(err => console.error("Erro logando clique dinâmico:", err));
+                    }
                 })
                 .catch(error => console.error('Erro na requisição:', error));
         }
