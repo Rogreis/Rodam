@@ -1,5 +1,12 @@
+from helpers.translations import Paper
 
 class SemanticFormatter:
+
+    @staticmethod
+    def _generate_github_url(self, display_text: str) -> str:
+        return f'<small><a href="javascript:void(0)" onclick="openGithubLink(\'{self.paper_str}\', \'{self.section_str}\', \'{self.par_str}\')" class="{self.css_class}" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
+
+
     @staticmethod
     def format_results_to_html(results: list, elapsed: float) -> str:
         """
@@ -27,11 +34,15 @@ class SemanticFormatter:
                 for code in code_list:
                     c = code.strip()
                     if c:
+                        # Valida se o c é um parágrafo válido
+                        if not Paper.extract_code_triplet(c):
+                            continue
+                        
                         # onclick chama navigateWithCode (definido no main.html)
                         links_html += f'''
-                        <a href="javascript:void(0)" 
+                        <a href="#" 
                            class="badge bg-primary text-decoration-none me-1" 
-                           onclick="navigateWithCode('{c}')">{c}</a>
+                           onclick="event.preventDefault(); navigateWithCode('{c}', true); return false;">{c}</a>
                         '''
             
             card_html = f'''

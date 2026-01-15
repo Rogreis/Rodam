@@ -115,8 +115,8 @@
             // 'expandNode' abre o próprio nó (caso seja uma pasta)
             $('#treeview').treeview('expandNode', [internalNodeId, { levels: 1, silent: false }]);
 
-            // 'selectNode' seleciona o nó visualmente
-            $('#treeview').treeview('selectNode', [internalNodeId, { silent: false }]);
+            // 'selectNode' seleciona o nó visualmente (Silent=True to prevent loop with onNodeSelected -> navigateWithCode)
+            $('#treeview').treeview('selectNode', [internalNodeId, { silent: true }]);
 
             // Rolar até o elemento
             const element = document.querySelector(`li[data-nodeid="${internalNodeId}"]`);

@@ -410,7 +410,7 @@
             }
         }
 
-        async function navigateWithCode(code) {
+        async function navigateWithCode(code, skipToCUpdate = false) {
             if (!code) return;
 
             // UI Feedback (Optional)
@@ -443,29 +443,33 @@
                     const secretCode = result.final_code_secret || result.final_code;
                     console.log("TRACE: Navigation success. Secret:", secretCode);
 
-                    if (result.updated_toc) {
-                        const leftCol = document.getElementById('leftColumn');
-                        if (leftCol) {
-                            console.log("TRACE: Updating ToC due to paper change.");
-                            leftCol.innerHTML = result.updated_toc;
-                            executeScripts(leftCol);
+                    if (!skipToCUpdate) {
+                        if (result.updated_toc) {
+                            const leftCol = document.getElementById('leftColumn');
+                            if (leftCol) {
+                                console.log("TRACE: Updating ToC due to paper change.");
+                                leftCol.innerHTML = result.updated_toc;
+                                executeScripts(leftCol);
 
-                            // Wait for treeview to init then select node
-                            console.log("TRACE: Waiting for treeview init to select:", secretCode);
-                            setTimeout(() => {
-                                if (typeof toggleNodeById === 'function') {
-                                    toggleNodeById(secretCode);
-                                } else {
-                                    console.warn("TRACE: toggleNodeById not found after delay.");
-                                }
-                            }, 500);
+                                // Wait for treeview to init then select node
+                                console.log("TRACE: Waiting for treeview init to select:", secretCode);
+                                setTimeout(() => {
+                                    if (typeof toggleNodeById === 'function') {
+                                        toggleNodeById(secretCode);
+                                    } else {
+                                        console.warn("TRACE: toggleNodeById not found after delay.");
+                                    }
+                                }, 500);
+                            }
+                        } else {
+                            // ToC didn't change, but we should still update selection
+                            console.log("TRACE: ToC stable. Selecting node:", secretCode);
+                            if (typeof toggleNodeById === 'function') {
+                                toggleNodeById(secretCode);
+                            }
                         }
                     } else {
-                        // ToC didn't change, but we should still update selection
-                        console.log("TRACE: ToC stable. Selecting node:", secretCode);
-                        if (typeof toggleNodeById === 'function') {
-                            toggleNodeById(secretCode);
-                        }
+                        console.log("TRACE: Skipping ToC update/selection as requested.");
                     }
 
                     // 2. Update Local History
@@ -731,7 +735,7 @@
                             // Isso pode atualizar a árvore (ToC) se o paper mudar.
                             if (data.navigate_to) {
                                 console.log("Auto-navigating to best match:", data.navigate_to);
-                                await navigateWithCode(data.navigate_to);
+                                await navigateWithCode(data.navigate_to, true);
                             }
 
                             // 3. Renderizar Resultados na Esquerda (Sobrescrevendo a ToC se necessário)
@@ -836,6 +840,9 @@
         function loadDynamicContent(secretString) {
             console.log("Enviando segredo:", secretString);
 
+            // Basic safety check to prevent obviously bad codes
+            if (!secretString || secretString.length > 50) return;
+
             // Chama uma rota específica passando a string como parâmetro
             fetch(`/get_node_content?code=${encodeURIComponent(secretString)}`)
                 .then(response => {
@@ -864,7 +871,7 @@
 
                         // Tenta parsear formato interno (xxx_xxx_xxx) ou misto
                         // Regex flexível: pega 3 grupos de digitos separados por _ . : ou -
-                        const match = secretString.match(/(\d+)[\._:\-](\d+)[\._:\-](\d+)/);
+                        const match = secretString.match(/^(\d+)[\._:\-](\d+)[\._:\-](\d+)$/);
 
                         if (match) {
                             const p = parseInt(match[1], 10);
@@ -872,24 +879,32 @@
                             const par = parseInt(match[3], 10);
                             displayCode = `${p}:${s}.${par}`;
                             console.log(`Formatando ${secretString} -> ${displayCode}`);
+                        } else {
+                            // Se não match, pode ser outro formato ou inválido para o combo,
+                            // mas se for apenas navegação interna (ex treeview), talvez não devêssemos atualizar o combo/histórico
+                            // se não for um parágrafo canônico.
+                            // Vamos assumir que Treeview envia XXX_XXX_XXX.
                         }
 
-                        // Atualizar Input
-                        document.getElementById('mytrackCombo').value = displayCode;
+                        // Atualizar Input somente se mudou
+                        const inputEl = document.getElementById('mytrackCombo');
+                        if (inputEl.value !== displayCode) {
+                            inputEl.value = displayCode;
 
-                        // Atualizar Lista (usando o código formatado)
-                        recentParagraphs = recentParagraphs.filter(item => item !== displayCode);
-                        recentParagraphs.unshift(displayCode);
-                        if (recentParagraphs.length > 20) recentParagraphs.pop();
-                        updateComboParagraphTrack();
+                            // Só atualiza histórico se for novo
+                            recentParagraphs = recentParagraphs.filter(item => item !== displayCode);
+                            recentParagraphs.unshift(displayCode);
+                            if (recentParagraphs.length > 20) recentParagraphs.pop();
+                            updateComboParagraphTrack();
 
-                        // Persistir no Backend via API criada anteriormente
-                        // Enviamos 'displayCode' que é o formato canônico que o backend espera (P:S.Par)
-                        fetch('/api/log_paragraph_click', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ code: displayCode })
-                        }).catch(err => console.error("Erro logando clique dinâmico:", err));
+                            // Persistir no Backend via API criada anteriormente
+                            // Enviamos 'displayCode' que é o formato canônico que o backend espera (P:S.Par)
+                            fetch('/api/log_paragraph_click', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ code: displayCode })
+                            }).catch(err => console.error("Erro logando clique dinâmico:", err));
+                        }
                     }
                 })
                 .catch(error => console.error('Erro na requisição:', error));

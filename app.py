@@ -455,6 +455,11 @@ async def semantic_search_endpoint(req: SemanticSearchRequest):
         return JSONResponse(status_code=503, content={"status": "error", "message": "Motor de busca semântica não incializado."})
 
     try:
+        # Save Query to Config
+        if global_config.SemanticQuery != req.query:
+             global_config.SemanticQuery = req.query
+             global_config.save()
+
         # Chama a função de busca
         results, elapsed = global_config.semantic_engine.buscar(req.query, top_k=req.top_k)
         
