@@ -41,12 +41,14 @@ class SemanticFormatter:
                         # onclick chama navigateWithCode (definido no main.html)
                         links_html += f'''
                         <a href="#" 
-                           class="badge bg-primary text-decoration-none me-1" 
                            onclick="event.preventDefault(); navigateWithCode('{c}', true); return false;">{c}</a>
                         '''
             
+            # Use Theme-Aware Bootstrap Classes (Requires Bootstrap 5.3+ data-bs-theme)
+            card_class = "list-group-item mb-3 rounded shadow-sm border"
+
             card_html = f'''
-            <div class="list-group-item bg-dark text-white border-secondary mb-3 rounded shadow-sm">
+            <div class="{card_class}">
                 <div class="d-flex w-100 justify-content-between align-items-center mb-1">
                     <span class="badge bg-secondary">#{rank}</span>
                     <small class="text-success">{score_pct:.1f}%</small>
