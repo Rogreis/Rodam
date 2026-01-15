@@ -25,6 +25,7 @@ def get_data_dir():
 TUB_FILES='TUB_Files'
 CONFIG_FILE = os.path.join(get_data_dir(), 'Rodam.json')
 TUB_FILES_DIR = os.path.join(get_data_dir(), 'TUB_Files')
+MODEL_PREFIX = os.path.join(get_data_dir(), 'tub_modelo')
 
 # Ensure config dir exists
 if not os.path.exists(get_data_dir()):

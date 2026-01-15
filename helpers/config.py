@@ -100,6 +100,8 @@ class Config:
         self.SemanticSearchMaxResults = SemanticSearchMaxResults
         self.SemanticSearchItemsToShow = SemanticSearchItemsToShow
         
+        self.semantic_engine = None # Runtime only
+        
         self.CurrentPaper = CurrentPaper
         self.LanguageForToc = LanguageForToc
         

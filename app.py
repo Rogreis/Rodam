@@ -440,6 +440,47 @@ async def log_page_endpoint(req: LogPageRequest):
             
     return {"status": "ignored"}
 
+class SemanticSearchRequest(BaseModel):
+    query: str
+    top_k: int = 5
+
+@app.post("/api/semantic_search")
+async def semantic_search_endpoint(req: SemanticSearchRequest):
+    """
+    Executa a busca semântica via SubjectSearch.
+    """
+    from helpers.globals import global_config
+    
+    if not hasattr(global_config, 'semantic_engine') or global_config.semantic_engine is None:
+        return JSONResponse(status_code=503, content={"status": "error", "message": "Motor de busca semântica não incializado."})
+
+    try:
+        # Chama a função de busca
+        results, elapsed = global_config.semantic_engine.buscar(req.query, top_k=req.top_k)
+        
+        # Formatar resultados em HTML (server-side rendering)
+        from helpers.semantic_formatter import SemanticFormatter
+        left_html = SemanticFormatter.format_results_to_html(results, elapsed)
+        
+        # Determinar melhor candidato para navegação (1º link do 1º resultado)
+        navigate_to = None
+        if results:
+            first = results[0]
+            links = first.get('links', '').split()
+            if links:
+                navigate_to = links[0].strip()
+
+        return {
+            "status": "success",
+            "#leftColumn": left_html, # Instrução explícita de onde renderizar (convenção) or just return data
+            "left_html": left_html,
+            "navigate_to": navigate_to,
+            "elapsed": elapsed
+        }
+    except Exception as e:
+        logger.error(f"Erro na busca semântica: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
 class LogParagraphRequest(BaseModel):
     code: str
 
@@ -584,6 +625,12 @@ def start_server():
 if __name__ == '__main__':
     import os
     import sys
+    from helpers.globals import global_config 
+    from helpers.subject_search import SubjectSearch
+    from helpers.globals import MODEL_PREFIX
+    
+    # Init Semantic Search Engine (Lazy - it loads on first 'buscar')
+    global_config.semantic_engine = SubjectSearch(MODEL_PREFIX)
 
     print("Starting Rodam (FastAPI + Whoosh)...")
     

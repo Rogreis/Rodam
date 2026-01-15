@@ -654,7 +654,7 @@
                 }
             };
 
-            function toggleSemanticScope() {
+            window.toggleSemanticScope = function () {
                 const scopeType = document.querySelector('#semanticForm input[name="scopeType"]:checked').value;
                 const partsOptions = document.getElementById('semPartsOptions');
                 const docsInput = document.getElementById('semDocsInput');
@@ -681,7 +681,7 @@
                 }
             }
 
-            async function performSemanticSearch() {
+            window.performSemanticSearch = async function () {
                 const form = document.getElementById('semanticForm');
                 const formData = new FormData(form);
                 const searchData = {};
@@ -698,12 +698,58 @@
                 searchData['SearchDocumentsList'] = document.getElementById('semDocsInput').value;
 
                 // Limits
-                searchData['SearchMaxResults'] = document.getElementById('semMaxResults').value;
-                searchData['SearchItemsToShow'] = document.getElementById('semPageSize').value;
+                const k_val = document.getElementById('semMaxResults').value;
 
-                // TODO: Use a dedicated endpoint or flag for semantic search
-                console.log("Semantic Search Data:", searchData);
-                alert("Dados da busca semântica capturados (ver console). Endpoint pendente.");
+                console.log(`Buscando por: "${searchData['query']}" com Top-K=${k_val}`);
+
+                const resultContainer = document.getElementById('semanticSearchResultsList');
+                resultContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Efetuando busca semântica por IA...</p></div>';
+                // Call Backend
+                fetch('/api/semantic_search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query: searchData['query'],
+                        top_k: parseInt(k_val)
+                    })
+                })
+                    .then(response => response.json())
+                    .then(async data => {
+                        console.log("Semantic Search Results:", data);
+
+                        if (data.status === 'success') {
+                            // 1. Fechar Modal
+                            var modalEl = document.getElementById('semanticSearchResultModal');
+                            // Restaurar conteúdo loading ou limpar
+                            resultContainer.innerHTML = '';
+                            if (modalEl) {
+                                var searchModal = bootstrap.Modal.getInstance(modalEl);
+                                if (searchModal) searchModal.hide();
+                            }
+
+                            // 2. Navegar para o (primeiro) resultado PRIMEIRO
+                            // Isso pode atualizar a árvore (ToC) se o paper mudar.
+                            if (data.navigate_to) {
+                                console.log("Auto-navigating to best match:", data.navigate_to);
+                                await navigateWithCode(data.navigate_to);
+                            }
+
+                            // 3. Renderizar Resultados na Esquerda (Sobrescrevendo a ToC se necessário)
+                            const leftCol = document.getElementById('leftColumn');
+                            if (leftCol && data.left_html) {
+                                console.log("Overwriting left column with Semantic Search results.");
+                                leftCol.innerHTML = data.left_html;
+                            }
+
+                        } else {
+                            // Erro
+                            resultContainer.innerHTML = `<div class="alert alert-danger">Erro: ${data.message}</div>`;
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Semantic search error:", err);
+                        resultContainer.innerHTML = `<div class="alert alert-danger">Erro de comunicação: ${err.message}</div>`;
+                    });
             }
 
             if (pageRoutes[currentPage]) {
