@@ -275,36 +275,30 @@ class TTranslations:
         """
         Retrieves a loaded translation.
         """
-    @staticmethod
+        return self.load(language_id)
     def get_text_content(language_id: int, ref_string: str) -> str:
         """
         Retorna o texto (sem HTML) do parágrafo especificado pela ref_string (ex: '100:2.3')
         para o idioma especificado.
         """
-        from helpers.globals import tr_en, tr_pt
+        import helpers.globals
         
         # 1. Obter a instância da tradução correta
         translation = None
-        if language_id == 2: # English (Tipicamente ID 2 ou 0? No globals.py tr_en carrega 0, mas aqui diz inglês)
-             # Na verdade, precisamos ver como estão carregadas em globals.py
-             # tr_en = translations_manager.load(0) -> Geralmente ID 0 é Inglês Original
-             # tr_pt = translations_manager.load(2) -> Geralmente ID 2 é Português
-             # Vamos assumir os objetos globais já carregados.
-             # Se o argumento language_id for 0 => tr_en
-             # Se for 2 => tr_pt
-             if language_id == 0:
-                 translation = tr_en
-             elif language_id == 2:
-                 translation = tr_pt
-        elif language_id == 0:
-             translation = tr_en
+        # Na verdade, precisamos ver como estão carregadas em globals.py
+        # tr_en = translations_manager.load(0) -> Geralmente ID 0 é Inglês Original
+        # tr_pt = translations_manager.load(2) -> Geralmente ID 2 é Português
+        
+        if language_id == 0:
+             translation = helpers.globals.tr_en
+        elif language_id == 2:
+             translation = helpers.globals.tr_pt
         
         # Fallback: tentar carregar via translations_manager se não estiver nas variáveis
         if not translation:
              # Isso requer acesso ao 'translations_manager' global
-             from helpers.globals import translations_manager
-             if translations_manager:
-                 translation = translations_manager.load(language_id)
+             if helpers.globals.translations_manager:
+                 translation = helpers.globals.translations_manager.load(language_id)
         
         if not translation:
             return ""

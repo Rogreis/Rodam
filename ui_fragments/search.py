@@ -197,7 +197,14 @@ class SearchFragment:
         # Perform Search
         # User requested to remove engine-side filtering ("não passe mais allowed_papers")
         # and perform local filtering instead.
-        searcher = RodamSearch()
+        try:
+            searcher = RodamSearch()
+        except Exception as e:
+            helpers.globals.logger.error(f"Erro ao instanciar RodamSearch: {e}")
+            return {
+                "left": f"{msg_left} <div class='alert alert-danger'>Erro ao inicializar busca: {e}</div>",
+                "right": ""
+            }
         
         # We search broadly (ignoring max_results limitation for a moment? No, searcher enforces it. 
         # This might return filtered-out results if max_results is hit before filtering. 

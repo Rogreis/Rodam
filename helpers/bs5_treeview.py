@@ -28,7 +28,8 @@ templates.env.filters['tojson'] = tojson_filter
 
 from typing import Optional, List, Dict, Any
 from helpers.translations import Paper, Paragraph
-from helpers.globals import global_config, translations_manager, log_exception, RodamException
+import helpers.globals
+from helpers.globals import global_config, log_exception, RodamException
 from helpers.paragraph_special import SpecialPartsRepository
 
 
@@ -78,7 +79,7 @@ class GenerateTreeView:
         # Determine language (Config or Default 0)
         self.lang_id = getattr(global_config, 'LanguageForToc', 0)
         # Load Translation
-        self.translation = translations_manager.get(self.lang_id)
+        self.translation = helpers.globals.translations_manager.get(self.lang_id)
 
     def _generate_root_part_nodes(self):
         repo = SpecialPartsRepository("assets/intro_texts.json")

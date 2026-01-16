@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 import logging
 
 # --- Configuration & Paths ---
-from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config, translations_manager
+from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config
 from helpers.config import Config
 from helpers.paper_format import FormatPaper
 from helpers.bs5_treeview import GenerateTreeView
@@ -50,14 +50,11 @@ templates = Jinja2Templates(directory=resource_path("templates"))
 # Import isolated Search Engine
 from helpers.search_engine import RodamSearch
 
-# Initialize Search Engine
-search_engine = RodamSearch()
-
-# Initialize FormatPaper
-paper_formatter = FormatPaper()
+# Initialize Search Engine and Fragments (LAZY)
+search_engine = None
+paper_formatter = None
 
 # Initialize Fragments
-
 subject_frag = SubjectFragment()
 articles_frag = ArticlesFragment()
 search_frag = SearchFragment()
@@ -92,7 +89,7 @@ def get_application_title(context_code: str = None) -> str:
         if not triplet: return 'Rodam'
         paper_id, _, _ = triplet
         lang_id = getattr(global_config, 'LanguageForToc', 0)
-        translation = translations_manager.get(lang_id)
+        translation = helpers.globals.translations_manager.get(lang_id)
         if not translation: return 'Rodam'
         if paper_id < 0 or paper_id >= len(translation.papers):
             return 'Rodam'
@@ -117,6 +114,10 @@ def _generate_right_content(code: str):
     Returns the HTML string or None if failed/empty.
     """
     try:
+        global paper_formatter
+        if paper_formatter is None:
+            paper_formatter = FormatPaper()
+
         paragraphs = paper_formatter.paper_display(code)
         
         if paragraphs:
@@ -407,6 +408,11 @@ async def search_endpoint(request: Request):
         lang_map = {1: 'pt', 2: 'en'}
         lang_str = lang_map.get(global_config.LanguageIdToSearch, 'pt')
         
+        # Lazy Init Search Engine
+        global search_engine
+        if search_engine is None:
+             search_engine = RodamSearch()
+
         return search_engine.search(
             query_str=global_config.query,
             lang=lang_str,
@@ -643,10 +649,15 @@ def start_server():
 if __name__ == '__main__':
     import os
     import sys
+    import helpers.globals
     from helpers.globals import global_config 
     from helpers.subject_search import SubjectSearch
     from helpers.globals import MODEL_PREFIX
     
+    # --- GLOBAL INITIALIZATION ---
+    # Must be called before any major component usage
+    helpers.globals.initialize()
+
     # Init Semantic Search Engine (Lazy - it loads on first 'buscar')
     global_config.semantic_engine = SubjectSearch(MODEL_PREFIX)
 

@@ -84,40 +84,54 @@ if not os.path.exists(get_data_dir()):
 
 # --- Load Config Early ---
 # Import Config after defining paths to avoid circular issues
-# But we need to load it before other potentially dependent operations
 from helpers.config import Config
 global_config = Config.load()
 
-# Imports from other helpers
-from helpers.translations import TTranslations
-
-# Global variable for Translations
+# Global variables (initialized in initialize())
 tr_pt = None
 tr_en = None
-
-# Global variable for Logger
 logger = None
-
-# Check files (Download/Verify)
-TTranslations.check_files(TUB_FILES_DIR)
-
-# Global Objects
-translations_manager = TTranslations(TUB_FILES_DIR)
-print(f"Carregando traduções")
-tr_en = translations_manager.load(0)
-tr_pt = translations_manager.load(2)
-print(f"Traduções carregadas")
-
-# Load Global Format Table
-from helpers.format_table import FormatTable
-from helpers.notes import NotesList
-
-FORMAT_TABLE_FILE = resource_path(os.path.join('assets', 'FormatTable.json'))
-format_table = FormatTable(FORMAT_TABLE_FILE)
-print(f"Tabela de Formatos carregada de: {FORMAT_TABLE_FILE}")
-
-NOTES_FILE = resource_path(os.path.join('assets', 'notes.json'))
-notes_list = NotesList(NOTES_FILE)
-print(f"Lista de Notas carregada de: {NOTES_FILE}")
+translations_manager = None
+format_table = None
+notes_list = None
+semantic_engine = None
 
 SEMANTIC_RESULTS_FILE = os.path.join(get_data_dir(), 'semantic_results.json')
+
+def initialize():
+    """
+    Inicializa as variáveis globais, carrega arquivos de tradução e tabelas.
+    Deve ser chamado explicitamente no início da aplicação.
+    """
+    global translations_manager, tr_en, tr_pt, format_table, notes_list, logger
+    
+    print(">>> Initializing Globals...")
+
+    # Imports locais para evitar dependências circulares precoces
+    from helpers.translations import TTranslations
+    from helpers.format_table import FormatTable
+    from helpers.notes import NotesList
+    
+    # Check files (Download/Verify)
+    # Isso pode demorar (download), por isso é bom estar no init controlado
+    TTranslations.check_files(TUB_FILES_DIR)
+
+    # Initialize Managers
+    translations_manager = TTranslations(TUB_FILES_DIR)
+    
+    print(f"Carregando traduções...")
+    tr_en = translations_manager.load(0)
+    tr_pt = translations_manager.load(2)
+    print(f"Traduções carregadas.")
+
+    # Load Global Format Table
+    FORMAT_TABLE_FILE = resource_path(os.path.join('assets', 'FormatTable.json'))
+    format_table = FormatTable(FORMAT_TABLE_FILE)
+    print(f"Tabela de Formatos carregada de: {FORMAT_TABLE_FILE}")
+
+    # Load Notes
+    NOTES_FILE = resource_path(os.path.join('assets', 'notes.json'))
+    notes_list = NotesList(NOTES_FILE)
+    print(f"Lista de Notas carregada de: {NOTES_FILE}")
+    
+    print(">>> Globals Initialized.")
