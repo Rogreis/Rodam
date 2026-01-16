@@ -25,6 +25,41 @@ class SubjectFragment:
         # or maybe we do? Request says "has data to display and no need to re-do search".
         # So if we have results, we disable the auto-open script.
         
+        from helpers.globals import global_config
+
+        # Calculate Scope String
+        scope_parts = []
+        if global_config.SemanticSearchParts:
+            parts_active = []
+            if global_config.SemanticSearchIntroduction: parts_active.append("Intro")
+            if global_config.SemanticSearchPartI: parts_active.append("Part I")
+            if global_config.SemanticSearchPartII: parts_active.append("Part II")
+            if global_config.SemanticSearchPartIII: parts_active.append("Part III")
+            if global_config.SemanticSearchPartIV: parts_active.append("Part IV")
+            if parts_active:
+                scope_parts.append(f"Parts ({', '.join(parts_active)})")
+        
+        scope_str = " + ".join(scope_parts) if scope_parts else "Todos"
+
+        info_html = f"""
+            <div class="w-100 mb-3 p-2 border-bottom text-start">
+                <p class="mb-1"><strong>Query:</strong> {global_config.SemanticQuery}</p>
+                <p class="mb-1"><strong>Escopo:</strong> {scope_str}</p>
+                <p class="mb-1"><strong>Máx. Resultados:</strong> {global_config.SemanticSearchMaxResults}</p>
+                <div class="mt-2">
+                    <label class="me-2 fw-bold">Ordenação:</label><br />
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="sortOrderSem" id="sortRankSem" value="1" checked disabled>
+                        <label class="form-check-label" for="sortRankSem">Prioridade</label>
+                    </div>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input" type="radio" name="sortOrderSem" id="sortParSem" value="0" disabled>
+                        <label class="form-check-label" for="sortParSem">Parágrafos</label>
+                    </div>
+                </div>
+            </div>
+        """
+
         script = """
             <script>
                 // Auto-open modal when this view is loaded ONLY if no results are shown?
@@ -51,12 +86,14 @@ class SubjectFragment:
         return {
             "left": f"""
             <div class="d-flex flex-column align-items-center justify-content-start h-100 text-muted p-3" style="overflow-y: auto;">
-                <div class="d-flex w-100 justify-content-between align-items-center mb-3">
+                <div class="d-flex w-100 justify-content-between align-items-center mb-0">
                     <h5 class="mb-0"><i class="bi bi-diagram-3"></i> Assuntos</h5>
                     <button class="btn btn-sm btn-outline-primary" onclick="openSemanticModal()">
                         <i class="bi bi-search"></i> Nova Busca
                     </button>
                 </div>
+                
+                {info_html}
                 
                 {results_html}
                 

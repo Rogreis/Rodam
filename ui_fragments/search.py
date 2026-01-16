@@ -101,7 +101,12 @@ class SearchFragment:
         msg_left = f"""
         {css_styles}
         <div class="mb-3 p-2 border-bottom">
-            <h4>Busca</h4>
+            <div class="d-flex w-100 justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="bi bi-search"></i> Busca</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="showSearchModal()">
+                    <i class="bi bi-search"></i> Nova Busca
+                </button>
+            </div>
             <p class="mb-1"><strong>Query:</strong> {last_query}</p>
             <p class="mb-1"><strong>Escopo:</strong> {scope_str}</p>
             <p class="mb-1"><strong>Máx. Resultados:</strong> {max_results}</p>
