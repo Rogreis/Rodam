@@ -11,12 +11,59 @@ if root_dir not in sys.path:
 from helpers.translations import Paper
 
 class SemanticFormatter:
-    nlp = None # Static class variable for lazy loading
-
     @staticmethod
-    def _generate_github_url(self, display_text: str) -> str:
-        return f'<small><a href="javascript:void(0)" onclick="openGithubLink(\'{self.paper_str}\', \'{self.section_str}\', \'{self.par_str}\')" class="{self.css_class}" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
+    def generate_light_snippet(text: str, query: str, window: int = 60) -> str:
+        """
+        Gera um snippet leve usando regex e string slicing, muito mais rápido que NLP completo.
+        """
+        import re
+        if not text or not query:
+            return ""
 
+        # Normalização básica para busca (case insensitive)
+        text_lower = text.lower()
+        query_lower = query.lower()
+        
+        # Tenta encontrar a query no texto
+        try:
+             # Busca simples do termo
+             match_index = text_lower.find(query_lower)
+             
+             if match_index == -1:
+                 # Tenta encontrar palavras individuais se a frase exata falhar
+                 words = query_lower.split()
+                 for w in words:
+                      if len(w) > 3: # Ignora palavras pequenas
+                           match_index = text_lower.find(w)
+                           if match_index != -1:
+                               query_lower = w # Atualiza para destacar esta palavra
+                               break
+             
+             if match_index != -1:
+                 start = max(0, match_index - window)
+                 end = min(len(text), match_index + len(query_lower) + window)
+                 
+                 prefix = "..." if start > 0 else ""
+                 suffix = "..." if end < len(text) else ""
+                 
+                 snippet_raw = text[start:end]
+                 
+                 # Highlight simplificado (apenas insere <mark>)
+                 # Usa regex com ignore case para substituir mantendo o case original do texto
+                 snippet_highlighted = re.sub(
+                     f"({re.escape(query_lower)})", 
+                     r"<mark>\1</mark>", 
+                     snippet_raw, 
+                     flags=re.IGNORECASE
+                 )
+                 
+                 return f"{prefix}{snippet_highlighted}{suffix}"
+             else:
+                 # Se não achar nada, retorna o começo
+                 return text[:100] + "..."
+                 
+        except Exception:
+             return text[:100] + "..."
 
     @classmethod
     def format_results_to_html(self, results: list, elapsed: float) -> str:
@@ -26,20 +73,10 @@ class SemanticFormatter:
         if not results:
             return '<div class="p-3 text-muted text-center">Nenhum resultado encontrado.</div>'
             
-        # Lazy Load Spacy
-        if self.nlp is None:
-            try:
-                print("Carregando modelo Spacy pt_core_news_sm...")
-                import spacy
-                self.nlp = spacy.load("pt_core_news_sm")
-            except Exception as e:
-                print(f"Erro ao carregar Spacy: {e}")
-                self.nlp = None
-
         html_parts = []
         html_parts.append('<div class="list-group list-group-flush p-2">')
         
-        # Header / Statas
+        # Header / Status
         html_parts.append(f'<div class="text-muted small mb-2 text-end">Encontrados {len(results)} resultados em {elapsed:.2f}s</div>')
 
         for item in results:
@@ -48,8 +85,6 @@ class SemanticFormatter:
             assunto = item.get('assunto', '')
             links_str = item.get('links', '')
             
-            # contaimpressos = 0
-
             # Processar links (ex: "100:1.1 100:2.1")
             links_html = ""
             if links_str:
@@ -64,132 +99,71 @@ class SemanticFormatter:
                         # Recuperar TTranslation
                         from helpers.translations import TTranslations
                         
-                        # Obter texto completo (Idioma 0 = Inglês)
+                        # Obter texto completo (Idioma 0 = Inglês, ou PT=2?) 
+                        # Geralmente PT faz mais sentido para interface PT, mas o código original usava 0 (EN).
+                        # Vou manter 0 se era a intenção, mas se o assunto está em PT, snippets em EN ficam estranhos.
+                        # O original usava 0.
                         texto_completo = TTranslations.get_text_content(0, c)
                         
-                        # Gerar snippet inteligente (se tivermos o nlp carregado e texto)
+                        # Gerar snippet leve
                         snippet = ""
-                        if self.nlp and texto_completo:
-                            snippet = self.gerar_snippet_inteligente(texto_completo, item.get('assunto', ''), self.nlp)
-
-                        # if contaimpressos < 10:
-                        #     contaimpressos += 1
-                        #     print("\ntexto_completo:", texto_completo)
-                        #     print("\nsnippet:", snippet)
+                        if texto_completo:
+                            snippet = self.generate_light_snippet(texto_completo, item.get('assunto', ''))
                         
                         # onclick chama navigateWithCode (definido no main.html)
-                        title_attr = f'data-bs-toggle="tooltip" data-bs-html="true"' if snippet else ""
+                        # onclick chama navigateWithCode
+                        # Layout similar à busca textual: Código destacado, snippet abaixo.
                         
                         links_html += f'''
-                        <a href="#" 
-                           {title_attr}
-                           onclick="event.preventDefault(); navigateWithCode('{c}', true); return false;">{c}{snippet}</a>
+                        <div class="mb-2">
+                            <a href="#" 
+                               class="text-decoration-none d-block"
+                               onclick="event.preventDefault(); navigateWithCode('{c}', true); return false;"
+                               onmouseover="this.querySelector('.c-ref').style.textDecoration='underline'"
+                               onmouseout="this.querySelector('.c-ref').style.textDecoration='none'">
+                                <div class="small text-muted">{c} {snippet}</div>
+                            </a>
+                        </div>
                         '''
             
-            # Use Theme-Aware Bootstrap Classes (Requires Bootstrap 5.3+ data-bs-theme)
+            # Use Theme-Aware Bootstrap Classes
             card_class = "list-group-item mb-3 rounded shadow-sm border"
+
+            # <div class="{card_class}">
+            #     <div class="d-flex w-100 justify-content-between align-items-start mb-2 border-bottom pb-1">
+            #          <span class="fw-bold fst-italic text-dark fs-6" style="margin-right: 10px;">{assunto}</span>
+            #          <div class="text-nowrap">
+            #             <span class="badge bg-secondary me-1">#{rank}</span>
+            #             <small class="text-success">{score_pct:.1f}%</small>
+
+            #          </div>
+            #     </div>
+            #     <div class="mt-2">
+            #         {links_html}
+            #     </div>
+            # </div>
+            # <span class="fw-bold fst-italic text-dark fs-6" style="margin-right: 10px;">{assunto}</span>
 
             card_html = f'''
             <div class="{card_class}">
-                <div class="d-flex w-100 justify-content-between align-items-center mb-1">
-                    <span class="badge bg-secondary">#{rank}</span>
-                    <small class="text-success">{score_pct:.1f}%</small>
+                <div class="d-flex w-100 align-items-center mb-2 border-bottom pb-1">
+                     <div class="text-nowrap flex-shrink-0 me-2">
+                        <span class="badge bg-secondary">#{rank}</span>
+                        <small class="text-success fw-bold ms-1">{score_pct:.1f}%</small>
+                     </div>
+                     <span class="fw-bold fst-italic fs-6 text-wrap">{assunto}</span>
                 </div>
-                <p class="mb-2 fw-bold" style="font-size: 0.95rem;">{assunto}</p>
-                <div class="">
+                <div class="mt-2">
                     {links_html}
                 </div>
             </div>
+
+
             '''
             html_parts.append(card_html)
 
         html_parts.append('</div>')
         return "".join(html_parts)
-
-
-    @staticmethod
-    def gerar_snippet_inteligente(texto_completo, assunto, nlp_model, janela=5):
-        """
-        Gera um resumo destacando o assunto e mostrando o contexto ao redor (janela).
-        Faz a fusão de trechos se as palavras estiverem próximas.
-        
-        :param texto_completo: O parágrafo original.
-        :param assunto: O termo de busca (assunto limpo).
-        :param nlp_model: O modelo Spacy carregado.
-        :param janela: Quantas palavras mostrar antes e depois do termo.
-        """
-        if not nlp_model:
-            return texto_completo[:150] + "..." if len(texto_completo) > 150 else texto_completo
-            
-        doc = nlp_model(texto_completo)
-        doc_assunto = nlp_model(assunto)
-        
-        # 1. Identificar os lemas do assunto (para bater singular/plural/verbos)
-        lemas_assunto = {t.lemma_.lower() for t in doc_assunto if not t.is_stop and not t.is_punct}
-        
-        # 2. Encontrar índices dos tokens que dão match
-        indices_match = [t.i for t in doc if t.lemma_.lower() in lemas_assunto]
-        
-        if not indices_match:
-            # Se não achou nada (estranho, pois veio da busca), retorna o início do texto
-            return texto_completo[:100] + "..."
-
-        # 3. Criar intervalos (spans) baseados na janela
-        # Ex: se achou na pos 10 e janela é 5, o span é (5, 15)
-        spans = []
-        total_tokens = len(doc)
-        
-        for i in indices_match:
-            inicio = max(0, i - janela)
-            fim = min(total_tokens, i + janela + 1)
-            spans.append((inicio, fim))
-        
-        # 4. Mesclar intervalos sobrepostos (A parte mais importante!)
-        # Se temos (5, 15) e (12, 20), eles se sobrepõem. Viram um só: (5, 20).
-        spans_mesclados = []
-        if spans:
-            spans_ordenados = sorted(spans, key=lambda x: x[0])
-            atual_inicio, atual_fim = spans_ordenados[0]
-            
-            for i in range(1, len(spans_ordenados)):
-                prox_inicio, prox_fim = spans_ordenados[i]
-                
-                if prox_inicio <= atual_fim: # Há sobreposição ou estão colados
-                    atual_fim = max(atual_fim, prox_fim) # Estende o fim
-                else:
-                    spans_mesclados.append((atual_inicio, atual_fim))
-                    atual_inicio, atual_fim = prox_inicio, prox_fim
-            
-            spans_mesclados.append((atual_inicio, atual_fim))
-
-        # 5. Construir o texto final com ellipses (...) e highlight
-        resultado_final = []
-        
-        for i, (inicio, fim) in enumerate(spans_mesclados):
-            trecho = []
-            
-            # Adiciona reticências se não for o começo absoluto do texto
-            if inicio > 0:
-                trecho.append("...")
-                
-            # Percorre os tokens dentro do span para reconstruir o texto
-            for token in doc[inicio:fim]:
-                # Aplica o highlight se for uma das palavras do assunto
-                if token.i in indices_match:
-                    trecho.append(f"<mark>{token.text}</mark>{token.whitespace_}")
-                else:
-                    trecho.append(token.text_with_ws)
-            
-            # Transforma lista de tokens em string
-            fragmento = "".join(trecho).strip()
-            resultado_final.append(fragmento)
-
-        # Se o último span não vai até o fim do texto original, adiciona reticências
-        if spans_mesclados[-1][1] < total_tokens:
-            resultado_final.append("...")
-
-        # Junta todos os fragmentos
-        return " ".join(resultado_final)
 
 if __name__ == "__main__":
     import json
