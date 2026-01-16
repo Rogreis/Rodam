@@ -71,3 +71,5 @@ print(f"Tabela de Formatos carregada de: {FORMAT_TABLE_FILE}")
 NOTES_FILE = resource_path(os.path.join('assets', 'notes.json'))
 notes_list = NotesList(NOTES_FILE)
 print(f"Lista de Notas carregada de: {NOTES_FILE}")
+
+SEMANTIC_RESULTS_FILE = os.path.join(get_data_dir(), 'semantic_results.json')

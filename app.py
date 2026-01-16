@@ -463,6 +463,20 @@ async def semantic_search_endpoint(req: SemanticSearchRequest):
         # Chama a função de busca
         results, elapsed = global_config.semantic_engine.buscar(req.query, top_k=req.top_k)
         
+        # Save results to file for persistence
+        from helpers.globals import SEMANTIC_RESULTS_FILE
+        import json
+        try:
+             with open(SEMANTIC_RESULTS_FILE, 'w', encoding='utf-8') as f:
+                 json.dump({
+                     "results": results, 
+                     "elapsed": elapsed,
+                     "query": req.query,
+                     "timestamp": pd.Timestamp.now().isoformat() if 'pd' in locals() else "" # Optional timestamp
+                 }, f, indent=4)
+        except Exception as save_err:
+             print(f"Error saving semantic results: {save_err}")
+        
         # Formatar resultados em HTML (server-side rendering)
         from helpers.semantic_formatter import SemanticFormatter
         left_html = SemanticFormatter.format_results_to_html(results, elapsed)
@@ -578,7 +592,7 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
             "id": "indexSemantic", 
             "label": "Assuntos", 
             "title": "Abre o recurso de navegação por assuntos", 
-            "href": "javascript:openSemanticModal()",
+            "href": "javascript:loadContent('/subject', 'indexSemantic')",
             "visible": config.ShowSemantics
         },
         {

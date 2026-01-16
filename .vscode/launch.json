@@ -5,7 +5,7 @@
             "name": "Debug Rodam (app.py)",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/app.py",
+            "program": "${workspaceFolder}/helpers/semantic_formatter.py",
             "console": "integratedTerminal",
             "justMyCode": false,
             "args": []
