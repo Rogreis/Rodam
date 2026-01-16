@@ -1,7 +1,55 @@
 import os
 import sys
+import traceback
+import inspect
 
 # Define resource_path and get_data_dir first as they are fundamental
+
+def log_exception(e: Exception, msg: str = ""):
+    """
+    Imprime detalhes da exceção na console identificando Classe.metodo chamador,
+    sem interromper a execução do programa.
+    """
+    try:
+        # Pega o frame anterior (quem chamou esta função)
+        frame = inspect.currentframe().f_back
+        if not frame:
+            print(f"[ERRO] {msg}: {e}")
+            return
+
+        # Nome da função/método
+        func_name = frame.f_code.co_name
+        
+        # Tenta descobrir a classe (olhando se existe 'self' ou 'cls' nos locais)
+        class_name = ""
+        if 'self' in frame.f_locals:
+            class_name = frame.f_locals['self'].__class__.__name__ + "."
+        elif 'cls' in frame.f_locals:
+             obj = frame.f_locals['cls']
+             if hasattr(obj, '__name__'):
+                 class_name = obj.__name__ + "."
+            
+        full_context = f"{class_name}{func_name}"
+        
+        print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print(f"⚠️  ERRO CAPTURADO em [{full_context}]")
+        if msg:
+            print(f"ℹ️  Contexto: {msg}")
+        print(f"❌  Exceção: {type(e).__name__}: {str(e)}")
+        # print(f"📍  Arquivo: {frame.f_code.co_filename}:{frame.f_lineno}")
+        print(f"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        
+    except Exception as inner_e:
+        print(f"Erro crítico ao tentar logar erro: {inner_e}")
+    finally:
+        # Importante para evitar ciclos de referência no Garbage Collector
+        del frame
+
+class RodamException(Exception):
+    """
+    Exceção base personalizada para erros internos da aplicação Rodam.
+    """
+    pass
 
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """

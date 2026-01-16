@@ -285,8 +285,7 @@ async def navigate_to_paragraph(code: str, request: Request):
             global_config.save()
             
             # Regenerate ToC
-            # Regenerate ToC
-            updated_toc_html = GenerateTreeView().generate()
+            #updated_toc_html = GenerateTreeView().generate()
 
         # 2. Update Config (Recent History)
         paper, section, paragraph = triplet

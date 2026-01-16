@@ -28,12 +28,11 @@ templates.env.filters['tojson'] = tojson_filter
 
 from typing import Optional, List, Dict, Any
 from helpers.translations import Paper, Paragraph
-from helpers.globals import global_config, translations_manager
+from helpers.globals import global_config, translations_manager, log_exception, RodamException
 from helpers.paragraph_special import SpecialPartsRepository
 
 
 class TreeNode:
-
     def __init__(self, node_id, text):
         self.id = node_id
         self.text = text
@@ -104,15 +103,20 @@ class GenerateTreeView:
         """
         Processes a Paper object to create a Tree Node (Folder) with Sections (Files).
         """
-        paragraphs = paper.paragraphs
+        try:
+            paragraphs = paper.paragraphs
 
-        first_p = paragraphs[0]
-        mainNode= TreeNodeParagraph(first_p)
-        for paragraph in paragraphs:
-            if (paragraph.section > 0 and paragraph.paragraph_no == 0):  # Generate toc entry only until sections
-                mainNode.add_child(TreeNodeParagraph(paragraph))
+            first_p = paragraphs[0]
+            mainNode= TreeNodeParagraph(first_p)
+            for paragraph in paragraphs:
+                if (paragraph.section > 0 and paragraph.paragraph_no == 0):  # Generate toc entry only until sections
+                    mainNode.add_child(TreeNodeParagraph(paragraph))
 
-        node.add_child(mainNode)
+            node.add_child(mainNode)
+            return node
+        except Exception as e:
+            log_exception(e, f"Erro ao gerar nodes para o paper {paper.title if paper else 'Unknown'}")
+            return node
 
 
     def _generate_children_part_nodes(self, node, paper_no_init, paper_no_end):
@@ -123,7 +127,13 @@ class GenerateTreeView:
 
     def generate(self, template_name_override: Optional[str] = None, initial_node=None):
         if not self.translation:
-            return f"<div class='alert alert-warning'>Translation ID {self.lang_id} not loaded.</div>"
+            msg = f"GenerateTreeView.generate: Translation ID {self.lang_id} not loaded."
+            
+            # Cria a exceção personalizada e Loga
+            exc = RodamException(msg)
+            log_exception(exc, "Dependencia crítica ausente")
+            
+            return f"<div class='alert alert-warning'>{msg}</div>"
 
         # Buffers for each part (Now Nodes)
         content_intro = []
