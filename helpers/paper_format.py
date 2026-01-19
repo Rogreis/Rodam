@@ -8,7 +8,8 @@ if __name__ == "__main__":
     if root_dir not in sys.path:
         sys.path.append(root_dir)
 
-from helpers.globals import translations_manager, format_table, notes_list
+from helpers.globals import translations_manager
+import helpers.globals
 from helpers.format_table import FormatEntry, ParagraphExportHtmlType
 from typing import List, Tuple, Optional, Union
 
@@ -26,7 +27,7 @@ class FormatParagraph:
         self.par_str = str(self.paragraph).zfill(3)
         self.id_paragraph = f"p{self.paper_str}_{self.section_str}_{self.par_str}"
 
-        self.format_entry = format_table.get_by_id(paper, section, paragraph)
+        self.format_entry = helpers.globals.format_table.get_by_id(paper, section, paragraph)
         if self.format_entry:
             self.ident_text = "<small>" + self.format_entry.identication() + "</small>"
         else:
@@ -79,11 +80,10 @@ class FormatParagraphRight(FormatParagraph):
     def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
         super().__init__(paper, section, paragraph, text, fmt, is_highlighted)
         self.id_paragraph= self.id_paragraph + "_R"
-        self.css_class = notes_list.get_css_class(paper, section, paragraph)
+        self.css_class = helpers.globals.notes_list.get_css_class(paper, section, paragraph)
 
     def _generate_github_url(self, display_text: str) -> str:
-        url = f"https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc{self.paper_str}/Par_{self.paper_str}_{self.section_str}_{self.par_str}.md"
-        return f'<small><a href="{url}" class="{self.css_class}" target="_blank" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
+        return f'<small><a href="javascript:void(0)" onclick="openGithubLink(\'{self.paper_str}\', \'{self.section_str}\', \'{self.par_str}\')" class="{self.css_class}" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
 
     def format_link_text(self, display_text: str, text= "") -> str:
             
@@ -121,9 +121,20 @@ import re
 
 class FormatPaper:
     def __init__(self):
-        # Garante a carga das traduções, como solicitado
-        self.tr_en = translations_manager.load(0)
-        self.tr_pt = translations_manager.load(2)
+        # Acessa as traduções globais já inicializadas
+        import helpers.globals
+        
+        # Garante que temos as referências (ou None se não init)
+        self.tr_en = helpers.globals.tr_en
+        self.tr_pt = helpers.globals.tr_pt
+        
+        # Fallback de segurança se chamado antes do init (ex: testes isolados sem main)
+        # Se helpers.globals.translations_manager existir, tenta carregar.
+        if not self.tr_en and helpers.globals.translations_manager:
+             self.tr_en = helpers.globals.translations_manager.load(0)
+             
+        if not self.tr_pt and helpers.globals.translations_manager:
+             self.tr_pt = helpers.globals.translations_manager.load(2)
 
     @staticmethod
     def extract_code_triplet(code: str) -> Optional[Tuple[int, int, int]]:

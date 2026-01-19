@@ -275,7 +275,70 @@ class TTranslations:
         """
         Retrieves a loaded translation.
         """
-        return self._translations.get(language_id)
+        return self.load(language_id)
+    def get_text_content(language_id: int, ref_string: str) -> str:
+        """
+        Retorna o texto (sem HTML) do parágrafo especificado pela ref_string (ex: '100:2.3')
+        para o idioma especificado.
+        """
+        import helpers.globals
+        
+        # 1. Obter a instância da tradução correta
+        translation = None
+        # Na verdade, precisamos ver como estão carregadas em globals.py
+        # tr_en = translations_manager.load(0) -> Geralmente ID 0 é Inglês Original
+        # tr_pt = translations_manager.load(2) -> Geralmente ID 2 é Português
+        
+        if language_id == 0:
+             translation = helpers.globals.tr_en
+        elif language_id == 2:
+             translation = helpers.globals.tr_pt
+        
+        # Fallback: tentar carregar via translations_manager se não estiver nas variáveis
+        if not translation:
+             # Isso requer acesso ao 'translations_manager' global
+             if helpers.globals.translations_manager:
+                 translation = helpers.globals.translations_manager.load(language_id)
+        
+        if not translation:
+            return ""
+
+        # 2. Obter trio (Paper, Section, Paragraph)
+        triplet = Paper.extract_code_triplet(ref_string)
+        if not triplet:
+            return ""
+            
+        target_paper, target_section, target_paragraph = triplet
+        
+        # 3. Localizar e retornar texto
+        # Precisamos achar o paper correto na lista de papers
+        # Papers geralmente estão ordenados, mas nem sempre o índice bate com o número do paper (Introdução é 0, Paper 1 é 1...)
+        # Mas translation.papers é uma lista. O Paper 0 é o primeiro?
+        # É mais seguro iterar ou usar um map se fosse otimizado. Como são ~197 papers, iterar é rápido o suficiente.
+        # Ou acessar direto se o papers[i].paper == i ? Geralmente sim, Paper 0 é indice 0.
+        
+        # Tentativa de acesso direto (Otimização)
+        if 0 <= target_paper < len(translation.papers):
+             cand = translation.papers[target_paper]
+             # Verifica se é o paper certo (pode haver deslocamento se faltar algum paper no JSON, improvável no TUB)
+             # O Paper 0 é o Foreword. Paper 1 é o Paper 1.
+             # O índice do array costuma casar. No entanto, Paper.paper é o ID.
+             # O translation.papers é uma lista de Paper objects.
+             # Vamos verificar o primeiro parágrafo para confirmar o ID do paper.
+             if cand.paragraphs and cand.paragraphs[0].paper == target_paper:
+                 target_p_obj = cand.get_paragraph_from_string(ref_string)
+                 if target_p_obj:
+                     return target_p_obj.text
+        
+        # Fallback de busca linear (se acesso direto falhar)
+        for p in translation.papers:
+            if p.paragraphs and p.paragraphs[0].paper == target_paper:
+                found = p.get_paragraph_from_string(ref_string)
+                if found:
+                    return found.text
+                break
+                
+        return ""
 
 
 

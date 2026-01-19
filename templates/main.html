@@ -118,7 +118,8 @@
                         </li>
 
                         {% for item in nav_items %}
-                        <li class="nav-item bg-primary">
+                        <li class="nav-item bg-primary {{ 'd-none' if item.visible == False else '' }}"
+                            id="nav-item-{{ item.id }}">
                             <a class="nav-link {{ 'active navactive' if current_page == item.id else 'navinactive' }}"
                                 aria-current="{{ 'page' if current_page == item.id else 'false' }}"
                                 href="{{ item.href }}" title="{{ item.title }}">
@@ -142,7 +143,7 @@
                                     title="Digite a identificação de um parágrafo e tecle enter&#10;Para separar, use qualquer combinação de ; . - : ou espaço&#10;Exemplos: 10 2 3 120:0-4 120:0:4 120.0.4"
                                     placeholder="Ir para ex: 1:2.3">
                             </div>
-                            <div class="trackCombo-options" id="mytrackComboOptions"></div>
+                            <div class="trackCombo-options" id="comboParagraphTrack"></div>
                         </div>
 
                         <!-- Open in Browser Button -->
@@ -179,116 +180,16 @@
     </div>
 
     <!-- Modals (Preserved) -->
-    <!-- Colors Modal -->
-    <div class="modal fade" id="colorsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Definição de Cores</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Aqui você poderá configurar as cores da interface (Em breve).</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    <button type="button" class="btn btn-primary">Salvar</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <!-- Settings Modal -->
-    <div class="modal fade" id="settingsModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Configurações</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <!-- Dark Mode Switch -->
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="darkModeSwitch" checked
-                            onchange="toggleDarkMode(this.checked)">
-                        <label class="form-check-label" for="darkModeSwitch">Modo Escuro (Dark Mode)</label>
-                    </div>
 
-                    <!-- Language ToC Switch -->
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="langTocSwitch" onchange="saveSettings()">
-                        <label class="form-check-label" for="langTocSwitch">Índice em Português</label>
-                    </div>
-
-                    <!-- Background Colors Switch -->
-                    <div class="form-check form-switch mb-3">
-                        <input class="form-check-input" type="checkbox" id="bgColorsSwitch"
-                            onchange="toggleBgColors(this.checked)">
-                        <label class="form-check-label" for="bgColorsSwitch">Exibir status do parágrafo em
-                            edição</label>
-                    </div>
-
-                    <!-- Highlight Color Selection -->
-                    <div class="mb-3">
-                        <label class="fw-bold mb-2">Cor de Destaque (Search Highlight)</label>
-
-                        <div class="d-flex flex-column gap-2">
-                            <!-- Helper to render option -->
-                            <!-- Option 1: Magenta -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlMagenta"
-                                    value="magenta" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlMagenta"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: magenta;">Destaque</span>
-                                </label>
-                            </div>
-
-                            <!-- Option 2: Gold -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlGold"
-                                    value="gold" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlGold"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: gold;">Destaque</span>
-                                </label>
-                            </div>
-
-                            <!-- Option 3: Cyan -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlCyan"
-                                    value="cyan" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlCyan"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: cyan;">Destaque</span>
-                                    (Dark)
-                                </label>
-                            </div>
-
-                            <!-- Option 4: DarkOrange -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="highlightColor" id="hlDarkOrange"
-                                    value="darkorange" onchange="setHighlightColor(this.value)">
-                                <label class="form-check-label" for="hlDarkOrange"
-                                    style="background-color: var(--bs-body-bg); color: var(--bs-body-color); padding: 2px 5px; border-radius: 4px;">
-                                    Texto normal com <span style="font-weight: bold; color: darkorange;">Destaque</span>
-                                    (Light)
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                    <!-- <button type="button" class="btn btn-primary">Salvar</button> Not needed for instant toggle -->
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Settings Modal (Included from Template) -->
+    {% include 'settings_modal.html' %}
 
     <!-- Search Results Modal (Included from Template) -->
     {% include 'search_modal.html' %}
+
+    <!-- Semantic Search Results Modal (Included from Template) -->
+    {% include 'semantic_search_modal.html' %}
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
@@ -306,6 +207,7 @@
         const savedHighlight = "{{ config.HighlightColor }}";
         const savedDarkMode = {{ "true" if config.DarkMode else "false" }};
         const savedShowBg = {{ "true" if config.ShowBgColors else "false" }};
+        const savedShowSemantics = {{ "true" if config.ShowSemantics else "false" }};
         const savedSplitterPosition = {{ config.SplitterPosition }};
         let savedLanguageForToc = {{ config.LanguageForToc }};
 
@@ -474,7 +376,41 @@
             traverse(rightColumn);
         }
 
-        async function navigateWithCode(code) {
+        async function openGithubLink(p, s, par) {
+            // 1. Construir URL do GitHub
+            // Formato esperado: https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc001/Par_001_000_000.md
+            const url = `https://github.com/Rogreis/PtAlternative/blob/correcoes/Doc${p}/Par_${p}_${s}_${par}.md`;
+
+            // 2. Abrir link em nova aba
+            window.open(url, '_blank');
+
+            // 2. Formatar código para UI (ex: 1:2.3)
+            // Temos paper/section/paragraph puros do backend
+            const code = `${parseInt(p)}:${parseInt(s)}.${parseInt(par)}`;
+            console.log("GitHub Link Clicked. Code:", code);
+
+            // 3. Atualizar UI Local (Combo)
+            document.getElementById('mytrackCombo').value = code;
+
+            // Atualizar lista recente
+            recentParagraphs = recentParagraphs.filter(item => item !== code);
+            recentParagraphs.unshift(code);
+            if (recentParagraphs.length > 20) recentParagraphs.pop();
+            updateComboParagraphTrack();
+
+            // 4. Callback para Backend salvar persistencia
+            try {
+                await fetch('/api/log_paragraph_click', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code })
+                });
+            } catch (err) {
+                console.error("Error logging paragraph click:", err);
+            }
+        }
+
+        async function navigateWithCode(code, skipToCUpdate = false) {
             if (!code) return;
 
             // UI Feedback (Optional)
@@ -507,29 +443,33 @@
                     const secretCode = result.final_code_secret || result.final_code;
                     console.log("TRACE: Navigation success. Secret:", secretCode);
 
-                    if (result.updated_toc) {
-                        const leftCol = document.getElementById('leftColumn');
-                        if (leftCol) {
-                            console.log("TRACE: Updating ToC due to paper change.");
-                            leftCol.innerHTML = result.updated_toc;
-                            executeScripts(leftCol);
+                    if (!skipToCUpdate) {
+                        if (result.updated_toc) {
+                            const leftCol = document.getElementById('leftColumn');
+                            if (leftCol) {
+                                console.log("TRACE: Updating ToC due to paper change.");
+                                leftCol.innerHTML = result.updated_toc;
+                                executeScripts(leftCol);
 
-                            // Wait for treeview to init then select node
-                            console.log("TRACE: Waiting for treeview init to select:", secretCode);
-                            setTimeout(() => {
-                                if (typeof toggleNodeById === 'function') {
-                                    toggleNodeById(secretCode);
-                                } else {
-                                    console.warn("TRACE: toggleNodeById not found after delay.");
-                                }
-                            }, 500);
+                                // Wait for treeview to init then select node
+                                console.log("TRACE: Waiting for treeview init to select:", secretCode);
+                                setTimeout(() => {
+                                    if (typeof toggleNodeById === 'function') {
+                                        toggleNodeById(secretCode);
+                                    } else {
+                                        console.warn("TRACE: toggleNodeById not found after delay.");
+                                    }
+                                }, 500);
+                            }
+                        } else {
+                            // ToC didn't change, but we should still update selection
+                            console.log("TRACE: ToC stable. Selecting node:", secretCode);
+                            if (typeof toggleNodeById === 'function') {
+                                toggleNodeById(secretCode);
+                            }
                         }
                     } else {
-                        // ToC didn't change, but we should still update selection
-                        console.log("TRACE: ToC stable. Selecting node:", secretCode);
-                        if (typeof toggleNodeById === 'function') {
-                            toggleNodeById(secretCode);
-                        }
+                        console.log("TRACE: Skipping ToC update/selection as requested.");
                     }
 
                     // 2. Update Local History
@@ -545,10 +485,10 @@
                     if (recentParagraphs.length > 20) recentParagraphs.pop();
 
                     // 3. Refresh Combo
-                    updateComboOptions();
+                    updateComboParagraphTrack();
 
                     // Hide Options
-                    const trackOptions = document.getElementById('mytrackComboOptions');
+                    const trackOptions = document.getElementById('comboParagraphTrack');
                     if (trackOptions) trackOptions.style.display = 'none';
 
                 } else {
@@ -562,8 +502,8 @@
             }
         }
 
-        function updateComboOptions() {
-            const container = document.getElementById('mytrackComboOptions');
+        function updateComboParagraphTrack() {
+            const container = document.getElementById('comboParagraphTrack');
             if (!container) return;
 
             container.innerHTML = '';
@@ -589,11 +529,11 @@
             updateHighlightButtonState();
 
             // Populate Combo
-            updateComboOptions();
+            updateComboParagraphTrack();
 
             // Setup Combo Box Behavior (Show/Hide)
             const trackInput = document.getElementById('mytrackCombo');
-            const trackOptions = document.getElementById('mytrackComboOptions');
+            const trackOptions = document.getElementById('comboParagraphTrack');
 
             if (trackInput && trackOptions) {
                 // Show on focus
@@ -630,6 +570,9 @@
 
             const bgSwitch = document.getElementById('bgColorsSwitch');
             if (bgSwitch) bgSwitch.checked = savedShowBg;
+
+            const semSwitch = document.getElementById('semanticsSwitch');
+            if (semSwitch) semSwitch.checked = savedShowSemantics;
 
             // Set Radio State
             const hlRadio = document.querySelector(`input[name="highlightColor"][value="${savedHighlight}"]`);
@@ -698,11 +641,151 @@
             const currentPage = "{{ current_page }}";
             const pageRoutes = {
                 'indexToc': '/toc',
-                'indexSubject': '/subject',
-                'indexStudy': '/articles',
+                'indexSemantic': '/subject',
+                'indexArticles': '/articles',
                 'search': '/search',
                 'settings': '/settings'
             };
+
+            window.openSemanticModal = function () {
+                console.log("Opening Semantic Modal...");
+                var modalEl = document.getElementById('semanticSearchResultModal');
+                if (modalEl) {
+                    var searchModal = new bootstrap.Modal(modalEl);
+                    searchModal.show();
+                } else {
+                    console.error("Semantic Modal element not found!");
+                }
+            };
+
+            window.toggleSemanticScope = function () {
+                const scopeType = document.querySelector('#semanticForm input[name="scopeType"]:checked').value;
+                const partsOptions = document.getElementById('semPartsOptions');
+                const docsInput = document.getElementById('semDocsInput');
+                // Parts checkboxes
+                const partChecks = partsOptions.querySelectorAll('.part-check');
+
+                if (scopeType === 'parts') {
+                    // Enable parts, disable docs
+                    partChecks.forEach(cb => {
+                        cb.disabled = false;
+                        cb.parentElement.classList.remove('text-muted');
+                    });
+                    // Disable docs
+                    docsInput.disabled = true;
+
+                } else {
+                    // Disable parts, enable docs
+                    partChecks.forEach(cb => {
+                        cb.disabled = true;
+                        cb.parentElement.classList.add('text-muted');
+                    });
+                    // Enable docs
+                    docsInput.disabled = false;
+                }
+            }
+
+            window.performSemanticSearch = async function () {
+                const form = document.getElementById('semanticForm');
+                const formData = new FormData(form);
+                const searchData = {};
+
+                // Manually handle checkboxes and inputs
+                searchData['query'] = document.getElementById('modalSemanticInput').value;
+
+                const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    searchData[cb.name] = cb.checked;
+                });
+
+                searchData['scopeType'] = document.querySelector('#semanticForm input[name="scopeType"]:checked').value;
+                // Correctly map the documents list input to the Pydantic model field
+                searchData['SemanticSearchDocumentsList'] = document.getElementById('semDocsInput').value;
+
+                // Limits
+                const k_val = document.getElementById('semMaxResults').value;
+                searchData['top_k'] = parseInt(k_val);
+
+                console.log(`Buscando por: "${searchData['query']}" com Top-K=${k_val} Scope=${searchData['scopeType']}`);
+                console.log("Search Data Payload:", searchData);
+
+                const resultContainer = document.getElementById('semanticSearchResultsList');
+                resultContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Efetuando busca semântica por IA...</p></div>';
+                // Call Backend
+                fetch('/api/semantic_search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(searchData)
+                })
+                    .then(response => response.json())
+                    .then(async data => {
+                        console.log("Semantic Search Results:", data);
+
+                        if (data.status === 'success') {
+                            // 1. Fechar Modal
+                            var modalEl = document.getElementById('semanticSearchResultModal');
+                            // Restaurar conteúdo loading ou limpar
+                            resultContainer.innerHTML = '';
+                            if (modalEl) {
+                                var searchModal = bootstrap.Modal.getInstance(modalEl);
+                                if (searchModal) searchModal.hide();
+                            }
+
+                            // 2. Navegar para o (primeiro) resultado PRIMEIRO
+                            // Isso pode atualizar a árvore (ToC) se o paper mudar.
+                            if (data.navigate_to) {
+                                console.log("Auto-navigating to best match:", data.navigate_to);
+                                await navigateWithCode(data.navigate_to, true);
+                            }
+
+                            // 3. Renderizar Resultados na Esquerda (Sobrescrevendo a ToC se necessário)
+                            const leftCol = document.getElementById('leftColumn');
+                            if (leftCol && data.left_html) {
+                                console.log("Overwriting left column with Semantic Search results.");
+                                leftCol.innerHTML = data.left_html;
+                            }
+
+                        } else {
+                            // Erro
+                            resultContainer.innerHTML = `<div class="alert alert-danger">Erro: ${data.message}</div>`;
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Semantic search error:", err);
+                        resultContainer.innerHTML = `<div class="alert alert-danger">Erro de comunicação: ${err.message}</div>`;
+                    });
+            }
+
+            window.changeSemanticSort = function (isRelevance) {
+                console.log("Changing semantic sort order to Relevance=" + isRelevance);
+
+                // Show loading state in left column potentially? 
+                // Or just Opacity check?
+                const leftCol = document.getElementById('leftColumn');
+                if (leftCol) leftCol.style.opacity = '0.5';
+
+                fetch('/api/update_semantic_sort', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sort_relevance: isRelevance })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            if (leftCol) {
+                                leftCol.innerHTML = data.left_html;
+                                leftCol.style.opacity = '1';
+                            }
+                        } else {
+                            alert("Erro ao ordenar: " + data.message);
+                            if (leftCol) leftCol.style.opacity = '1';
+                        }
+                    })
+                    .catch(e => {
+                        console.error(e);
+                        if (leftCol) leftCol.style.opacity = '1';
+                    });
+            }
 
             if (pageRoutes[currentPage]) {
                 // Load initial content without saving (it was just restored)
@@ -788,6 +871,9 @@
         function loadDynamicContent(secretString) {
             console.log("Enviando segredo:", secretString);
 
+            // Basic safety check to prevent obviously bad codes
+            if (!secretString || secretString.length > 50) return;
+
             // Chama uma rota específica passando a string como parâmetro
             fetch(`/get_node_content?code=${encodeURIComponent(secretString)}`)
                 .then(response => {
@@ -805,6 +891,52 @@
                     rightCol.innerHTML = data.right;
                     // Important: Execute scripts inside the new HTML (e.g. scroll logic)
                     executeScripts(rightCol);
+
+                    // --- ATUALIZAÇÃO DO COMBO (Novo) ---
+                    // Tenta detectar se é um parágrafo (ex: contém números e separadores)
+                    // Como não temos validação estrita aqui, assumimos que se gerou conteúdo na direita, vale o registro.
+                    // Para ficar mais limpo, apenas se parecer um código curto.
+                    if (secretString && secretString.length < 20) {
+                        // --- Lógica de Formatação (ex: 056_001_000 -> 56:1.0) ---
+                        let displayCode = secretString;
+
+                        // Tenta parsear formato interno (xxx_xxx_xxx) ou misto
+                        // Regex flexível: pega 3 grupos de digitos separados por _ . : ou -
+                        const match = secretString.match(/^(\d+)[\._:\-](\d+)[\._:\-](\d+)$/);
+
+                        if (match) {
+                            const p = parseInt(match[1], 10);
+                            const s = parseInt(match[2], 10);
+                            const par = parseInt(match[3], 10);
+                            displayCode = `${p}:${s}.${par}`;
+                            console.log(`Formatando ${secretString} -> ${displayCode}`);
+                        } else {
+                            // Se não match, pode ser outro formato ou inválido para o combo,
+                            // mas se for apenas navegação interna (ex treeview), talvez não devêssemos atualizar o combo/histórico
+                            // se não for um parágrafo canônico.
+                            // Vamos assumir que Treeview envia XXX_XXX_XXX.
+                        }
+
+                        // Atualizar Input somente se mudou
+                        const inputEl = document.getElementById('mytrackCombo');
+                        if (inputEl.value !== displayCode) {
+                            inputEl.value = displayCode;
+
+                            // Só atualiza histórico se for novo
+                            recentParagraphs = recentParagraphs.filter(item => item !== displayCode);
+                            recentParagraphs.unshift(displayCode);
+                            if (recentParagraphs.length > 20) recentParagraphs.pop();
+                            updateComboParagraphTrack();
+
+                            // Persistir no Backend via API criada anteriormente
+                            // Enviamos 'displayCode' que é o formato canônico que o backend espera (P:S.Par)
+                            fetch('/api/log_paragraph_click', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ code: displayCode })
+                            }).catch(err => console.error("Erro logando clique dinâmico:", err));
+                        }
+                    }
                 })
                 .catch(error => console.error('Erro na requisição:', error));
         }
@@ -879,6 +1011,19 @@
             }
         }
 
+        function toggleSemantics(show) {
+            console.log("Semantics toggled:", show);
+            const navItem = document.getElementById('nav-item-indexSemantic');
+            if (navItem) {
+                if (show) {
+                    navItem.classList.remove('d-none');
+                } else {
+                    navItem.classList.add('d-none');
+                }
+            }
+            saveSettings();
+        }
+
         function setHighlightColor(color) {
             document.documentElement.style.setProperty('--highlight-color', color);
         }
@@ -893,6 +1038,7 @@
             const highlightColor = document.querySelector('input[name="highlightColor"]:checked')?.value || 'magenta';
             const darkMode = document.getElementById('darkModeSwitch').checked;
             const showBgColors = document.getElementById('bgColorsSwitch').checked;
+            const showSemantics = document.getElementById('semanticsSwitch').checked;
             const langTocVal = document.getElementById('langTocSwitch')?.checked ? 2 : 0;
 
             // Get current splitter width
@@ -906,6 +1052,7 @@
                 highlight_color: highlightColor,
                 dark_mode: darkMode,
                 show_bg_colors: showBgColors,
+                show_semantics: showSemantics,
                 splitter_position: splitPos,
                 language_for_toc: langTocVal
             };

@@ -16,7 +16,7 @@ from bs4 import BeautifulSoup
 import logging
 
 # --- Configuration & Paths ---
-from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config, translations_manager
+from helpers.globals import resource_path, get_data_dir, CONFIG_FILE, global_config
 from helpers.config import Config
 from helpers.paper_format import FormatPaper
 from helpers.bs5_treeview import GenerateTreeView
@@ -50,14 +50,11 @@ templates = Jinja2Templates(directory=resource_path("templates"))
 # Import isolated Search Engine
 from helpers.search_engine import RodamSearch
 
-# Initialize Search Engine
-search_engine = RodamSearch()
-
-# Initialize FormatPaper
-paper_formatter = FormatPaper()
+# Initialize Search Engine and Fragments (LAZY)
+search_engine = None
+paper_formatter = None
 
 # Initialize Fragments
-
 subject_frag = SubjectFragment()
 articles_frag = ArticlesFragment()
 search_frag = SearchFragment()
@@ -92,7 +89,7 @@ def get_application_title(context_code: str = None) -> str:
         if not triplet: return 'Rodam'
         paper_id, _, _ = triplet
         lang_id = getattr(global_config, 'LanguageForToc', 0)
-        translation = translations_manager.get(lang_id)
+        translation = helpers.globals.translations_manager.get(lang_id)
         if not translation: return 'Rodam'
         if paper_id < 0 or paper_id >= len(translation.papers):
             return 'Rodam'
@@ -117,6 +114,10 @@ def _generate_right_content(code: str):
     Returns the HTML string or None if failed/empty.
     """
     try:
+        global paper_formatter
+        if paper_formatter is None:
+            paper_formatter = FormatPaper()
+
         paragraphs = paper_formatter.paper_display(code)
         
         if paragraphs:
@@ -285,8 +286,7 @@ async def navigate_to_paragraph(code: str, request: Request):
             global_config.save()
             
             # Regenerate ToC
-            # Regenerate ToC
-            updated_toc_html = GenerateTreeView().generate()
+            #updated_toc_html = GenerateTreeView().generate()
 
         # 2. Update Config (Recent History)
         paper, section, paragraph = triplet
@@ -326,6 +326,7 @@ class SettingsModel(BaseModel):
     highlight_color: str
     dark_mode: bool
     show_bg_colors: bool
+    show_semantics: bool
     splitter_position: Optional[int] = None
     language_for_toc: Optional[int] = None
 
@@ -339,6 +340,7 @@ async def save_settings(settings: SettingsModel):
         global_config.HighlightColor = settings.highlight_color
         global_config.DarkMode = settings.dark_mode
         global_config.ShowBgColors = settings.show_bg_colors
+        global_config.ShowSemantics = settings.show_semantics
         
         if settings.language_for_toc is not None:
              global_config.LanguageForToc = settings.language_for_toc
@@ -358,7 +360,14 @@ async def save_settings(settings: SettingsModel):
 
 @app.get("/search")
 async def get_search_ui(page: Optional[int] = None):
-    should_open_modal = (page is None)
+    from helpers.globals import global_config
+    
+    # Only open modal automatically if it's the first load (page is None) AND there is no previous query
+    is_initial_load = (page is None)
+    has_previous_query = bool(global_config.query and global_config.query.strip())
+    
+    should_open_modal = is_initial_load and not has_previous_query
+
     current_page = page if page is not None else 1
     return JSONResponse(search_frag.html(page=current_page, open_modal=should_open_modal, templates=templates))
 
@@ -406,6 +415,11 @@ async def search_endpoint(request: Request):
         lang_map = {1: 'pt', 2: 'en'}
         lang_str = lang_map.get(global_config.LanguageIdToSearch, 'pt')
         
+        # Lazy Init Search Engine
+        global search_engine
+        if search_engine is None:
+             search_engine = RodamSearch()
+
         return search_engine.search(
             query_str=global_config.query,
             lang=lang_str,
@@ -437,6 +451,273 @@ async def log_page_endpoint(req: LogPageRequest):
             return {"status": "saved", "page": req.page_id}
             
     return {"status": "ignored"}
+
+class SemanticSearchRequest(BaseModel):
+    query: str
+    top_k: int = 50
+    # Search Options
+    scopeType: str = "parts" # "parts" or "docs"
+    SemanticSearchIntroduction: bool = True
+    SemanticSearchPartI: bool = True
+    SemanticSearchPartII: bool = True
+    SemanticSearchPartIII: bool = True
+    SemanticSearchPartIV: bool = True
+    SemanticSearchDocumentsList: str = ""
+
+@app.post("/api/semantic_search")
+async def semantic_search_endpoint(req: SemanticSearchRequest):
+    """
+    Executa a busca semântica via SubjectSearch com filtros de escopo.
+    """
+    from helpers.globals import global_config
+    
+    if not hasattr(global_config, 'semantic_engine') or global_config.semantic_engine is None:
+        return JSONResponse(status_code=503, content={"status": "error", "message": "Motor de busca semântica não incializado."})
+
+    try:
+        # 1. Update Config (Persist user choices)
+        # Note: 'scopeType' itself isn't stored in global_config explicitly as a preference? 
+        # The logic usually relies on "SemanticSearchParts" vs "SemanticSearchDocuments" flags.
+        # But the UI sends a 'scopeType' radio value. We should map this to the booleans if possible or just use them for this request.
+        # Let's update the specific booleans.
+        
+        has_changes = False
+        if global_config.SemanticQuery != req.query:
+             global_config.SemanticQuery = req.query
+             has_changes = True
+             
+        # Config has: SemanticSearchPartI, etc.
+        # Map fields
+        if global_config.SemanticSearchIntroduction != req.SemanticSearchIntroduction: global_config.SemanticSearchIntroduction = req.SemanticSearchIntroduction; has_changes=True
+        if global_config.SemanticSearchPartI != req.SemanticSearchPartI: global_config.SemanticSearchPartI = req.SemanticSearchPartI; has_changes=True
+        if global_config.SemanticSearchPartII != req.SemanticSearchPartII: global_config.SemanticSearchPartII = req.SemanticSearchPartII; has_changes=True
+        if global_config.SemanticSearchPartIII != req.SemanticSearchPartIII: global_config.SemanticSearchPartIII = req.SemanticSearchPartIII; has_changes=True
+        if global_config.SemanticSearchPartIV != req.SemanticSearchPartIV: global_config.SemanticSearchPartIV = req.SemanticSearchPartIV; has_changes=True
+        
+        if global_config.SemanticSearchDocumentsList != req.SemanticSearchDocumentsList: global_config.SemanticSearchDocumentsList = req.SemanticSearchDocumentsList; has_changes=True
+        
+        # Max results persistence
+        if global_config.SemanticSearchMaxResults != req.top_k: global_config.SemanticSearchMaxResults = req.top_k; has_changes=True
+        
+        # Based on scopeType, we might want to store which mode was last used?
+        # For now, we respect the incoming request for filtering, and update config fields for next time UI load.
+        # But UI Logic (SearchModal) handles this by setting "Parts" vs "Docs" bools?
+        # In Semantic Search we have a Radio. We should set "SemanticSearchParts" = (scopeType == 'parts')
+        new_parts_mode = (req.scopeType == 'parts')
+        if global_config.SemanticSearchParts != new_parts_mode:
+            global_config.SemanticSearchParts = new_parts_mode
+            global_config.SemanticSearchDocuments = not new_parts_mode
+            has_changes = True
+
+        if has_changes:
+             global_config.save()
+
+        # 2. Build allowed_papers list based on Request
+        allowed_papers = []
+        
+        if req.scopeType == 'parts':
+            if req.SemanticSearchIntroduction: allowed_papers.append(0)
+            if req.SemanticSearchPartI: allowed_papers.extend(range(1, 32))   # 1 to 31
+            if req.SemanticSearchPartII: allowed_papers.extend(range(32, 57)) # 32 to 56
+            if req.SemanticSearchPartIII: allowed_papers.extend(range(57, 120)) # 57 to 119
+            if req.SemanticSearchPartIV: allowed_papers.extend(range(120, 197)) # 120 to 196
+        
+        elif req.scopeType == 'docs': # e.g. "manual docs entry"
+             doc_str = req.SemanticSearchDocumentsList
+             if doc_str:
+                parts_str = doc_str.split(';')
+                for p_str in parts_str:
+                    p_str = p_str.strip()
+                    if not p_str: continue
+                    # Support both : and - as range separators
+                    if ':' in p_str or '-' in p_str:
+                        try:
+                            p_str_clean = p_str.replace('-', ':')
+                            start, end = map(int, p_str_clean.split(':'))
+                            allowed_papers.extend(range(start, end + 1))
+                        except: pass
+                    else:
+                        try:
+                            allowed_papers.append(int(p_str))
+                        except: pass
+
+        # Deduplicate
+        allowed_papers = sorted(list(set(allowed_papers)))
+        
+        # Optimization: If list is empty (Select All implied if Parts mode?) or Full (197 items)
+        # However, if allowed_papers is empty AND scope was specific, maybe it means NO papers?
+        # Typically in search logic: Empty List = ALL.
+        # But here valid selection might result in empty list (uncheck all parts).
+        # If user unchecked all parts, allowed_papers is empty. Should return empty?
+        # Let's assume: If parts mode and NO check is true -> Empty result.
+        # But if docs mode and Empty String -> Empty result?
+        # To avoid confusion, let's treat Empty List as "Restrict to Nothing" if scopeType was active?
+        # Re-using logic from SearchFragment:
+        # "If len(allowed_papers) >= 197 -> None (All)"
+        
+        # Correction on ranges:
+        # Part I: 1-31. range(1, 32)
+        # Part II: 32-56. range(32, 57)
+        # Part III: 57-119. range(57, 120)
+        # Part IV: 120-196. range(120, 197)
+        # Total papers: 0 to 196 = 197 papers.
+        
+        final_filter = None
+        if len(allowed_papers) > 0 and len(allowed_papers) < 197:
+             final_filter = allowed_papers
+        elif len(allowed_papers) == 0:
+             # If user explicitly unselected all parts, we probably should return nothing?
+             # But usually defaults to ALL on intial load.
+             # If req says "parts" mode but all bools false -> intended 0 results.
+             if req.scopeType == 'parts' and not (req.SemanticSearchIntroduction or req.SemanticSearchPartI or req.SemanticSearchPartII or req.SemanticSearchPartIII or req.SemanticSearchPartIV):
+                   return {"status": "success", "left_html": "<div class='alert alert-warning'>Nenhuma parte selecionada.</div>", "navigate_to": None}
+             
+             # If docs mode and empty string -> intended 0?
+             if req.scopeType == 'docs' and not req.SemanticSearchDocumentsList.strip():
+                   # fallback to all? or error?
+                   # SearchFragment treats empty list as all?
+                   pass
+
+        # Chama a função de busca
+        results, elapsed = global_config.semantic_engine.buscar(
+            req.query, 
+            top_k=req.top_k, 
+            allowed_papers=final_filter
+        )
+        
+        # Save results to file for persistence
+        from helpers.globals import SEMANTIC_RESULTS_FILE
+        import json
+        try:
+             with open(SEMANTIC_RESULTS_FILE, 'w', encoding='utf-8') as f:
+                 json.dump({
+                     "results": results, 
+                     "elapsed": elapsed,
+                     "query": req.query,
+                     "timestamp": "" # simplified
+                 }, f, indent=4)
+        except Exception as save_err:
+             print(f"Error saving semantic results: {save_err}")
+             
+        # ... rest of function ...
+        
+        # Formatar resultados em HTML (server-side rendering)
+        from helpers.semantic_formatter import SemanticFormatter
+        formatted_results = SemanticFormatter.format_results_to_html(results, elapsed)
+        
+        # Envelopar em placeholder para consistência
+        results_html = f'<div id="semanticResultsPlaceholder" class="mt-4 w-100">{formatted_results}</div>'
+        
+        # Gerar a View Completa (com inputs, headers, etc) usando o Fragment
+        from ui_fragments.subject import SubjectFragment
+        left_html = SubjectFragment.render_view(results_html)
+        
+        # Determinar melhor candidato para navegação (1º link do 1º resultado)
+        navigate_to = None
+        if results:
+            # Precisamos percorrer até achar um permitido
+            for item in results:
+                links_str = item.get('links', '')
+                codes = links_str.split()
+                for c in codes:
+                     # Check validade
+                     if final_filter:
+                         # Parse ID
+                         try:
+                             pid = int(c.split(':')[0])
+                             if pid in final_filter:
+                                 navigate_to = c
+                                 break
+                         except: pass
+                     else:
+                         navigate_to = c
+                         break
+                if navigate_to: break
+
+        return {
+            "status": "success",
+            "left_html": left_html,
+            "navigate_to": navigate_to,
+            "elapsed": elapsed
+        }
+    except Exception as e:
+        logger.error(f"Erro na busca semântica: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+class SemanticSortRequest(BaseModel):
+    sort_relevance: bool
+
+@app.post("/api/update_semantic_sort")
+async def update_semantic_sort(req: SemanticSortRequest):
+    from helpers.globals import global_config, SEMANTIC_RESULTS_FILE
+    import json
+    import os
+    
+    try:
+        # 1. Update Config
+        if global_config.SemanticSearchSortOrder != req.sort_relevance:
+            global_config.SemanticSearchSortOrder = req.sort_relevance
+            global_config.save()
+            
+        # 2. Reload Results
+        if not os.path.exists(SEMANTIC_RESULTS_FILE):
+             return {"status": "error", "message": "No search results found to sort."}
+             
+        with open(SEMANTIC_RESULTS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            results = data.get('results', [])
+            elapsed = data.get('elapsed', 0)
+            
+        # 3. Re-render
+        from helpers.semantic_formatter import SemanticFormatter
+        formatted_results = SemanticFormatter.format_results_to_html(results, elapsed)
+        
+        results_html = f'<div id="semanticResultsPlaceholder" class="mt-4 w-100">{formatted_results}</div>'
+        
+        from ui_fragments.subject import SubjectFragment
+        # No script needed usually, as we are already on the page
+        left_html = SubjectFragment.render_view(results_html, script="")
+        
+        return {
+            "status": "success",
+            "left_html": left_html
+        }
+            
+    except Exception as e:
+        logger.error(f"Error sorting semantic results: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+class LogParagraphRequest(BaseModel):
+    code: str
+
+@app.post("/api/log_paragraph_click")
+async def log_paragraph_click_endpoint(req: LogParagraphRequest):
+    """
+    Salva o parágrafo no histórico recente sem gerar conteúdo HTML HTML.
+    """
+    try:
+        from helpers.globals import global_config
+        from helpers.paper_format import FormatPaper
+        
+        # Validar formato
+        triplet = FormatPaper.extract_code_triplet(req.code)
+        if triplet:
+            paper, section, paragraph = triplet
+            canonical_ref = f"{paper}:{section}-{paragraph}"
+            
+            # Adicionar ao histórico
+            global_config.add_recent_paragraph(canonical_ref)
+            
+            # Atualiza o último selecionado também (para persistência entre sessões)
+            global_config.LastSelectedParagraph = canonical_ref
+            global_config.save()
+            
+            return {"status": "success", "canonical_code": canonical_ref}
+            
+        return {"status": "error", "message": "Invalid code"}
+    except Exception as e:
+        logger.error(f"Error logging paragraph: {e}")
+        return {"status": "error", "message": str(e)}
 
 @app.post("/api/window_loaded")
 async def window_loaded():
@@ -494,18 +775,20 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
             "title": "Abre o recurso de navegação por documentos", 
             "href": "javascript:loadContent('/toc', 'indexToc')"
         },
-        # {
-        #     "id": "indexSubject", 
-        #     "label": "Assuntos", 
-        #     "title": "Abre o recurso de navegação por assuntos", 
-        #     "href": "javascript:loadContent('/subject', 'indexSubject')"
-        # },
-        # {
-        #     "id": "indexStudy", 
-        #     "label": "Artigos", 
-        #     "title": "Abre o recurso de navegação por artigos", 
-        #     "href": "javascript:loadContent('/articles', 'indexStudy')"
-        # },
+        {
+            "id": "indexSemantic", 
+            "label": "Assuntos", 
+            "title": "Abre o recurso de navegação por assuntos", 
+            "href": "javascript:loadContent('/subject', 'indexSemantic')",
+            "visible": config.ShowSemantics
+        },
+        {
+            "id": "indexArticles", 
+            "label": "Artigos", 
+            "title": "Abre o recurso de navegação por artigos", 
+            "href": "javascript:loadContent('/articles', 'indexArticles')",
+            "visible": False
+        },
         {
             "id": "search", 
             "label": "Busca", 
@@ -548,6 +831,17 @@ def start_server():
 if __name__ == '__main__':
     import os
     import sys
+    import helpers.globals
+    from helpers.globals import global_config 
+    from helpers.subject_search import SubjectSearch
+    from helpers.globals import MODEL_PREFIX
+    
+    # --- GLOBAL INITIALIZATION ---
+    # Must be called before any major component usage
+    helpers.globals.initialize()
+
+    # Init Semantic Search Engine (Lazy - it loads on first 'buscar')
+    global_config.semantic_engine = SubjectSearch(MODEL_PREFIX)
 
     print("Starting Rodam (FastAPI + Whoosh)...")
     

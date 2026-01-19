@@ -101,7 +101,12 @@ class SearchFragment:
         msg_left = f"""
         {css_styles}
         <div class="mb-3 p-2 border-bottom">
-            <h4>Busca</h4>
+            <div class="d-flex w-100 justify-content-between align-items-center mb-3">
+                <h5 class="mb-0"><i class="bi bi-search"></i> Busca</h5>
+                <button class="btn btn-sm btn-outline-primary" onclick="showSearchModal()">
+                    <i class="bi bi-search"></i> Nova Busca
+                </button>
+            </div>
             <p class="mb-1"><strong>Query:</strong> {last_query}</p>
             <p class="mb-1"><strong>Escopo:</strong> {scope_str}</p>
             <p class="mb-1"><strong>Máx. Resultados:</strong> {max_results}</p>
@@ -197,7 +202,14 @@ class SearchFragment:
         # Perform Search
         # User requested to remove engine-side filtering ("não passe mais allowed_papers")
         # and perform local filtering instead.
-        searcher = RodamSearch()
+        try:
+            searcher = RodamSearch()
+        except Exception as e:
+            helpers.globals.logger.error(f"Erro ao instanciar RodamSearch: {e}")
+            return {
+                "left": f"{msg_left} <div class='alert alert-danger'>Erro ao inicializar busca: {e}</div>",
+                "right": ""
+            }
         
         # We search broadly (ignoring max_results limitation for a moment? No, searcher enforces it. 
         # This might return filtered-out results if max_results is hit before filtering. 

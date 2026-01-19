@@ -56,15 +56,15 @@ class RodamSearch:
         schema = self.get_schema(lang)
         
         # Access global translations
-        from helpers.globals import tr_pt, tr_en
+        import helpers.globals
         
         if lang == 2:
-            source_tr = tr_pt
+            source_tr = helpers.globals.tr_pt
         elif lang == 0:
-            source_tr = tr_en
+            source_tr = helpers.globals.tr_en
         else:
             # Default fallback if unknown, or raise error
-            source_tr = tr_pt 
+            source_tr = helpers.globals.tr_pt 
             
         if not source_tr:
             # If specifically requested ID is not loaded

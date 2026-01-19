@@ -28,12 +28,12 @@ templates.env.filters['tojson'] = tojson_filter
 
 from typing import Optional, List, Dict, Any
 from helpers.translations import Paper, Paragraph
-from helpers.globals import global_config, translations_manager
+import helpers.globals
+from helpers.globals import global_config, log_exception, RodamException
 from helpers.paragraph_special import SpecialPartsRepository
 
 
 class TreeNode:
-
     def __init__(self, node_id, text):
         self.id = node_id
         self.text = text
@@ -79,7 +79,7 @@ class GenerateTreeView:
         # Determine language (Config or Default 0)
         self.lang_id = getattr(global_config, 'LanguageForToc', 0)
         # Load Translation
-        self.translation = translations_manager.get(self.lang_id)
+        self.translation = helpers.globals.translations_manager.get(self.lang_id)
 
     def _generate_root_part_nodes(self):
         repo = SpecialPartsRepository("assets/intro_texts.json")
@@ -104,26 +104,37 @@ class GenerateTreeView:
         """
         Processes a Paper object to create a Tree Node (Folder) with Sections (Files).
         """
-        paragraphs = paper.paragraphs
+        try:
+            paragraphs = paper.paragraphs
 
-        first_p = paragraphs[0]
-        mainNode= TreeNodeParagraph(first_p)
-        for paragraph in paragraphs:
-            if (paragraph.section > 0 and paragraph.paragraph_no == 0):  # Generate toc entry only until sections
-                mainNode.add_child(TreeNodeParagraph(paragraph))
+            first_p = paragraphs[0]
+            mainNode= TreeNodeParagraph(first_p)
+            for paragraph in paragraphs:
+                if (paragraph.section > 0 and paragraph.paragraph_no == 0):  # Generate toc entry only until sections
+                    mainNode.add_child(TreeNodeParagraph(paragraph))
 
-        node.add_child(mainNode)
+            node.add_child(mainNode)
+            return node
+        except Exception as e:
+            log_exception(e, f"Erro ao gerar nodes para o paper {paper.title if paper else 'Unknown'}")
+            return node
 
 
     def _generate_children_part_nodes(self, node, paper_no_init, paper_no_end):
         for paperNo in range(paper_no_init, paper_no_end + 1):
             paper = self.translation.papers[paperNo]
-            node.add_child(self._generate_paper_nodes(node, paper))
+            self._generate_paper_nodes(node, paper)
 
 
     def generate(self, template_name_override: Optional[str] = None, initial_node=None):
         if not self.translation:
-            return f"<div class='alert alert-warning'>Translation ID {self.lang_id} not loaded.</div>"
+            msg = f"GenerateTreeView.generate: Translation ID {self.lang_id} not loaded."
+            
+            # Cria a exceção personalizada e Loga
+            exc = RodamException(msg)
+            log_exception(exc, "Dependencia crítica ausente")
+            
+            return f"<div class='alert alert-warning'>{msg}</div>"
 
         # Buffers for each part (Now Nodes)
         content_intro = []

@@ -7,13 +7,13 @@ from helpers.paper_format import FormatPaper
 logger = logging.getLogger("Rodam")
 
 # Initialize shared resources for this module
+# Initialize shared resources for this module
 templates = Jinja2Templates(directory=resource_path("templates"))
-paper_formatter = FormatPaper()
+# paper_formatter = FormatPaper() - REMOVED: Will be instantiated on demand or in methods to ensure globals are ready
 
 class HtmlContentGenerator:
     def __init__(self):
-        self.tr_en = translations_manager.load(0)
-        self.tr_pt = translations_manager.load(2)
+        pass
 
     @staticmethod
     def _generate_right_content(code: str):
@@ -22,6 +22,8 @@ class HtmlContentGenerator:
         Returns the HTML string or None if failed/empty.
         """
         try:
+            # Instantiate here to ensure globals are loaded
+            paper_formatter = FormatPaper()
             paragraphs = paper_formatter.paper_display(code)
             
             if paragraphs:
