@@ -56,8 +56,11 @@ class SubjectSearch:
         report("Sistema Pronto!")
         return True
 
-    def buscar(self, query, top_k=5, status_callback=None, cancel_check=None):
-        """Executa a busca e retorna os resultados formatados."""
+    def buscar(self, query, top_k=5, allowed_papers=None, status_callback=None, cancel_check=None):
+        """
+        Executa a busca e retorna os resultados formatados.
+        :param allowed_papers: Lista de IDs de Papers permitidos (inteiros 0-196). Se None ou vazio, busca em todos.
+        """
         # --- Lazy Loading ---
         # Se não estiver carregado, tenta carregar agora, repassando os callbacks
         if self.model is None:
@@ -80,19 +83,54 @@ class SubjectSearch:
         faiss.normalize_L2(vector)
         
         # 3. Buscar no índice
-        scores, indices = self.index.search(vector, top_k)
+        # Se temos filtro, buscamos mais candidatos para garantir top_k após filtragem
+        # Ex: pedir 5x mais, ou um mínimo de 50
+        search_k = top_k * 5 if allowed_papers else top_k
+        if search_k < 50: search_k = 50
+        
+        scores, indices = self.index.search(vector, search_k)
         
         results = []
+        rank_counter = 1
+        
         for i, idx in enumerate(indices[0]):
             score = scores[0][i]
             if idx < len(self.metadata):
                 item = self.metadata[idx]
+                assunto = item[0]
+                links_str = item[1]
+                
+                # Filter Logic
+                if allowed_papers:
+                    # Parse first link to determine paper
+                    # Links format: "120:3.4 121:0.1" (space separated)
+                    # We check if ANY link in the subject belongs to an allowed paper? 
+                    # Usually subject belongs to a context. Let's check the first one as primary.
+                    try:
+                        first_link = links_str.strip().split(' ')[0]
+                        # 120:3.4 -> 120
+                        # 0:0.1 -> 0
+                        # separadores podem variar? O CSV original usava o que? Normalmente 120:3.4
+                        import re
+                        # Pega digitos antes de qualquer separador não digito
+                        match = re.match(r'^(\d+)', first_link)
+                        if match:
+                            paper_id = int(match.group(1))
+                            if paper_id not in allowed_papers:
+                                continue # Skip this result
+                    except:
+                        pass # If parse fail, include? or exclude? Include for safety.
+
                 results.append({
-                    "rank": i + 1,
+                    "rank": rank_counter,
                     "score": float(score), # float nativo para JSON
-                    "assunto": item[0],
-                    "links": item[1]
+                    "assunto": assunto,
+                    "links": links_str
                 })
+                rank_counter += 1
+                
+                if len(results) >= top_k:
+                    break
         
         elapsed = time.time() - start_time
         return results, elapsed

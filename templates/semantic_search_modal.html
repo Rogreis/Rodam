@@ -55,28 +55,32 @@
                                 <div class="ms-3" id="semPartsOptions">
                                     <div class="form-check form-check-inline">
                                         <input class="form-check-input part-check" type="checkbox"
-                                            name="SearchIntroduction" id="semPartIntro" {% if
+                                            name="SemanticSearchIntroduction" id="semPartIntro" {% if
                                             config.SemanticSearchIntroduction %}checked{% endif %}>
                                         <label class="form-check-label" for="semPartIntro">Intr.</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartI"
-                                            id="semPart1" {% if config.SemanticSearchPartI %}checked{% endif %}>
+                                        <input class="form-check-input part-check" type="checkbox"
+                                            name="SemanticSearchPartI" id="semPart1" {% if config.SemanticSearchPartI
+                                            %}checked{% endif %}>
                                         <label class="form-check-label" for="semPart1">Pt I</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartII"
-                                            id="semPart2" {% if config.SemanticSearchPartII %}checked{% endif %}>
+                                        <input class="form-check-input part-check" type="checkbox"
+                                            name="SemanticSearchPartII" id="semPart2" {% if config.SemanticSearchPartII
+                                            %}checked{% endif %}>
                                         <label class="form-check-label" for="semPart2">Pt II</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartIII"
-                                            id="semPart3" {% if config.SemanticSearchPartIII %}checked{% endif %}>
+                                        <input class="form-check-input part-check" type="checkbox"
+                                            name="SemanticSearchPartIII" id="semPart3" {% if
+                                            config.SemanticSearchPartIII %}checked{% endif %}>
                                         <label class="form-check-label" for="semPart3">Pt III</label>
                                     </div>
                                     <div class="form-check form-check-inline">
-                                        <input class="form-check-input part-check" type="checkbox" name="SearchPartIV"
-                                            id="semPart4" {% if config.SemanticSearchPartIV %}checked{% endif %}>
+                                        <input class="form-check-input part-check" type="checkbox"
+                                            name="SemanticSearchPartIV" id="semPart4" {% if config.SemanticSearchPartIV
+                                            %}checked{% endif %}>
                                         <label class="form-check-label" for="semPart4">Pt IV</label>
                                     </div>
                                 </div>
@@ -90,9 +94,9 @@
                                 <div class="ms-3">
                                     <input type="text"
                                         class="form-control form-control-sm bg-secondary text-white border-secondary"
-                                        id="semDocsInput" name="SearchDocumentsList" placeholder="Ex: 1; 5-10; 100"
-                                        value="{{ config.SemanticSearchDocumentsList }}" {% if not
-                                        config.SemanticSearchDocuments %}disabled{% endif %}>
+                                        id="semDocsInput" name="SemanticSearchDocumentsList"
+                                        placeholder="Ex: 1; 5-10; 100" value="{{ config.SemanticSearchDocumentsList }}"
+                                        {% if not config.SemanticSearchDocuments %}disabled{% endif %}>
                                 </div>
                             </div>
 
@@ -102,14 +106,14 @@
                                 <label for="semMaxResults" class="form-label">Máx. de Resultados: <span
                                         id="semMaxResultsVal">{{
                                         config.SemanticSearchMaxResults }}</span></label>
-                                <input type="range" class="form-range" name="SearchMaxResults" min="20" max="300"
-                                    step="10" id="semMaxResults" value="{{ config.SemanticSearchMaxResults }}"
+                                <input type="range" class="form-range" name="top_k" min="20" max="300" step="10"
+                                    id="semMaxResults" value="{{ config.SemanticSearchMaxResults }}"
                                     oninput="document.getElementById('semMaxResultsVal').innerText = this.value">
 
                                 <div class="mt-2">
                                     <label for="semPageSize" class="form-label">Itens por página</label>
                                     <select class="form-select form-select-sm bg-secondary text-white border-secondary"
-                                        id="semPageSize" name="SearchItemsToShow">
+                                        id="semPageSize" name="SemanticSearchItemsToShow">
                                         <option value="20" {% if config.SemanticSearchItemsToShow==20 %}selected{% endif
                                             %}>20
                                         </option>

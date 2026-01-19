@@ -454,12 +454,20 @@ async def log_page_endpoint(req: LogPageRequest):
 
 class SemanticSearchRequest(BaseModel):
     query: str
-    top_k: int = 5
+    top_k: int = 50
+    # Search Options
+    scopeType: str = "parts" # "parts" or "docs"
+    SemanticSearchIntroduction: bool = True
+    SemanticSearchPartI: bool = True
+    SemanticSearchPartII: bool = True
+    SemanticSearchPartIII: bool = True
+    SemanticSearchPartIV: bool = True
+    SemanticSearchDocumentsList: str = ""
 
 @app.post("/api/semantic_search")
 async def semantic_search_endpoint(req: SemanticSearchRequest):
     """
-    Executa a busca semântica via SubjectSearch.
+    Executa a busca semântica via SubjectSearch com filtros de escopo.
     """
     from helpers.globals import global_config
     
@@ -467,13 +475,115 @@ async def semantic_search_endpoint(req: SemanticSearchRequest):
         return JSONResponse(status_code=503, content={"status": "error", "message": "Motor de busca semântica não incializado."})
 
     try:
-        # Save Query to Config
+        # 1. Update Config (Persist user choices)
+        # Note: 'scopeType' itself isn't stored in global_config explicitly as a preference? 
+        # The logic usually relies on "SemanticSearchParts" vs "SemanticSearchDocuments" flags.
+        # But the UI sends a 'scopeType' radio value. We should map this to the booleans if possible or just use them for this request.
+        # Let's update the specific booleans.
+        
+        has_changes = False
         if global_config.SemanticQuery != req.query:
              global_config.SemanticQuery = req.query
+             has_changes = True
+             
+        # Config has: SemanticSearchPartI, etc.
+        # Map fields
+        if global_config.SemanticSearchIntroduction != req.SemanticSearchIntroduction: global_config.SemanticSearchIntroduction = req.SemanticSearchIntroduction; has_changes=True
+        if global_config.SemanticSearchPartI != req.SemanticSearchPartI: global_config.SemanticSearchPartI = req.SemanticSearchPartI; has_changes=True
+        if global_config.SemanticSearchPartII != req.SemanticSearchPartII: global_config.SemanticSearchPartII = req.SemanticSearchPartII; has_changes=True
+        if global_config.SemanticSearchPartIII != req.SemanticSearchPartIII: global_config.SemanticSearchPartIII = req.SemanticSearchPartIII; has_changes=True
+        if global_config.SemanticSearchPartIV != req.SemanticSearchPartIV: global_config.SemanticSearchPartIV = req.SemanticSearchPartIV; has_changes=True
+        
+        if global_config.SemanticSearchDocumentsList != req.SemanticSearchDocumentsList: global_config.SemanticSearchDocumentsList = req.SemanticSearchDocumentsList; has_changes=True
+        
+        # Max results persistence
+        if global_config.SemanticSearchMaxResults != req.top_k: global_config.SemanticSearchMaxResults = req.top_k; has_changes=True
+        
+        # Based on scopeType, we might want to store which mode was last used?
+        # For now, we respect the incoming request for filtering, and update config fields for next time UI load.
+        # But UI Logic (SearchModal) handles this by setting "Parts" vs "Docs" bools?
+        # In Semantic Search we have a Radio. We should set "SemanticSearchParts" = (scopeType == 'parts')
+        new_parts_mode = (req.scopeType == 'parts')
+        if global_config.SemanticSearchParts != new_parts_mode:
+            global_config.SemanticSearchParts = new_parts_mode
+            global_config.SemanticSearchDocuments = not new_parts_mode
+            has_changes = True
+
+        if has_changes:
              global_config.save()
 
+        # 2. Build allowed_papers list based on Request
+        allowed_papers = []
+        
+        if req.scopeType == 'parts':
+            if req.SemanticSearchIntroduction: allowed_papers.append(0)
+            if req.SemanticSearchPartI: allowed_papers.extend(range(1, 32))   # 1 to 31
+            if req.SemanticSearchPartII: allowed_papers.extend(range(32, 57)) # 32 to 56
+            if req.SemanticSearchPartIII: allowed_papers.extend(range(57, 120)) # 57 to 119
+            if req.SemanticSearchPartIV: allowed_papers.extend(range(120, 197)) # 120 to 196
+        
+        elif req.scopeType == 'docs': # e.g. "manual docs entry"
+             doc_str = req.SemanticSearchDocumentsList
+             if doc_str:
+                parts_str = doc_str.split(';')
+                for p_str in parts_str:
+                    p_str = p_str.strip()
+                    if not p_str: continue
+                    # Support both : and - as range separators
+                    if ':' in p_str or '-' in p_str:
+                        try:
+                            p_str_clean = p_str.replace('-', ':')
+                            start, end = map(int, p_str_clean.split(':'))
+                            allowed_papers.extend(range(start, end + 1))
+                        except: pass
+                    else:
+                        try:
+                            allowed_papers.append(int(p_str))
+                        except: pass
+
+        # Deduplicate
+        allowed_papers = sorted(list(set(allowed_papers)))
+        
+        # Optimization: If list is empty (Select All implied if Parts mode?) or Full (197 items)
+        # However, if allowed_papers is empty AND scope was specific, maybe it means NO papers?
+        # Typically in search logic: Empty List = ALL.
+        # But here valid selection might result in empty list (uncheck all parts).
+        # If user unchecked all parts, allowed_papers is empty. Should return empty?
+        # Let's assume: If parts mode and NO check is true -> Empty result.
+        # But if docs mode and Empty String -> Empty result?
+        # To avoid confusion, let's treat Empty List as "Restrict to Nothing" if scopeType was active?
+        # Re-using logic from SearchFragment:
+        # "If len(allowed_papers) >= 197 -> None (All)"
+        
+        # Correction on ranges:
+        # Part I: 1-31. range(1, 32)
+        # Part II: 32-56. range(32, 57)
+        # Part III: 57-119. range(57, 120)
+        # Part IV: 120-196. range(120, 197)
+        # Total papers: 0 to 196 = 197 papers.
+        
+        final_filter = None
+        if len(allowed_papers) > 0 and len(allowed_papers) < 197:
+             final_filter = allowed_papers
+        elif len(allowed_papers) == 0:
+             # If user explicitly unselected all parts, we probably should return nothing?
+             # But usually defaults to ALL on intial load.
+             # If req says "parts" mode but all bools false -> intended 0 results.
+             if req.scopeType == 'parts' and not (req.SemanticSearchIntroduction or req.SemanticSearchPartI or req.SemanticSearchPartII or req.SemanticSearchPartIII or req.SemanticSearchPartIV):
+                   return {"status": "success", "left_html": "<div class='alert alert-warning'>Nenhuma parte selecionada.</div>", "navigate_to": None}
+             
+             # If docs mode and empty string -> intended 0?
+             if req.scopeType == 'docs' and not req.SemanticSearchDocumentsList.strip():
+                   # fallback to all? or error?
+                   # SearchFragment treats empty list as all?
+                   pass
+
         # Chama a função de busca
-        results, elapsed = global_config.semantic_engine.buscar(req.query, top_k=req.top_k)
+        results, elapsed = global_config.semantic_engine.buscar(
+            req.query, 
+            top_k=req.top_k, 
+            allowed_papers=final_filter
+        )
         
         # Save results to file for persistence
         from helpers.globals import SEMANTIC_RESULTS_FILE
@@ -484,26 +594,48 @@ async def semantic_search_endpoint(req: SemanticSearchRequest):
                      "results": results, 
                      "elapsed": elapsed,
                      "query": req.query,
-                     "timestamp": pd.Timestamp.now().isoformat() if 'pd' in locals() else "" # Optional timestamp
+                     "timestamp": "" # simplified
                  }, f, indent=4)
         except Exception as save_err:
              print(f"Error saving semantic results: {save_err}")
+             
+        # ... rest of function ...
         
         # Formatar resultados em HTML (server-side rendering)
         from helpers.semantic_formatter import SemanticFormatter
-        left_html = SemanticFormatter.format_results_to_html(results, elapsed)
+        formatted_results = SemanticFormatter.format_results_to_html(results, elapsed)
+        
+        # Envelopar em placeholder para consistência
+        results_html = f'<div id="semanticResultsPlaceholder" class="mt-4 w-100">{formatted_results}</div>'
+        
+        # Gerar a View Completa (com inputs, headers, etc) usando o Fragment
+        from ui_fragments.subject import SubjectFragment
+        left_html = SubjectFragment.render_view(results_html)
         
         # Determinar melhor candidato para navegação (1º link do 1º resultado)
         navigate_to = None
         if results:
-            first = results[0]
-            links = first.get('links', '').split()
-            if links:
-                navigate_to = links[0].strip()
+            # Precisamos percorrer até achar um permitido
+            for item in results:
+                links_str = item.get('links', '')
+                codes = links_str.split()
+                for c in codes:
+                     # Check validade
+                     if final_filter:
+                         # Parse ID
+                         try:
+                             pid = int(c.split(':')[0])
+                             if pid in final_filter:
+                                 navigate_to = c
+                                 break
+                         except: pass
+                     else:
+                         navigate_to = c
+                         break
+                if navigate_to: break
 
         return {
             "status": "success",
-            "#leftColumn": left_html, # Instrução explícita de onde renderizar (convenção) or just return data
             "left_html": left_html,
             "navigate_to": navigate_to,
             "elapsed": elapsed

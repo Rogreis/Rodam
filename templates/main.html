@@ -699,12 +699,15 @@
                 });
 
                 searchData['scopeType'] = document.querySelector('#semanticForm input[name="scopeType"]:checked').value;
-                searchData['SearchDocumentsList'] = document.getElementById('semDocsInput').value;
+                // Correctly map the documents list input to the Pydantic model field
+                searchData['SemanticSearchDocumentsList'] = document.getElementById('semDocsInput').value;
 
                 // Limits
                 const k_val = document.getElementById('semMaxResults').value;
+                searchData['top_k'] = parseInt(k_val);
 
-                console.log(`Buscando por: "${searchData['query']}" com Top-K=${k_val}`);
+                console.log(`Buscando por: "${searchData['query']}" com Top-K=${k_val} Scope=${searchData['scopeType']}`);
+                console.log("Search Data Payload:", searchData);
 
                 const resultContainer = document.getElementById('semanticSearchResultsList');
                 resultContainer.innerHTML = '<div class="text-center p-3"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><p class="mt-2 text-muted">Efetuando busca semântica por IA...</p></div>';
@@ -712,10 +715,7 @@
                 fetch('/api/semantic_search', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        query: searchData['query'],
-                        top_k: parseInt(k_val)
-                    })
+                    body: JSON.stringify(searchData)
                 })
                     .then(response => response.json())
                     .then(async data => {

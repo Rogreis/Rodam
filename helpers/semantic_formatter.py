@@ -66,12 +66,59 @@ class SemanticFormatter:
              return text[:100] + "..."
 
     @classmethod
-    def format_results_to_html(self, results: list, elapsed: float) -> str:
+    def format_results_to_html(cls, results: list, elapsed: float) -> str:
         """
         Formata a lista de resultados da busca semântica em HTML para a coluna esquerda.
         """
         if not results:
             return '<div class="p-3 text-muted text-center">Nenhum resultado encontrado.</div>'
+            
+        from helpers.globals import global_config
+
+        # --- Determinar Documentos Permitidos (Scope) ---
+        allowed_papers = set()
+        has_restriction = False
+
+        if global_config.SemanticSearchParts:
+            has_restriction = True
+            if global_config.SemanticSearchIntroduction: allowed_papers.add(0)
+            if global_config.SemanticSearchPartI: allowed_papers.update(range(1, 32))   # 1 a 31
+            if global_config.SemanticSearchPartII: allowed_papers.update(range(32, 57)) # 32 a 56
+            if global_config.SemanticSearchPartIII: allowed_papers.update(range(57, 120)) # 57 a 119
+            if global_config.SemanticSearchPartIV: allowed_papers.update(range(120, 197)) # 120 a 196
+            
+        elif global_config.SemanticSearchDocuments:
+            has_restriction = True
+            doc_str = global_config.SemanticSearchDocumentsList
+            if doc_str:
+                parts_str = doc_str.split(';') # Suporte a separador ;
+                # Mas o prompt menciona separador virgula? "numeros vêm separados por vírgula"
+                # Vamos suportar , e ; substituindo antes
+                doc_str = doc_str.replace(',', ';')
+                parts_str = doc_str.split(';')
+                
+                for p_str in parts_str:
+                    p_str = p_str.strip()
+                    if not p_str: continue
+                    
+                    # Suporte a range com - ou :
+                    if '-' in p_str or ':' in p_str:
+                        try:
+                            clean = p_str.replace(':', '-')
+                            start, end = map(int, clean.split('-'))
+                            allowed_papers.update(range(start, end + 1))
+                        except: pass
+                    else:
+                        try:
+                            allowed_papers.add(int(p_str))
+                        except: pass
+
+        # Se não há flag de restrição ativa, assume TODOS (allowed_papers = None)
+        if not has_restriction:
+            print("DEBUG: Restrição INATIVA")
+            allowed_papers = None
+        else:
+            print(f"DEBUG: Restrição ATIVA.allowed_papers: {allowed_papers}")
             
         html_parts = []
         html_parts.append('<div class="list-group list-group-flush p-2">')
@@ -87,32 +134,40 @@ class SemanticFormatter:
             
             # Processar links (ex: "100:1.1 100:2.1")
             links_html = ""
+            valid_links_count = 0 
+            
             if links_str:
                 code_list = links_str.split()
                 for code in code_list:
                     c = code.strip()
                     if c:
-                        # Valida se o c é um parágrafo válido
-                        if not Paper.extract_code_triplet(c):
+                        # 1. Extrair ID do Paper e Validar
+                        triplet = Paper.extract_code_triplet(c)
+                        if not triplet:
                             continue
+                        
+                        paper_id, _, _ = triplet
+                        
+                        # 2. Check de Restrição
+                        if allowed_papers is not None:
+                            if paper_id not in allowed_papers:
+                                print(f"DEBUG: Paper {paper_id} não está no allowed_papers")
+                                continue
+                            else:
+                                print(f"DEBUG: Paper {paper_id} está no allowed_papers")
+
+                        valid_links_count += 1
                         
                         # Recuperar TTranslation
                         from helpers.translations import TTranslations
                         
                         # Obter texto completo (Idioma 0 = Inglês, ou PT=2?) 
-                        # Geralmente PT faz mais sentido para interface PT, mas o código original usava 0 (EN).
-                        # Vou manter 0 se era a intenção, mas se o assunto está em PT, snippets em EN ficam estranhos.
-                        # O original usava 0.
                         texto_completo = TTranslations.get_text_content(0, c)
                         
                         # Gerar snippet leve
                         snippet = ""
                         if texto_completo:
-                            snippet = self.generate_light_snippet(texto_completo, item.get('assunto', ''))
-                        
-                        # onclick chama navigateWithCode (definido no main.html)
-                        # onclick chama navigateWithCode
-                        # Layout similar à busca textual: Código destacado, snippet abaixo.
+                            snippet = cls.generate_light_snippet(texto_completo, item.get('assunto', ''))
                         
                         links_html += f'''
                         <div class="mb-2">
@@ -121,28 +176,19 @@ class SemanticFormatter:
                                onclick="event.preventDefault(); navigateWithCode('{c}', true); return false;"
                                onmouseover="this.querySelector('.c-ref').style.textDecoration='underline'"
                                onmouseout="this.querySelector('.c-ref').style.textDecoration='none'">
-                                <div class="small text-muted">{c} {snippet}</div>
+                                <div class="small text-muted"><span class="c-ref fw-bold text-primary">{c}</span> {snippet}</div>
                             </a>
                         </div>
                         '''
             
+            # Se após o filtro não sobrar nenhum link neste assunto, não exibimos o Card?
+            # O prompt diz "somente exibirmos parágrafos dentro dos documentos". 
+            # Se o assunto ficou sem parágrafos, melhor esconder o card todo para não poluir.
+            if valid_links_count == 0:
+                continue
+
             # Use Theme-Aware Bootstrap Classes
             card_class = "list-group-item mb-3 rounded shadow-sm border"
-
-            # <div class="{card_class}">
-            #     <div class="d-flex w-100 justify-content-between align-items-start mb-2 border-bottom pb-1">
-            #          <span class="fw-bold fst-italic text-dark fs-6" style="margin-right: 10px;">{assunto}</span>
-            #          <div class="text-nowrap">
-            #             <span class="badge bg-secondary me-1">#{rank}</span>
-            #             <small class="text-success">{score_pct:.1f}%</small>
-
-            #          </div>
-            #     </div>
-            #     <div class="mt-2">
-            #         {links_html}
-            #     </div>
-            # </div>
-            # <span class="fw-bold fst-italic text-dark fs-6" style="margin-right: 10px;">{assunto}</span>
 
             card_html = f'''
             <div class="{card_class}">
@@ -157,12 +203,15 @@ class SemanticFormatter:
                     {links_html}
                 </div>
             </div>
-
-
             '''
             html_parts.append(card_html)
 
         html_parts.append('</div>')
+        
+        # Se filtrou tudo
+        if len(html_parts) <= 2: # Só tem o div inicial e o status
+             return '<div class="p-3 text-muted text-center">Nenhum parágrafo encontrado nos documentos selecionados.</div>'
+             
         return "".join(html_parts)
 
 if __name__ == "__main__":
