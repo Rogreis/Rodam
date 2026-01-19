@@ -123,7 +123,7 @@ class GenerateTreeView:
     def _generate_children_part_nodes(self, node, paper_no_init, paper_no_end):
         for paperNo in range(paper_no_init, paper_no_end + 1):
             paper = self.translation.papers[paperNo]
-            node.add_child(self._generate_paper_nodes(node, paper))
+            self._generate_paper_nodes(node, paper)
 
 
     def generate(self, template_name_override: Optional[str] = None, initial_node=None):
