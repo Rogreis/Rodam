@@ -1,10 +1,9 @@
 # To DO
 
-Corrigir o erro que aparece na console
-Salvar resultados da última busca
-Recuperar resultados salvos quando usuário clicar em "Busca" na barra de navegação
-Exibir os resultados
-Evitar que a modal automática quando há dados de busca
+- [x] Salvar resultados da última busca
+- [x] Recuperar resultados salvos quando usuário clicar em "Busca" na barra de navegação
+- [x] Exibir os resultados
+- [x] Evitar que a modal automática quando há dados de busca
 No assuntos ver se a modal é exibida quando não há dados 
 Colocar os dados da busca semântica no TUB_FILEs
 Gerar checksums dos arquivos
@@ -13,7 +12,7 @@ Fazer download deles se diferentes
 Implementar as restrições e ordenação  nos assuntos
 Fazer testes e merge do repositório de semântica
 Verificar a action do github
-Implementar o instalado com ícone
+Implementar o instalador com ícone
 
 
 

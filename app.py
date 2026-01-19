@@ -360,7 +360,14 @@ async def save_settings(settings: SettingsModel):
 
 @app.get("/search")
 async def get_search_ui(page: Optional[int] = None):
-    should_open_modal = (page is None)
+    from helpers.globals import global_config
+    
+    # Only open modal automatically if it's the first load (page is None) AND there is no previous query
+    is_initial_load = (page is None)
+    has_previous_query = bool(global_config.query and global_config.query.strip())
+    
+    should_open_modal = is_initial_load and not has_previous_query
+
     current_page = page if page is not None else 1
     return JSONResponse(search_frag.html(page=current_page, open_modal=should_open_modal, templates=templates))
 
