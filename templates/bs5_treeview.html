@@ -6,9 +6,11 @@
 
 <!-- Header -->
 <div class="mb-3 p-2 border-bottom">
-    <div class="d-flex w-100 justify-content-between align-items-center mb-0">
+    <div class="d-flex w-100 justify-content-between align-items-center mb-2">
         <h5 class="mb-0"><i class="bi bi-journal-text"></i> Documentos</h5>
     </div>
+    <input type="text" class="form-control form-control-sm" id="input-search-toc"
+        placeholder="Filtrar documentos... (Enter)" autocomplete="off">
 </div>
 
 <!-- Treeview Container -->
@@ -20,7 +22,7 @@
     // Globalize or hoisting safe
     function initTreeview() {
         try {
-            $('#treeview').treeview({
+            var $tree = $('#treeview').treeview({
                 data: treeData,
                 levels: 2,
                 showBorder: false,
@@ -30,11 +32,6 @@
                 onNodeSelected: function (event, data) {
                     // Navigate to content when node is selected
                     if (data.href && window.navigateWithCode) {
-                        // Converter ID interno (000_000_000) para referência de navegação (0:0-0)
-                        // A função ExtractCodeTriplet ou similar no backend espera algo parseável
-                        // Mas navigateWithCode chame /api/navigate que usa FormatPaper.extract_code_triplet
-                        // Vamos converter '_' para separadores aceitos
-
                         let parts = data.href.split('_');
                         if (parts.length === 3) {
                             let cleanRef = `${parseInt(parts[0])}:${parseInt(parts[1])}-${parseInt(parts[2])}`;
@@ -44,6 +41,38 @@
                     }
                 }
             });
+
+            // Initialize Search Logic
+            var searchInput = document.getElementById('input-search-toc');
+            if (searchInput) {
+                searchInput.addEventListener('keydown', function (e) { // Changed to keydown to catch Enter
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        var pattern = searchInput.value;
+                        if (pattern === "") {
+                            $tree.treeview('clearSearch');
+                            $tree.treeview('collapseAll', { silent: true });
+                            $tree.treeview('expandNode', [0, { levels: 2, silent: true }]); // Reset expansion? logic may vary
+                        } else {
+                            var options = {
+                                ignoreCase: true,
+                                exactMatch: false,
+                                revealResults: true,
+                            };
+                            var results = $tree.treeview('search', [pattern, options]);
+                            console.log("Filtered tree. Results:", results);
+                        }
+                    }
+                });
+
+                // Also allow clearing on empty (live feedback or X button in search input usually)
+                searchInput.addEventListener('input', function (e) {
+                    if (searchInput.value === "") {
+                        $tree.treeview('clearSearch');
+                    }
+                });
+            }
+
 
             // Auto-select initial node if provided (from Jinja variable)
             const initialNode = "{{ initial_node }}";
@@ -81,26 +110,17 @@
     function toggleNodeById(secret_code) {
         if (!secret_code) return;
 
-        // Check format: 0:0-1 (digits : digits - digits)
-        // Regex: ^(\d+)[:\.](\d+)[\-\.]\d+ (Assuming paragraph part is irrelevant for TreeView node matching, usually nodes are Paper or Section)
-        // Only Paper and Section nodes exist in TreeView? If paragraphs exist as nodes, we need full conversion.
-        // Assuming Tree Nodes are structured as: Paper_Section_000 (000 for paragraph unless tree goes deeper)
-
         let targetHref = secret_code;
 
         // Conversion Logic: 
         // 120:3-4 -> 120, 3, 4 -> 120_003_000 (Ignore paragraph for node selection if tree only shows sections?)
-        // Or 120_003_004 if tree shows paragraphs.
 
-        // Let's implement robust parsing similar to backend
         const tripletMatch = secret_code.match(/^(\d+)[\.:](\d+)(?:[\-\.:](\d+))?$/);
 
         if (tripletMatch) {
             const p = parseInt(tripletMatch[1]).toString().padStart(3, '0');
             const s = parseInt(tripletMatch[2]).toString().padStart(3, '0');
             // The third part (paragraph) is usually 000 for tree nodes unless tree goes down to paragraph level
-            // Based on app.py GenerateTreeView logic, let's assume section level granularity 000
-            // But if user clicks a specific paragraph, we want the Section Node to open.
             targetHref = `${p}_${s}_000`;
             console.log(`Converted ${secret_code} to tree ID: ${targetHref}`);
         }
@@ -130,10 +150,7 @@
             if (element) element.scrollIntoView({ behavior: "smooth", block: "center" });
 
         } else {
-            //alert("Nó não encontrado (1): " + secret_code);
-            console.error("Nó não encontrado. Primeiros 40 itens disponíveis:");
-            //const debugList = tree.slice(0, 40).map(n => `id: ${n.nodeId} | href: ${n.href}`);
-            //console.log(debugList.join("\n"));
+            console.error("Nó não encontrado (toggleNodeById).");
         }
     }
 
