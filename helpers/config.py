@@ -46,6 +46,7 @@ class Config:
                  SemanticSearchDocumentsList: str = "",
                  SemanticSearchMaxResults: int = 100,
                  SemanticSearchItemsToShow: int = 50,
+                 SemanticSearchSortOrder: bool = True,
                  
                  # ToC Configs
                  CurrentPaper: int = 0,
@@ -99,6 +100,7 @@ class Config:
         self.SemanticSearchDocumentsList = SemanticSearchDocumentsList
         self.SemanticSearchMaxResults = SemanticSearchMaxResults
         self.SemanticSearchItemsToShow = SemanticSearchItemsToShow
+        self.SemanticSearchSortOrder = SemanticSearchSortOrder
         
         self.semantic_engine = None # Runtime only
         
@@ -163,6 +165,7 @@ class Config:
                     SemanticSearchDocumentsList=data.get("SemanticSearchDocumentsList", ""),
                     SemanticSearchMaxResults=data.get("SemanticSearchMaxResults", 100),
                     SemanticSearchItemsToShow=data.get("SemanticSearchItemsToShow", 50),
+                    SemanticSearchSortOrder=data.get("SemanticSearchSortOrder", True),
                     
                     CurrentPaper=data.get("CurrentPaper", 0),
                     LanguageForToc=data.get("LanguageForToc", 0),
@@ -208,18 +211,7 @@ class Config:
             "SemanticSearchDocumentsList": self.SemanticSearchDocumentsList,
             "SemanticSearchMaxResults": self.SemanticSearchMaxResults,
             "SemanticSearchItemsToShow": self.SemanticSearchItemsToShow,
-            
-            "SemanticQuery": self.SemanticQuery,
-            "SemanticSearchParts": self.SemanticSearchParts,
-            "SemanticSearchDocuments": self.SemanticSearchDocuments,
-            "SemanticSearchIntroduction": self.SemanticSearchIntroduction,
-            "SemanticSearchPartI": self.SemanticSearchPartI,
-            "SemanticSearchPartII": self.SemanticSearchPartII,
-            "SemanticSearchPartIII": self.SemanticSearchPartIII,
-            "SemanticSearchPartIV": self.SemanticSearchPartIV,
-            "SemanticSearchDocumentsList": self.SemanticSearchDocumentsList,
-            "SemanticSearchMaxResults": self.SemanticSearchMaxResults,
-            "SemanticSearchItemsToShow": self.SemanticSearchItemsToShow,
+            "SemanticSearchSortOrder": self.SemanticSearchSortOrder,
 
             "CurrentPaper": self.CurrentPaper,
             "LanguageForToc": self.LanguageForToc,

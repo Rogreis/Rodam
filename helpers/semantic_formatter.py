@@ -113,17 +113,41 @@ class SemanticFormatter:
                             allowed_papers.add(int(p_str))
                         except: pass
 
-        # Se não há flag de restrição ativa, assume TODOS (allowed_papers = None)
-        if not has_restriction:
-            print("DEBUG: Restrição INATIVA")
-            allowed_papers = None
-        else:
-            print(f"DEBUG: Restrição ATIVA.allowed_papers: {allowed_papers}")
+        # # Se não há flag de restrição ativa, assume TODOS (allowed_papers = None)
+        # if not has_restriction:
+        #     print("DEBUG: Restrição INATIVA")
+        #     allowed_papers = None
+        # else:
+        #     print(f"DEBUG: Restrição ATIVA.allowed_papers: {allowed_papers}")
             
         html_parts = []
         html_parts.append('<div class="list-group list-group-flush p-2">')
         
-        # Header / Status
+        # Header / Status (moved) 
+        # But sort first!
+        
+        # Ordenação
+        # Por padrão (True) = Relevância (já vem do FAISS assim)
+        # Se False = Parágrafos (ordenar pelo primeiro link)
+        # Assumindo que global_config tem SemanticSearchSortOrder. Se não tiver, default True.
+        
+        sort_by_relevance = getattr(global_config, 'SemanticSearchSortOrder', True)
+        
+        if not sort_by_relevance:
+            def get_sort_key(item):
+                links_str = item.get('links', '')
+                if not links_str: return (9999, 0, 0)
+                
+                # Pega primeiro código
+                first_code = links_str.split()[0]
+                triplet = Paper.extract_code_triplet(first_code)
+                if triplet:
+                    return triplet
+                return (9999, 0, 0)
+            
+            # Ordenar lista in-place
+            results.sort(key=get_sort_key)
+            
         html_parts.append(f'<div class="text-muted small mb-2 text-end">Encontrados {len(results)} resultados em {elapsed:.2f}s</div>')
 
         for item in results:
@@ -151,10 +175,10 @@ class SemanticFormatter:
                         # 2. Check de Restrição
                         if allowed_papers is not None:
                             if paper_id not in allowed_papers:
-                                print(f"DEBUG: Paper {paper_id} não está no allowed_papers")
+                                # print(f"DEBUG: Paper {paper_id} não está no allowed_papers")
                                 continue
-                            else:
-                                print(f"DEBUG: Paper {paper_id} está no allowed_papers")
+                            # else:
+                            #     print(f"DEBUG: Paper {paper_id} está no allowed_papers")
 
                         valid_links_count += 1
                         

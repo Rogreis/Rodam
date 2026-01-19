@@ -25,6 +25,9 @@ class SubjectFragment:
             doc_list = global_config.SemanticSearchDocumentsList
             scope_str = f"Docs: {doc_list}" if doc_list else "Docs: (Vazio)"
 
+        sort_relevance_checked = "checked" if getattr(global_config, 'SemanticSearchSortOrder', True) else ""
+        sort_paragraphs_checked = "checked" if not getattr(global_config, 'SemanticSearchSortOrder', True) else ""
+
         info_html = f"""
             <div class="w-100 mb-3 p-2 border-bottom text-start">
                 <p class="mb-1"><strong>Query:</strong> {global_config.SemanticQuery}</p>
@@ -33,11 +36,11 @@ class SubjectFragment:
                 <div class="mt-2">
                     <label class="me-2 fw-bold">Ordenação:</label><br />
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="sortOrderSem" id="sortRankSem" value="1" checked disabled>
-                        <label class="form-check-label" for="sortRankSem">Prioridade</label>
+                        <input class="form-check-input" type="radio" name="sortOrderSem" id="sortRankSem" value="1" {sort_relevance_checked} onchange="changeSemanticSort(true)">
+                        <label class="form-check-label" for="sortRankSem">Relevância</label>
                     </div>
                     <div class="form-check form-check-inline">
-                        <input class="form-check-input" type="radio" name="sortOrderSem" id="sortParSem" value="0" disabled>
+                        <input class="form-check-input" type="radio" name="sortOrderSem" id="sortParSem" value="0" {sort_paragraphs_checked} onchange="changeSemanticSort(false)">
                         <label class="form-check-label" for="sortParSem">Parágrafos</label>
                     </div>
                 </div>

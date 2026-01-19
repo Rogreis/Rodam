@@ -644,6 +644,49 @@ async def semantic_search_endpoint(req: SemanticSearchRequest):
         logger.error(f"Erro na busca semântica: {e}")
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
+class SemanticSortRequest(BaseModel):
+    sort_relevance: bool
+
+@app.post("/api/update_semantic_sort")
+async def update_semantic_sort(req: SemanticSortRequest):
+    from helpers.globals import global_config, SEMANTIC_RESULTS_FILE
+    import json
+    import os
+    
+    try:
+        # 1. Update Config
+        if global_config.SemanticSearchSortOrder != req.sort_relevance:
+            global_config.SemanticSearchSortOrder = req.sort_relevance
+            global_config.save()
+            
+        # 2. Reload Results
+        if not os.path.exists(SEMANTIC_RESULTS_FILE):
+             return {"status": "error", "message": "No search results found to sort."}
+             
+        with open(SEMANTIC_RESULTS_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            results = data.get('results', [])
+            elapsed = data.get('elapsed', 0)
+            
+        # 3. Re-render
+        from helpers.semantic_formatter import SemanticFormatter
+        formatted_results = SemanticFormatter.format_results_to_html(results, elapsed)
+        
+        results_html = f'<div id="semanticResultsPlaceholder" class="mt-4 w-100">{formatted_results}</div>'
+        
+        from ui_fragments.subject import SubjectFragment
+        # No script needed usually, as we are already on the page
+        left_html = SubjectFragment.render_view(results_html, script="")
+        
+        return {
+            "status": "success",
+            "left_html": left_html
+        }
+            
+    except Exception as e:
+        logger.error(f"Error sorting semantic results: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
 class LogParagraphRequest(BaseModel):
     code: str
 

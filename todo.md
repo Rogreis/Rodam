@@ -1,35 +1,5 @@
 # To DO
 
-- [x] Implementar as restrições e ordenação  nos assuntos
-
-Antes da linha 99 de helpers\semantic_formatter.py precisamos decidir que parágrafos efetivamente devem ser exibidos dentro do conjunto de resultados vindos da busca semântica. Para isto deve ser criado um conjunto de números de documentos e somente exibirmos parágrafos dentro dos documentos que devem ser considerados. 
-O conjunto de documentos deve ser definido como se segue:
-
-Se Config.SemanticSearchParts for True, então os documentos devem ser considerados:
-    Se SemanticSearchIntroduction for true, então o documento 0 deve ser considerado
-    Se SemanticSearchPartI for true, então inclua os documentos de 1 a 31
-    Se SemanticSearchPartII for true, então inclua os documentos de 32 a 56
-    Se SemanticSearchPartIII for true, então inclua os documentos de 57 a 119
-    Se SemanticSearchPartIV for true, então inclua os documentos de 120 a 196
-
-Se pelo contrário SemanticSearchDocuments for true. então a string em SemanticSearchDocumentsList deve ser usada para definir os documentos a serem considerados; nela os números vêm separados por vírgula ou por traço, o que indica intervalos. Exemplo: 1,2,5-7,10-12,15.
-Este processamento é o mesmo já feito na Busca.
-
-
-
-Efetuar a descrição (propmpt) para pedir a restrição e documentos na busca semântica:
-Depois implementar a ordenação dos resultados da busca semântica:
-+
-                    SemanticSearchDocuments=data.get("SemanticSearchDocuments", False),
-                    SemanticSearchDocumentsList=data.get("SemanticSearchDocumentsList", ""),
-                    SemanticSearchMaxResults=data.get("SemanticSearchMaxResults", 100),
-                    SemanticSearchItemsToShow=data.get("SemanticSearchItemsToShow", 50),
-
-Colocar os dados da busca semântica no TUB_FILEs
-Gerar checksums dos arquivos
-Fazer download deles se diferentes
-Fazer testes e merge do repositório de semântica
-
 
 Verificar a action do github
 Implementar o instalador com ícone

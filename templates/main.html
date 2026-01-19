@@ -756,6 +756,37 @@
                     });
             }
 
+            window.changeSemanticSort = function (isRelevance) {
+                console.log("Changing semantic sort order to Relevance=" + isRelevance);
+
+                // Show loading state in left column potentially? 
+                // Or just Opacity check?
+                const leftCol = document.getElementById('leftColumn');
+                if (leftCol) leftCol.style.opacity = '0.5';
+
+                fetch('/api/update_semantic_sort', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sort_relevance: isRelevance })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.status === 'success') {
+                            if (leftCol) {
+                                leftCol.innerHTML = data.left_html;
+                                leftCol.style.opacity = '1';
+                            }
+                        } else {
+                            alert("Erro ao ordenar: " + data.message);
+                            if (leftCol) leftCol.style.opacity = '1';
+                        }
+                    })
+                    .catch(e => {
+                        console.error(e);
+                        if (leftCol) leftCol.style.opacity = '1';
+                    });
+            }
+
             if (pageRoutes[currentPage]) {
                 // Load initial content without saving (it was just restored)
                 // Passing null as pageId to avoid re-saving immediately, or pass currentPage if we want to confirm.
