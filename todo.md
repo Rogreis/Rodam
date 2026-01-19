@@ -5,20 +5,12 @@ Verificar a action do github
 Implementar o instalador com ícone
 
 
----
-
-
-
 Depois iniciar artigos com as sugestões do Gemini:
 
-Entendi perfeitamente. O cenário mudou de uma **aplicação web centralizada** (onde todos acessam o mesmo servidor) para uma **aplicação distribuída** (cada usuário roda o Python na sua própria máquina localmente), mas os arquivos originais vêm de uma fonte central (GitHub).
-
-O problema agora é de **sincronização**: Como o "Python Local" do usuário fala com o "Admin Remoto"?
-
-O SQLite local não serve porque ele fica isolado no computador do usuário. Você precisa de um **intermediário na nuvem**. Aqui estão três abordagens robustas, ordenadas da mais integrada ao GitHub para a mais flexível:
-
 ---
 ---
+
+## Comentários nos artigos
 
 ### Opção 1: Usar o próprio GitHub (Issues) - *Recomendada*
 
@@ -47,8 +39,6 @@ def enviar_comentario_github(arquivo, usuario, texto, token):
 
 ```
 
----
-
 ### Opção 2: Google Sheets como Backend (Low-Code)
 
 Você mencionou Google Docs, e essa é uma ótima ideia, mas use o **Google Sheets**. Ele funciona como um banco de dados na nuvem gratuito e fácil de ler.
@@ -63,7 +53,6 @@ Você mencionou Google Docs, e essa é uma ótima ideia, mas use o **Google Shee
 * **Vantagem:** Muito fácil para o Admin gerenciar (interface de Excel).
 * **Desvantagem:** Requer configuração de credenciais da API do Google (arquivo JSON) distribuído junto com o app.
 
----
 
 ### Opção 3: Backend como Serviço (Supabase ou Firebase)
 

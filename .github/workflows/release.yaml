@@ -1,35 +1,29 @@
 name: Build e Release do Rodam
 
-# Gatilho: Apenas quando uma tag começando com 'v' for enviada
 on:
   push:
     tags:
-      - 'v*' 
+      - 'v*'
 
 jobs:
   create-release:
     name: Build para ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
-    # Permissão explícita para criar releases
     permissions:
       contents: write
     strategy:
       fail-fast: false
       matrix:
-        # Cria 3 máquinas virtuais simultâneas
         include:
           - os: ubuntu-latest
             TARGET_OS: Linux
-            FILE_EXT: ""   # Linux não tem extensão padrão
-            MIME_TYPE: application/x-executable
+            ARTIFACT_EXT: .deb  # Mudamos para .deb
           - os: windows-latest
             TARGET_OS: Windows
-            FILE_EXT: .exe
-            MIME_TYPE: application/vnd.microsoft.portable-executable
+            ARTIFACT_EXT: .exe
           - os: macos-latest
             TARGET_OS: MacOS
-            FILE_EXT: .dmg # No Mac vamos empacotar depois
-            MIME_TYPE: application/x-apple-diskimage
+            ARTIFACT_EXT: .dmg
 
     steps:
       - name: Checkout do Código
@@ -40,53 +34,108 @@ jobs:
         with:
           python-version: '3.12'
 
-      # Dependências de sistema para o Linux (necessário para pywebview)
+      # --- 0. EXTRAIR VERSÃO (Remove o 'v') ---
+      - name: Extrair Versão Limpa
+        shell: bash
+        run: |
+          VERSION_TAG=${{ github.ref_name }}
+          CLEAN_VERSION=${VERSION_TAG#v}
+          echo "APP_VERSION=$CLEAN_VERSION" >> $GITHUB_ENV
+          echo "Versão detectada: $CLEAN_VERSION"
+
+      # --- DEPENDÊNCIAS ---
       - name: Instalar Deps Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev || sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev
+          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+          # Instalar FPM (para criar o .deb)
+          sudo gem install fpm
 
       - name: Instalar Python Requirements
         run: |
           pip install -r requirements.txt
           pip install pyinstaller Pillow
 
-      # Compilar com PyInstaller
+      # --- BUILD PYINSTALLER (Comum a todos) ---
+      # Nota: Adicionei --windowed para não abrir terminal preto no Windows
       - name: Build com PyInstaller
         run: pyinstaller Rodam.spec
 
-      # --- TRATAMENTO PÓS-BUILD ---
-
-      # 1. WINDOWS: Renomeia para Rodam-Windows-v1.0.0.exe
-      - name: Preparar Windows
+      # ========================================================
+      # 1. WINDOWS: INNO SETUP
+      # ========================================================
+      - name: Criar Instalador Windows (Inno Setup)
         if: runner.os == 'Windows'
-        run: |
-          move dist\Rodam.exe dist\Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}.exe
+        uses: Minionguyjosh/inno-setup-action@v1.2.2
+        with:
+          path: setup.iss
+          # Passamos a versão limpa para o script .iss
+          options: /DMyAppVersion="${{ env.APP_VERSION }}"
 
-      # 2. LINUX: Renomeia para Rodam-Linux-v1.0.0
-      - name: Preparar Linux
+      # O Inno Setup (configurado acima) já deve salvar em dist/Rodam-Setup-Windows-X.X.exe
+
+      # ========================================================
+      # 2. LINUX: FPM (.deb)
+      # ========================================================
+      - name: Empacotar Linux (.deb)
         if: runner.os == 'Linux'
         run: |
-          mv dist/Rodam dist/Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}
+          # 1. Criar estrutura de pastas temporária
+          mkdir -p build_pkg/usr/bin
+          mkdir -p build_pkg/usr/share/applications
+          mkdir -p build_pkg/usr/share/icons/hicolor/256x256/apps/
+          
+          # 2. Copiar binário
+          cp dist/Rodam build_pkg/usr/bin/rodam
+          chmod +x build_pkg/usr/bin/rodam
+          
+          # 3. Copiar atalho (.desktop) e ícone
+          # Assumindo que você criou o rodam.desktop na raiz
+          cp rodam.desktop build_pkg/usr/share/applications/
+          # Se tiver ícone, descomente abaixo:
+          # cp resources/icon.png build_pkg/usr/share/icons/hicolor/256x256/apps/rodam.png
 
-      # 3. MAC: Cria DMG e renomeia
-      - name: Preparar Mac (Criar DMG)
+          # 4. Rodar FPM
+          fpm -s dir -t deb \
+            -n "rodam" \
+            -v "${{ env.APP_VERSION }}" \
+            -C build_pkg \
+            -p dist/Rodam-Linux-${{ env.APP_VERSION }}.deb \
+            --description "Interface FastAPI Rodam" \
+            --maintainer "Seu Nome <email@exemplo.com>" \
+            usr/
+
+      # ========================================================
+      # 3. MACOS: CREATE-DMG
+      # ========================================================
+      - name: Criar DMG MacOS
         if: runner.os == 'macOS'
         run: |
-          npm install -g create-dmg
-          create-dmg dist/Rodam.app dist/ || true
-          mv dist/Rodam\ 0.0.0.dmg dist/Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}.dmg
+          # Usamos uma action ou brew para instalar create-dmg mais robusto
+          brew install create-dmg
 
-      # --- PUBLICAR NO GITHUB RELEASES ---
-      
+          # Se tiver ícone .icns, certifique-se que o PyInstaller usou ele no .spec
+          # Ou copie manualmente para o .app se necessário
+
+          # Cria a pasta de release limpa
+          mkdir -p dist_dmg
+          
+          create-dmg \
+            --volname "Instalador Rodam" \
+            --window-pos 200 120 \
+            --window-size 800 400 \
+            --app-drop-link 600 185 \
+            "dist/Rodam-MacOS-${{ env.APP_VERSION }}.dmg" \
+            "dist/Rodam.app"
+
+      # --- PUBLICAR ---
       - name: Publicar Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
-          # O nome da Release será a Tag (ex: v1.0.2)
-          name: Versão ${{ github.ref_name }}
-          draft: false
-          prerelease: false
+          name: Versão ${{ env.APP_VERSION }}
           files: |
-            dist/Rodam-${{ matrix.TARGET_OS }}-${{ github.ref_name }}${{ matrix.FILE_EXT }}
+            dist/*.exe
+            dist/*.deb
+            dist/*.dmg

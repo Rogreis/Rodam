@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=Rodam
+Comment=Aplicação Rodam FastAPI Interface
+Exec=/usr/bin/rodam
+Icon=/usr/share/icons/hicolor/256x256/apps/rodam.png
+Terminal=false
+Type=Application
+Categories=Utility;
