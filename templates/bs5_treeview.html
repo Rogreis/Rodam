@@ -29,6 +29,7 @@
                 expandIcon: 'bi bi-chevron-right',
                 collapseIcon: 'bi bi-chevron-down',
                 emptyIcon: 'bi bi-dot',
+                highlightSearchResults: false,
                 onNodeSelected: function (event, data) {
                     // Navigate to content when node is selected
                     if (data.href && window.navigateWithCode) {
@@ -51,6 +52,7 @@
                         var pattern = searchInput.value;
                         if (pattern === "") {
                             $tree.treeview('clearSearch');
+                            $('#treeview .list-group-item').show(); // Garantir que todos voltem a ficar visíveis
                             $tree.treeview('collapseAll', { silent: true });
                             $tree.treeview('expandNode', [0, { levels: 2, silent: true }]); // Reset expansion? logic may vary
                         } else {
@@ -60,6 +62,29 @@
                                 revealResults: true,
                             };
                             var results = $tree.treeview('search', [pattern, options]);
+
+                            // Logica de Filtro Visual (Esconder nós que não são resultado nem pais de resultados)
+                            // 1. Esconder todos os nós visíveis (rendered)
+                            var allNodes = $('#treeview .list-group-item');
+                            allNodes.hide();
+
+                            // 2. Função recursiva para exibir nó e seus pais
+                            var showNodeAndParents = function (node) {
+                                var nodeId = node.nodeId;
+                                var el = $('#treeview li[data-nodeid="' + nodeId + '"]');
+                                el.show();
+
+                                if (node.parentId !== undefined) {
+                                    var parent = $tree.treeview('getNode', node.parentId);
+                                    showNodeAndParents(parent);
+                                }
+                            };
+
+                            // 3. Exibir apenas os resultados e seus caminhos
+                            results.forEach(function (node) {
+                                showNodeAndParents(node);
+                            });
+
                             console.log("Filtered tree. Results:", results);
                         }
                     }
