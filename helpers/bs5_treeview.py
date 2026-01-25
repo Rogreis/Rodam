@@ -94,6 +94,9 @@ class GenerateTreeView:
         t_iii = current_parts[2] if len(current_parts) > 2 else "PART III"
         t_iv  = current_parts[3] if len(current_parts) > 3 else "PART IV"
 
+        intro_text = "Introduction" if self.lang_id == 0 else "Introdução"
+
+        self.introduction     = TreeNodePart("Introduction", intro_text)
         self.content_part_i   = TreeNodePart("PartI", t_i)
         self.content_part_ii  = TreeNodePart("PartII", t_ii)
         self.content_part_iii = TreeNodePart("PartIII", t_iii)
@@ -141,6 +144,8 @@ class GenerateTreeView:
         template_name = "bs5_treeview.html"
 
         self._generate_root_part_nodes()
+        content_intro.append(self.introduction)
+        self._generate_children_part_nodes(self.introduction, 0, 0)
         content_intro.append(self.content_part_i)
         self._generate_children_part_nodes(self.content_part_i, 1, 31)
         content_intro.append(self.content_part_ii)
