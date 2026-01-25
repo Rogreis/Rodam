@@ -27,11 +27,8 @@ class FormatParagraph:
         self.par_str = str(self.paragraph).zfill(3)
         self.id_paragraph = f"p{self.paper_str}_{self.section_str}_{self.par_str}"
 
-        self.format_entry = helpers.globals.format_table.get_by_id(paper, section, paragraph)
-        if self.format_entry:
-            self.ident_text = "<small>" + self.format_entry.identication() + "</small>"
-        else:
-            self.ident_text = f"<small>{paper}:{section}.{paragraph}</small>"
+        self.format_entry = helpers.globals.format_table.format_identification(paper, section, paragraph)
+        self.ident_text = f"<small>{self.format_entry}</small>"
 
         self.text= text
         self.fmt= fmt
@@ -55,26 +52,36 @@ class FormatParagraphLeft(FormatParagraph):
         self.id_paragraph= self.id_paragraph + "_L"
 
     def html_text(self):
-        if self.fmt == ParagraphExportHtmlType.BookTitle:
-            return self.format_nolink_text(self.id_paragraph, f"<h2>{self.text}</h2>")
 
-        elif self.fmt == ParagraphExportHtmlType.PaperTitle:
+
+        if (self.section == 0 and self.paragraph == 0):
             return self.format_nolink_text(self.id_paragraph, f"<h3>{self.text}</h3>")
-
-        elif self.fmt == ParagraphExportHtmlType.SectionTitle:
+        elif (self.paragraph == 0):
             return self.format_nolink_text(self.id_paragraph, f"<h4>{self.text}</h4>")
-
-        elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
+        else:
             return self.format_nolink_text(self.id_paragraph, f"{self.text}", self.ident_text)
 
-        elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
-            return self.format_nolink_text(self.id_paragraph, f"<blockquote>{self.ident_text} {self.text}</blockquote>")
 
-        elif self.fmt == ParagraphExportHtmlType.Separator:
-            return f"<h3>" + SEPARATOR_TEXT + "</h3>"
+        # if self.fmt == ParagraphExportHtmlType.BookTitle:
+        #     return self.format_nolink_text(self.id_paragraph, f"<h2>{self.text}</h2>")
 
-        elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
-            return f"<h5>{self.text}</h5>"
+        # elif self.fmt == ParagraphExportHtmlType.PaperTitle:
+        #     return self.format_nolink_text(self.id_paragraph, f"<h3>{self.text}</h3>")
+
+        # elif self.fmt == ParagraphExportHtmlType.SectionTitle:
+        #     return self.format_nolink_text(self.id_paragraph, f"<h4>{self.text}</h4>")
+
+        # elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
+        #     return self.format_nolink_text(self.id_paragraph, f"{self.text}", self.ident_text)
+
+        # elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
+        #     return self.format_nolink_text(self.id_paragraph, f"<blockquote>{self.ident_text} {self.text}</blockquote>")
+
+        # elif self.fmt == ParagraphExportHtmlType.Separator:
+        #     return f"<h3>" + SEPARATOR_TEXT + "</h3>"
+
+        # elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
+        #     return f"<h5>{self.text}</h5>"
 
 class FormatParagraphRight(FormatParagraph):
     def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
@@ -83,7 +90,8 @@ class FormatParagraphRight(FormatParagraph):
         self.css_class = helpers.globals.notes_list.get_css_class(paper, section, paragraph)
 
     def _generate_github_url(self, display_text: str) -> str:
-        return f'<small><a href="javascript:void(0)" onclick="openGithubLink(\'{self.paper_str}\', \'{self.section_str}\', \'{self.par_str}\')" class="{self.css_class}" title="Edita o conteúdo deste parágrafo no github">{display_text}</a></small>'
+        linha=f'<a href="javascript:void(0)" onclick="openGithubLink(\'{self.paper_str}\', \'{self.section_str}\', \'{self.par_str}\')" class="{self.css_class}" title="Edita o conteúdo deste parágrafo no github">{display_text}</a><!-- debug -->'
+        return linha
 
     def format_link_text(self, display_text: str, text= "") -> str:
             
@@ -94,26 +102,38 @@ class FormatParagraphRight(FormatParagraph):
         return f'<div id="{self.id_paragraph}" class="p-3 mb-2 {self.css_class}" {style}>{self._generate_github_url(display_text)} {text}</div>'
 
     def html_text(self):
-        if self.fmt == ParagraphExportHtmlType.BookTitle:
-            return self.format_nolink_text(self.id_paragraph, f"<h2>{self.text}</h2>")
 
-        elif self.fmt == ParagraphExportHtmlType.PaperTitle:
+        if (self.section == 0 and self.paragraph == 0):
             return self.format_link_text(f"<h3>{self.text}</h3>")
-
-        elif self.fmt == ParagraphExportHtmlType.SectionTitle:
+        elif (self.paragraph == 0):
             return self.format_link_text(f"<h4>{self.text}</h4>")
-
-        elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
+        else:
             return self.format_link_text(self.ident_text, self.text)
 
-        elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
-            return self.format_link_text(f"<blockquote>{self.ident_text} {self.text}</blockquote>")
 
-        elif self.fmt == ParagraphExportHtmlType.Separator:
-            return f"<h3>" + SEPARATOR_TEXT + "</h3>"
+
+        # if self.fmt == ParagraphExportHtmlType.BookTitle:
+        #     return self.format_nolink_text(self.id_paragraph, f"<h2>{self.text}</h2>")
+
+        # elif self.fmt == ParagraphExportHtmlType.PaperTitle:
+        #     return self.format_link_text(f"<h3>{self.text}</h3>")
+
+        # elif self.fmt == ParagraphExportHtmlType.SectionTitle:
+        #     return self.format_link_text(f"<h4>{self.text}</h4>")
+
+        # elif self.fmt == ParagraphExportHtmlType.NormalParagraph:
+        #     # print("NormalParagraph: " + self.text)
+        #     return self.format_link_text(self.ident_text, self.text)
+
+        # elif self.fmt == ParagraphExportHtmlType.IdentedParagraph:
+        #     print("IndentedParagraph: " + self.text)
+        #     return self.format_link_text(f"<blockquote>{self.ident_text} {self.text}</blockquote>")
+
+        # elif self.fmt == ParagraphExportHtmlType.Separator:
+        #     return f"<h3>" + SEPARATOR_TEXT + "</h3>"
             
-        elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
-            return f"<h5>{self.text}</h5>"
+        # elif self.fmt == ParagraphExportHtmlType.PartIntroduction:
+        #     return f"<h5>{self.text}</h5>"
 
 
 

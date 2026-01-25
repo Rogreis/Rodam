@@ -743,6 +743,27 @@ async def window_loaded():
         "current_query": global_config.query
     }
 
+@app.post("/api/check_semantic_resources")
+async def check_semantic_resources_endpoint():
+    try:
+        from helpers.github_requests import GitHubRequests
+        # Run in thread/background to avoid blocking? 
+        # The user said "isto pode demorar minutos", so we probably shouldn't block the async loop if it's synchronous IO.
+        # But 'requests' is synchronous.
+        # Ideally we'd use run_in_executor or similar.
+        # For simplicity in this stack, we'll just run it. The user interface "alert" is displayed.
+        
+        downloader = GitHubRequests()
+        success, errors = downloader.check_semantic_files()
+        
+        if success:
+             return {"status": "success"}
+        else:
+             return {"status": "error", "message": "; ".join(errors)}
+    except Exception as e:
+        logger.error(f"Error checking semantic resources: {e}")
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
 
 # --- Endpoints ---
 
@@ -854,9 +875,9 @@ if __name__ == '__main__':
     time.sleep(1.5)
     
     # Start WebView
-    webview.create_window('Rodam', 'http://127.0.0.1:5000', maximized=True)
+    webview.create_window('Rodam', 'http://127.0.0.1:5000', maximized=True, text_select=True)
 
     # 2. O Controle do "Inspecionar Elemento"
     # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.
     # debug=False (Produção): O botão direito é desativado ou não mostra o menu de inspeção. O usuário vê apenas o app, sem saber como ele foi feito.
-    webview.start(debug=True)
+    webview.start(debug=False)

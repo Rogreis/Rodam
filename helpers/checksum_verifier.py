@@ -1,7 +1,6 @@
 import os
-import json
 import hashlib
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List, Any
 
 import sys
 # Fix path to run directly if executed as main script
@@ -16,17 +15,16 @@ from helpers.globals import TUB_FILES_DIR
 
 class ChecksumVerifier:
     """
-    Class responsible for verifying file checksums against a JSON manifest.
+    Class responsible for verifying file checksums against a provided manifest.
     """
     
     def __init__(self, data_dir: str = TUB_FILES_DIR):
         self.data_dir = data_dir
-        self.manifest_file = os.path.join(self.data_dir, "rodam_available.json")
 
     def _calculate_sha256(self, file_path: str) -> str:
         """Calculates the SHA-256 checksum of a file."""
         if not os.path.exists(file_path):
-            return None
+            return ""
         
         sha256_hash = hashlib.sha256()
         try:
@@ -37,67 +35,49 @@ class ChecksumVerifier:
             return sha256_hash.hexdigest()
         except Exception as e:
             print(f"Error calculating checksum for {file_path}: {e}")
-            return None
+            return ""
 
-    def verify_files(self) -> Tuple[bool, bool, bool]:
+    def verify_files(self, manifest_items: List[Any]) -> Dict[str, bool]:
         """
-        Reads the manifest file and verifies the checksums of the 3 specific files:
-        1. FormatTable.gz
-        2. TR000.zip
-        3. TR002.zip
+        Verifies the checksums of files listed in the manifest items.
+
+        Args:
+            manifest_items: List of RodamManifestItem objects (or objects with FileName, FilePath, Hash256 attributes).
 
         Returns:
-            Tuple[bool, bool, bool]: A tuple indicating (valid_format_table, valid_tr000, valid_tr002)
+            Dict[str, bool]: A dictionary mapping FileName to validity status (True/False).
         """
-        # Default results (False implies missing or invalid)
-        results = {
-            "FormatTable.gz": False,
-            "TR000.zip": False,
-            "TR002.zip": False
-        }
+        results = {}
         
-        if not os.path.exists(self.manifest_file):
-            print(f"Manifest file not found: {self.manifest_file}")
-            return (False, False, False)
-            
-        try:
-            with open(self.manifest_file, "r", encoding="utf-8") as f:
-                manifest_data = json.load(f)
-        except Exception as e:
-            print(f"Error reading manifest file: {e}")
-            return (False, False, False)
+        if not manifest_items:
+            print("No manifest items provided for verification.")
+            return results
 
-        # Check each file
-        target_files = ["FormatTable.gz", "TR000.zip", "TR002.zip"]
-        
-        for filename in target_files:
-            expected_checksum = manifest_data.get(filename.replace('.', ''))
+        for item in manifest_items:
+            # Construct full local path using data_dir, item's FilePath, and FileName
+            # item.FilePath might be empty strings or relative paths like "semantic\model"
+            full_path = os.path.join(self.data_dir, item.FilePath, item.FileName)
             
-            if not expected_checksum:
-                print(f"Checksum for {filename} not found in manifest.")
-                results[filename] = False
+            # Calculate local checksum
+            if not os.path.exists(full_path):
+                # If optional and missing, maybe valid? But for sync purposes, we usually assume missing = needs download.
+                # If the goal is "is the file correct on disk", missing means False.
+                results[item.FileName] = False
                 continue
-                
-            file_path = os.path.join(self.data_dir, filename)
-            calculated_checksum = self._calculate_sha256(file_path)
+
+            calculated_checksum = self._calculate_sha256(full_path)
             
-            if calculated_checksum == expected_checksum:
-                results[filename] = True
+            if calculated_checksum == item.Hash256:
+                results[item.FileName] = True
             else:
-                print(f"Checksum mismatch for {filename}. Expected: {expected_checksum}, Got: {calculated_checksum}")
-                results[filename] = False
+                print(f"Checksum mismatch for {item.FileName}. Expected: {item.Hash256}, Got: {calculated_checksum}")
+                results[item.FileName] = False
                 
-        return (results["FormatTable.gz"], results["TR000.zip"], results["TR002.zip"])
+        return results
 
 if __name__ == "__main__":
     # Test routine
     verifier = ChecksumVerifier()
-    print(f"Verifying files in: {verifier.data_dir}")
-    
-    # Create dummy files for testing if they don't exist (Optional, but good for self-contained test)
-    # Note: In a real scenario, these files should exist.
-    
-    r1, r2, r3 = verifier.verify_files()
-    print(f"FormatTable.gz valid: {r1}")
-    print(f"TR000.zip valid: {r2}")
-    print(f"TR002.zip valid: {r3}")
+    print(f"ChecksumVerifier instantiating for dir: {verifier.data_dir}")
+    # Cannot verify without items passed in.
+

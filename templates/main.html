@@ -1017,11 +1017,45 @@
             if (navItem) {
                 if (show) {
                     navItem.classList.remove('d-none');
+                    checkSemanticFiles();
                 } else {
                     navItem.classList.add('d-none');
                 }
             }
             saveSettings();
+        }
+
+        function checkSemanticFiles() {
+            const switchContainer = document.getElementById('semanticsSwitch').parentElement;
+
+            // Check if alert already exists, remove it
+            const existingAlert = document.getElementById('semanticDownloadAlert');
+            if (existingAlert) existingAlert.remove();
+
+            const alertDiv = document.createElement('div');
+            alertDiv.id = 'semanticDownloadAlert';
+            alertDiv.className = 'alert alert-info mt-2';
+            alertDiv.textContent = "Baixando arquivo da semântica, isto pode demorar minutos...";
+            switchContainer.appendChild(alertDiv);
+
+            fetch('/api/check_semantic_resources', { method: 'POST' })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        alertDiv.className = 'alert alert-success mt-2';
+                        alertDiv.textContent = "Arquivos de semântica verificados/baixados com sucesso!";
+                        // Remove after a few seconds
+                        setTimeout(() => { if (alertDiv) alertDiv.remove(); }, 3000);
+                    } else {
+                        alertDiv.className = 'alert alert-danger mt-2';
+                        alertDiv.textContent = "Erro ao baixar arquivos de semântica: " + data.message;
+                    }
+                })
+                .catch(err => {
+                    alertDiv.className = 'alert alert-danger mt-2';
+                    alertDiv.textContent = "Erro de conexão.";
+                    console.error(err);
+                });
         }
 
         function setHighlightColor(color) {

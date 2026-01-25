@@ -2,6 +2,7 @@ import os
 import sys
 import traceback
 import inspect
+from rodam_exception import RodamException
 
 # Define resource_path and get_data_dir first as they are fundamental
 
@@ -45,12 +46,6 @@ def log_exception(e: Exception, msg: str = ""):
         # Importante para evitar ciclos de referência no Garbage Collector
         del frame
 
-class RodamException(Exception):
-    """
-    Exceção base personalizada para erros internos da aplicação Rodam.
-    """
-    pass
-
 def resource_path(relative_path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     try:
@@ -73,7 +68,7 @@ def get_data_dir():
 TUB_FILES='TUB_Files'
 CONFIG_FILE = os.path.join(get_data_dir(), 'Rodam.json')
 TUB_FILES_DIR = os.path.join(get_data_dir(), 'TUB_Files')
-MODEL_PREFIX = os.path.join(get_data_dir(), 'tub_modelo')
+MODEL_PREFIX = os.path.join(get_data_dir(), 'TUB_Files', 'semantic', 'model', 'tub_modelo')
 
 # Ensure config dir exists
 if not os.path.exists(get_data_dir()):
@@ -107,15 +102,36 @@ def initialize():
     
     print(">>> Initializing Globals...")
 
+    # Check Semantic Files Existence & Update Config
+    from helpers.github_requests import GitHubRequests
+    gh = GitHubRequests()
+
+    try:
+        # Sync data files (format and translations)
+        # Isso pode demorar (download), por isso é bom estar no init controlado
+        gh.sync_data_files()
+    except RodamException as e:
+        print(f"[ERROR] Sync Failed: {e}")
+        # Could exit or continue partial? User said "mais forte", usually implies handling.
+        # But if core data missing, maybe bad.
+        # However, let's just log and continue for now as 'gh.check_semantic_files_existence' follows.
+
+
+    if not gh.check_semantic_files_existence():
+        print(">>> Arquivos de semântica ausentes. Desabilitando recurso 'ShowSemantics'.")
+        # Ensure config is loaded
+        if 'global_config' in globals() and global_config:
+            if global_config.ShowSemantics:
+                global_config.ShowSemantics = False
+                global_config.save()
+    else:
+        print(">>> Arquivos de semântica presente.")
+
     # Imports locais para evitar dependências circulares precoces
     from helpers.translations import TTranslations
     from helpers.format_table import FormatTable
     from helpers.notes import NotesList
     
-    # Check files (Download/Verify)
-    # Isso pode demorar (download), por isso é bom estar no init controlado
-    TTranslations.check_files(TUB_FILES_DIR)
-
     # Initialize Managers
     translations_manager = TTranslations(TUB_FILES_DIR)
     
@@ -134,4 +150,5 @@ def initialize():
     notes_list = NotesList(NOTES_FILE)
     print(f"Lista de Notas carregada de: {NOTES_FILE}")
     
+
     print(">>> Globals Initialized.")
