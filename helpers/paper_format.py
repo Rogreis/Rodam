@@ -16,10 +16,12 @@ from typing import List, Tuple, Optional, Union
 SEPARATOR_TEXT= "* * * * * *"
 
 class FormatParagraph:
-    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, page: int = 0, line: int = 0, is_highlighted: bool = False):
         self.paper = paper
         self.section = section
         self.paragraph = paragraph
+        self.page = page
+        self.line = line
         self.is_highlighted = is_highlighted
 
         self.paper_str = str(self.paper).zfill(3)
@@ -27,7 +29,7 @@ class FormatParagraph:
         self.par_str = str(self.paragraph).zfill(3)
         self.id_paragraph = f"p{self.paper_str}_{self.section_str}_{self.par_str}"
 
-        self.format_entry = helpers.globals.format_table.format_identification(paper, section, paragraph)
+        self.format_entry = helpers.globals.format_table.format_identification(paper, section, paragraph, self.page, self.line)
         self.ident_text = f"<small>{self.format_entry}</small>"
 
         self.text= text
@@ -47,8 +49,8 @@ class FormatParagraph:
         return f'<div id="{id_paragraph}" class="p-3 mb-2" {style}>{ident_text}{text}</div>'
 
 class FormatParagraphLeft(FormatParagraph):
-    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
-        super().__init__(paper, section, paragraph, text, fmt, is_highlighted)
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, page: int = 0, line: int = 0, is_highlighted: bool = False):
+        super().__init__(paper, section, paragraph, text, fmt, page, line, is_highlighted)
         self.id_paragraph= self.id_paragraph + "_L"
 
     def html_text(self):
@@ -84,8 +86,8 @@ class FormatParagraphLeft(FormatParagraph):
         #     return f"<h5>{self.text}</h5>"
 
 class FormatParagraphRight(FormatParagraph):
-    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, is_highlighted: bool = False):
-        super().__init__(paper, section, paragraph, text, fmt, is_highlighted)
+    def __init__(self, paper: int, section: int, paragraph: int, text: str, fmt:int, page: int = 0, line: int = 0, is_highlighted: bool = False):
+        super().__init__(paper, section, paragraph, text, fmt, page, line, is_highlighted)
         self.id_paragraph= self.id_paragraph + "_R"
         self.css_class = helpers.globals.notes_list.get_css_class(paper, section, paragraph)
 
@@ -230,14 +232,16 @@ class FormatPaper:
         fmt_val = p_en.format if p_en else 0
         fmt = ParagraphExportHtmlType(fmt_val)
 
-        p_left= FormatParagraphLeft(paper, section, paragraph, text_left, fmt, is_target)
-        p_right= FormatParagraphRight(paper, section, paragraph, text_right, fmt, is_target)
+        page = p_en.page if p_en and p_en.page is not None else 0
+        line = p_en.line if p_en and p_en.line is not None else 0
+        
+        p_left= FormatParagraphLeft(paper, section, paragraph, text_left, fmt, page, line, is_target)
+        p_right= FormatParagraphRight(paper, section, paragraph, text_right, fmt, page, line, is_target)
 
         return (p_left.html_text(), p_right.html_text())
 
     def paper_display(self, code) -> Optional[List[Tuple[str, str]]]:
         # Resolve PaperNo/Triplet from item
-        print(f"DEBUG: paper_display called with item={code!r} type={type(code)}")
         
         result = []  # Returned data collection
 

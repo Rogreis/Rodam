@@ -64,12 +64,16 @@ class FormatTable:
     def get_all(self) -> List['FormatEntry']:
         return [FormatEntry(d) for d in self._data]
 
-    def format_identification(self, paper: int, section: int, paragraph_no: int):
+    def format_identification(self, paper: int, section: int, paragraph_no: int, page: int = 0, line: int = 0):
         """
         Retrieves a format rule by generating the FormatIdentity key: "<paper>:<section>-<paragraphNo>".
-        Example: "1:2-3"
+        Example: "1:2-3" or "1:2-3 (12.4)" if page/line provided.
         """
         ident= f"{paper}:{section}-{paragraph_no}"
+        
+        if page > 0 and line > 0:
+            ident += f" <small class='text-muted'>({page}.{line})</small>"
+            
         return ident
 
 def main():
