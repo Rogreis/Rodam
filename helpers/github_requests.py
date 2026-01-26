@@ -184,61 +184,62 @@ class GitHubRequests:
             bool: True se o download foi bem-sucedido, False caso contrário (ex: arquivo não está no manifesto ou erro de download).
         """
         # Find the item in the manifest
-        # We search case-insensitively or exactly? Typically exact match based on manifest definition.
         target_item = next((item for item in self.manifest_items if item.FileName == file_name), None)
         
         if not target_item:
-            print(f"Arquivo '{file_name}' não encontrado no manifesto. Impossível baixar.")
+            print(f"Erro: Arquivo {file_name} não encontrado no manifesto.")
             return False
             
-        destination_path = os.path.join(self.download_dir, target_item.FilePath, target_item.FileName)
-        print(f"Solicitado download específico de: {file_name}")
+        # Determine full path
+        if target_item.FilePath:
+            dest_dir = os.path.join(self.download_dir, target_item.FilePath)
+        else:
+            dest_dir = self.download_dir
+            
+        os.makedirs(dest_dir, exist_ok=True)
+        full_path = os.path.join(dest_dir, target_item.FileName)
         
-        # We need the relative path for the URL construction
-        relative_path = target_item.get_relative_path()
-        return self._download_file(relative_path, destination_path)
+        return self._download_file(target_item.FileName, full_path, target_item.FilePath)
 
-    def check_semantic_files(self) -> tuple:
+    def check_semantic_files(self) -> "tuple[bool, list[str]]":
         """
-        Verifica e baixa os arquivos necessários para a busca semântica.
-        Arquivos: 'tub_modelo_meta.pkl' e 'tub_modelo.index'
+        Verifica se os arquivos necessários para a busca semântica estão presentes e válidos.
+        Se não estiverem, tenta baixá-los.
         
         Returns:
-            (success: bool, errors: list[str])
+            tuple[bool, list[str]]: (Sucesso, Lista de Erros)
         """
         required_files = ["tub_modelo_meta.pkl", "tub_modelo.index"]
         errors = []
         
-        print("--- Verificando Arquivos de Semântica ---")
+        # Filter manifest for semantic files
+        target_items = [item for item in self.manifest_items if item.FileName in required_files]
         
-        # We need to make sure manifest is loaded
-        if not self.manifest_items:
-            self._fetch_manifest()
-            if not self.manifest_items:
-                 return False, ["Falha ao baixar manifesto."]
+        if not target_items:
+            return False, ["Manifesto não contém arquivos de semântica."]
 
-        # Create a partial verification for just these files
+        # Verify items
         verifier = ChecksumVerifier(self.download_dir)
-        # Filter manifest items for these files
-        semantic_items = [item for item in self.manifest_items if item.FileName in required_files]
+        results = verifier.verify_files(target_items)
         
-        if len(semantic_items) != len(required_files):
-             missing = set(required_files) - set(i.FileName for i in semantic_items)
-             return False, [f"Arquivos não encontrados no manifesto: {missing}"]
-             
-        results = verifier.verify_files(semantic_items)
-        
-        for item in semantic_items:
-             is_valid = results.get(item.FileName, False)
-             if is_valid:
-                 print(f"Semântica: {item.FileName} já está correto.")
-             else:
-                 print(f"Semântica: Baixando {item.FileName}...")
-                 success = self.download_specific_file(item.FileName)
-                 if not success:
-                     errors.append(f"Falha ao baixar {item.FileName}")
-        
-        return (len(errors) == 0), errors
+        for item in target_items:
+            is_valid = results.get(item.FileName, False)
+            if not is_valid:
+                print(f"[Semantic Check] Arquivo ausente ou inválido: {item.FileName}. Iniciando download...")
+                try:
+                    success = self.download_specific_file(item.FileName)
+                    if not success:
+                        errors.append(f"Falha ao baixar {item.FileName}")
+                except Exception as e:
+                    errors.append(f"Erro ao baixar {item.FileName}: {str(e)}")
+            else:
+                 print(f"[Semantic Check] Arquivo {item.FileName} verificado OK.")
+                 
+        if errors:
+            return False, errors
+            
+        return True, []
+
 
     def check_semantic_files_existence(self) -> bool:
         """
@@ -249,34 +250,27 @@ class GitHubRequests:
         Returns:
             bool: True se ambos existirem, False caso contrário.
         """
-        required_files = [
-            ("tub_modelo_meta.pkl", "semantic/model"), 
-            ("tub_modelo.index", "semantic/model")
-        ]
+        required_files = ["tub_modelo_meta.pkl", "tub_modelo.index"]
         
-        # Local paths logic: We need to know where they should be.
-        # Ideally we'd look up in manifest, but for pure existence check we assume standard paths 
-        # or we reuse manifest if loaded. Use manifest if available, else guess?
-        # The user request says "ver se os arquivos da semântica existem".
-        # Let's rely on manifest to be safe about paths, or just hardcode checking the download_dir recursive?
-        # The manifest items for these are:
-        # FileName: tub_modelo_meta.pkl, FilePath: semantic\model
-        
-        # Checking manifest first
+        # Load manifest if needed
         if not self.manifest_items:
              self._fetch_manifest()
-             
-        for filename, _ in required_files:
-             # Find item
+
+        # Check each required file
+        for filename in required_files:
+             # Find item in manifest to get correct path
              item = next((i for i in self.manifest_items if i.FileName == filename), None)
+             
              if item:
                  full_path = os.path.join(self.download_dir, item.FilePath, item.FileName)
-                 if not os.path.exists(full_path):
-                     print(f"Semântica: Arquivo ausente detectado: {full_path}")
-                     return False
              else:
                  # Fallback if manifest fails or file not in it (unlikely)
-                 pass
+                 # Assume standard structure if not found
+                 full_path = os.path.join(self.download_dir, "semantic", "model", filename)
+                 
+             if not os.path.exists(full_path):
+                 print(f"Semântica: Arquivo ausente: {filename}")
+                 return False
 
         return True
 
