@@ -131,22 +131,26 @@ class RodamSearch:
         return self.build_index(lang)
 
     def search(self, query_str: str, lang: int = 2, max_results: int = 100):
-        # Validate/Force restricted values 0 or 2
+        # Allow string '0' or '2' just in case
+        try:
+            lang = int(lang)
+        except:
+            lang = 2
+
+        # Validate
         if lang not in [0, 2]:
-            # Fallback or strict? 
-            # User said "possiveis valores sejam 0 ou 2, apenas estes."
-            # We default to 2 (PT) if invalid
+            logger.warning(f"Invalid language ID {lang} passed to search. Defaulting to 2 (PT).")
             lang = 2
             
         try:
+            # Ensure index exists (might take a moment if rebuilding)
             ix = self.ensure_index(lang)
             results_data = []
             
             with ix.searcher() as searcher:
+                # Use query parser
                 qp = QueryParser("content", ix.schema)
                 q = qp.parse(query_str)
-
-                index_path = self.get_index_path(lang)
                 
                 # Perform search
                 results = searcher.search(q, limit=max_results)
@@ -158,10 +162,8 @@ class RodamSearch:
                         section = int(id_parts[1])
                         
                         # Generate highlighted snippet (HTML)
-                        # The default formatter uses <b> and </b> tags with classes match term0 etc.
                         highlighted = hit.highlights("content", top=3) 
                         
-                        # If highlights returns empty (e.g. matched on hidden field or weirdness), fallback to text
                         if not highlighted:
                             highlighted = hit['content'][:250] + "..." if len(hit['content']) > 250 else hit['content']
                         
@@ -169,7 +171,7 @@ class RodamSearch:
                             "id": hit['id'],
                             "title": hit.get('title', hit['id']),
                             "text": hit['content'],
-                            "snippet_html": highlighted, # New field with HTML highlights
+                            "snippet_html": highlighted,
                             "paper": paper,
                             "section": section,
                             "paragraph": int(id_parts[2])
@@ -177,7 +179,10 @@ class RodamSearch:
             return results_data
             
         except Exception as e:
-            logger.debug(f"Search failed: {e}")
+            import traceback
+            traceback.print_exc()
+            logger.error(f"Search failed: {e}")
+            print(f"ERROR executing search: {e}")
             return []
 
 if __name__ == "__main__":

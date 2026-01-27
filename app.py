@@ -410,23 +410,32 @@ async def search_endpoint(request: Request):
         # Note: global_config.query is updated by helper.
         
         if not global_config.query:
+            print("Search Endpoint: Empty Query")
             return []
 
-        lang_map = {1: 'pt', 2: 'en'}
-        lang_str = lang_map.get(global_config.LanguageIdToSearch, 'pt')
+        # Fix: Pass integer directly. 
+        # Frontend sends 0 (EN) or 2 (PT).
+        # helper.process_form_data casts to int.
+        lang_id = global_config.LanguageIdToSearch
+        
+        print(f"Executing Search (POST). Query='{global_config.query}' LangID={lang_id}")
         
         # Lazy Init Search Engine
         global search_engine
         if search_engine is None:
              search_engine = RodamSearch()
 
-        return search_engine.search(
+        results = search_engine.search(
             query_str=global_config.query,
-            lang=lang_str,
+            lang=lang_id,
             max_results=global_config.SearchMaxResults
         )
+        print(f"Search (POST) returned {len(results)} results.")
+        return results
 
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         logger.error(f"Error in search endpoint: {e}")
         return JSONResponse(status_code=500, content={"error": str(e)})
 

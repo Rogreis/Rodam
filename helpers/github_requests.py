@@ -199,7 +199,7 @@ class GitHubRequests:
         os.makedirs(dest_dir, exist_ok=True)
         full_path = os.path.join(dest_dir, target_item.FileName)
         
-        return self._download_file(target_item.FileName, full_path, target_item.FilePath)
+        return self._download_file(target_item.get_relative_path(), full_path)
 
     def check_semantic_files(self) -> "tuple[bool, list[str]]":
         """

@@ -41,34 +41,41 @@ function toggleSearchScope() {
 }
 
 async function performSearch() {
+    console.log("performSearch() called");
     const form = document.getElementById('searchForm');
-    if (!form) return;
+    if (!form) {
+        console.error("Search form not found!");
+        return;
+    }
 
     // Check query validity
     const queryInput = document.getElementById('modalSearchInput');
-    if (!queryInput.value.trim()) {
+    const queryVal = queryInput.value.trim();
+    if (!queryVal) {
         alert("Por favor, digite algo para buscar.");
         return;
     }
 
     // Capture Form Data
     const formData = new FormData(form);
-
-    // Explicitly add checkbox values as true/false or similar, 
-    // because FormData only includes checked boxes. Unchecked are missing.
-    // Our Python helper handles missing boolean keys as False (default), 
-    // EXCEPT that we need to transmit 'true' for checked ones.
-    // FormData sends 'on' for checkboxes by default if no value attribute.
-    // Let's create a plain object.
     const payload = {};
     formData.forEach((value, key) => {
         payload[key] = value;
     });
 
-    // Handle checkboxes specifically if they need to be explicit booleans?
-    // The Python helper `get_bool` handles 'on' as True.
-    // Missing keys are distinct.
-    // So standard FormData -> Object mapping is sufficient for 'checked=on'.
+    // Validar booleans que escapam do FormData
+    const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(cb => {
+        payload[cb.name] = cb.checked;
+    });
+
+    // Validar scopeType radio
+    const scopeEl = form.querySelector('input[name="scopeType"]:checked');
+    if (scopeEl) {
+        payload['scopeType'] = scopeEl.value;
+    }
+
+    console.log("Sending Search Payload:", payload);
 
     try {
         const response = await fetch('/search', {
@@ -79,6 +86,8 @@ async function performSearch() {
             body: JSON.stringify(payload)
         });
 
+        console.log("Search POST response status:", response.status);
+
         if (!response.ok) {
             let errorMsg = 'Erro ao salvar busca';
             try {
@@ -86,22 +95,33 @@ async function performSearch() {
                 if (errJson.error) errorMsg = errJson.error;
                 else if (errJson.message) errorMsg = errJson.message;
             } catch (e) { }
+            console.error("Search POST failed:", errorMsg);
             throw new Error(errorMsg);
         }
 
-        // Hide Modal
+        // Hide Modal Forcefully
         const el = document.getElementById('searchResultsModal');
-        const modal = bootstrap.Modal.getInstance(el);
+        // Try BS5 instance
+        var modal = bootstrap.Modal.getInstance(el);
         if (modal) {
             modal.hide();
+        } else {
+            // Fallback
+            console.warn("Bootstrap Modal instance not found, hiding manually.");
+            el.classList.remove('show');
+            el.style.display = 'none';
+            document.body.classList.remove('modal-open');
+            const backpack = document.querySelector('.modal-backdrop');
+            if (backpack) backpack.remove();
         }
 
         // Trigger reload of the search page.
+        console.log("Reloading content with action=perform_search");
         window.justPerformedSearch = true;
         loadContent('/search?action=perform_search');
 
     } catch (error) {
-        console.error(error);
+        console.error("Error in performSearch:", error);
         alert(`Erro ao iniciar busca: ${error.message}`);
     }
 }
