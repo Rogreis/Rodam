@@ -863,6 +863,14 @@ if __name__ == '__main__':
     # Must be called before any major component usage
     helpers.globals.initialize()
 
+    # Close Splash Screen (if exists)
+    try:
+        import pyi_splash
+        pyi_splash.update_text('UI Loaded...')
+        pyi_splash.close()
+    except ImportError:
+        pass
+
     # Init Semantic Search Engine (Lazy - it loads on first 'buscar')
     global_config.semantic_engine = SubjectSearch(MODEL_PREFIX)
 
