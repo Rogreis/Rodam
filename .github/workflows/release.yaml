@@ -48,6 +48,7 @@ jobs:
       - name: Instalar Deps Linux
         if: runner.os == 'Linux'
         run: |
+          sudo add-apt-repository universe
           sudo apt-get update
           sudo apt-get install -y \
             libgtk-3-dev \
@@ -59,9 +60,7 @@ jobs:
             python3-setuptools \
             libgirepository1.0-dev \
             libcairo2-dev \
-            pkg-config \
-            gir1.2-gtk-3.0 \
-            gir1.2-webkit-4.1
+            pkg-config
 
           # Instalar FPM (para criar o .deb)
           sudo gem install fpm
@@ -75,7 +74,15 @@ jobs:
       # --- BUILD PYINSTALLER (Comum a todos) ---
       # Nota: Adicionei --windowed para não abrir terminal preto no Windows
       - name: Build com PyInstaller
-        run: pyinstaller Rodam.spec
+        shell: bash
+        run: |
+          # Desabilita Splash no MacOS (não suportado) modificando o .spec dinamicamente
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+             sed -i '' 's/splash = Splash(/splash = None # Splash(/' Rodam.spec
+             sed -i '' 's/splash,/# splash,/' Rodam.spec
+             sed -i '' 's/splash.binaries,/# splash.binaries,/' Rodam.spec
+          fi
+          pyinstaller Rodam.spec
 
       # ========================================================
       # 1. WINDOWS: INNO SETUP
