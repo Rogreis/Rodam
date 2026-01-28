@@ -28,3 +28,21 @@ class RodamException(Exception):
         # 3. Encerra a aplicação
         print("🛑 Encerrando a aplicação...")
         sys.exit(1)
+
+    @staticmethod
+    def warning(message: str):
+        """
+        Registra um aviso formatado no console e log, SEM encerrar a aplicação.
+        """
+        # 1. Impressão na Console com destaque
+        print(f"\n{'-'*60}")
+        print(f"⚠️  AVISO (RodamException)")
+        print(f"➡️  {message}")
+        print(f"{'-'*60}\n")
+        
+        # 2. Log do Aviso
+        try:
+            logger = logging.getLogger("Rodam")
+            logger.warning(f"Rodam Warning: {message}")
+        except Exception:
+            pass

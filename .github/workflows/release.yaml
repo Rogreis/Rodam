@@ -48,12 +48,26 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev
+          sudo apt-get install -y \
+            libgtk-3-dev \
+            libwebkit2gtk-4.0-dev \
+            build-essential \
+            libssl-dev \
+            libffi-dev \
+            python3-dev \
+            python3-setuptools \
+            libgirepository1.0-dev \
+            libcairo2-dev \
+            pkg-config \
+            gir1.2-gtk-3.0 \
+            gir1.2-webkit2-4.0
+
           # Instalar FPM (para criar o .deb)
           sudo gem install fpm
 
       - name: Instalar Python Requirements
         run: |
+          pip install --upgrade pip setuptools wheel
           pip install -r requirements.txt
           pip install pyinstaller Pillow
 
@@ -67,11 +81,10 @@ jobs:
       # ========================================================
       - name: Criar Instalador Windows (Inno Setup)
         if: runner.os == 'Windows'
-        uses: Minionguyjosh/inno-setup-action@v1.2.2
-        with:
-          path: setup.iss
-          # Passamos a versão limpa para o script .iss
-          options: /DMyAppVersion="${{ env.APP_VERSION }}"
+        shell: cmd
+        run: |
+          choco install innosetup
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss /DMyAppVersion="${{ env.APP_VERSION }}"
 
       # O Inno Setup (configurado acima) já deve salvar em dist/Rodam-Setup-Windows-X.X.exe
 
@@ -93,8 +106,9 @@ jobs:
           # 3. Copiar atalho (.desktop) e ícone
           # Assumindo que você criou o rodam.desktop na raiz
           cp rodam.desktop build_pkg/usr/share/applications/
-          # Se tiver ícone, descomente abaixo:
-          # cp resources/icon.png build_pkg/usr/share/icons/hicolor/256x256/apps/rodam.png
+          
+          # Copiar ícone (resources/icon.png -> rodam.png)
+          cp resources/icon.png build_pkg/usr/share/icons/hicolor/256x256/apps/rodam.png
 
           # 4. Rodar FPM
           fpm -s dir -t deb \

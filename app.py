@@ -21,6 +21,7 @@ from helpers.config import Config
 from helpers.paper_format import FormatPaper
 from helpers.bs5_treeview import GenerateTreeView
 from helpers.html_content_generator import HtmlContentGenerator
+from rodam_exception import RodamException
 
 # Import UI Fragments
 from ui_fragments import (
@@ -78,7 +79,7 @@ def get_application_title(context_code: str = None) -> str:
     """
     import helpers.globals
     from helpers.translations import Paper
-    print("get_application_title Context code: ", context_code)
+    logger.info("get_application_title Context code: ", context_code)
 
     if not context_code:
         return 'Rodam'
@@ -104,7 +105,7 @@ def get_application_title(context_code: str = None) -> str:
         else:
             return 'Rodam'
     except Exception as e:
-        print(f"Error generating title: {e}")
+        RodamException.warning(f"Error generating title: {e}")
         return 'Rodam'
 
 
@@ -170,7 +171,6 @@ async def get_toc_ui(request: Request):
     # 2. Renderiza o template passando 'tree_data'
     # toc_template = templates.get_template("bs5_treeview.html")
     # left_content = toc_template.render({"request": request, "tree_data": data})
-    print("Generating ToC")
     # Determine initial node from LastSelectedParagraph
     from helpers.globals import global_config
     initial_node = None
@@ -281,7 +281,7 @@ async def navigate_to_paragraph(code: str, request: Request):
         
         # Check if paper changed
         if new_paper_id != global_config.CurrentPaper:
-            print(f"Paper changed from {global_config.CurrentPaper} to {new_paper_id}. Updating ToC.")
+            logger.info(f"Paper changed from {global_config.CurrentPaper} to {new_paper_id}. Updating ToC.")
             global_config.CurrentPaper = new_paper_id
             global_config.save()
             
@@ -355,7 +355,6 @@ async def save_settings(settings: SettingsModel):
     except Exception as e:
         import traceback
         traceback.print_exc() # Print full stack trace to console
-        print(f"Error saving settings: {e}")
         return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
 
 @app.get("/search")
@@ -410,15 +409,12 @@ async def search_endpoint(request: Request):
         # Note: global_config.query is updated by helper.
         
         if not global_config.query:
-            print("Search Endpoint: Empty Query")
             return []
 
         # Fix: Pass integer directly. 
         # Frontend sends 0 (EN) or 2 (PT).
         # helper.process_form_data casts to int.
         lang_id = global_config.LanguageIdToSearch
-        
-        print(f"Executing Search (POST). Query='{global_config.query}' LangID={lang_id}")
         
         # Lazy Init Search Engine
         global search_engine
@@ -430,7 +426,6 @@ async def search_endpoint(request: Request):
             lang=lang_id,
             max_results=global_config.SearchMaxResults
         )
-        print(f"Search (POST) returned {len(results)} results.")
         return results
 
     except Exception as e:
@@ -606,7 +601,7 @@ async def semantic_search_endpoint(req: SemanticSearchRequest):
                      "timestamp": "" # simplified
                  }, f, indent=4)
         except Exception as save_err:
-             print(f"Error saving semantic results: {save_err}")
+             RodamException.warning(f"Error saving semantic results: {save_err}")
              
         # ... rest of function ...
         
@@ -733,7 +728,6 @@ async def window_loaded():
     """
     Called by the frontend when the main window/local is fully loaded.
     """
-    print("»»» Frontend reports: Window Loaded")
     logger.info("Frontend reports: Window Loaded")
     from helpers.globals import global_config
     
@@ -789,7 +783,6 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
 
     # 1. Verificar LastVisitedPage para restaurar a última página visitada
     # Se o usuário acessou a raiz (p="indexToc"), tentamos restaurar o estado salvo.
-    print(f"»»»» LastVisitedPage: {p}")
     if p == "indexToc":
         if config.LastVisitedPage and config.LastVisitedPage != "settings":
              # Restaura a página salva (ex: "indexToc", "indexSubject", "search")
@@ -873,7 +866,7 @@ if __name__ == '__main__':
     # Init Semantic Search Engine (Lazy - it loads on first 'buscar')
     global_config.semantic_engine = SubjectSearch(MODEL_PREFIX)
 
-    print("Starting Rodam (FastAPI + Whoosh)...")
+    logger.info("Starting Rodam (FastAPI + Whoosh)...")
     
     # Start Server Thread
     t = threading.Thread(target=start_server)
@@ -889,4 +882,4 @@ if __name__ == '__main__':
     # 2. O Controle do "Inspecionar Elemento"
     # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.
     # debug=False (Produção): O botão direito é desativado ou não mostra o menu de inspeção. O usuário vê apenas o app, sem saber como ele foi feito.
-    webview.start(debug=True)
+    webview.start(debug=False)

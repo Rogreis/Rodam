@@ -14,6 +14,7 @@ datas = [
     ('css', 'css'),
     ('js', 'js'),
     ('assets', 'assets'),
+    ('resources', 'resources'),
     ('favicon.ico', '.')
 ]
 
@@ -21,10 +22,14 @@ datas = [
 # Coloque seus ícones numa pasta 'assets' ou use o favicon da raiz
 icon_path = 'favicon.ico'
 if sys.platform == 'win32':
-    if os.path.exists('assets/icon.ico'):
+    if os.path.exists('resources/icon.ico'):
+        icon_path = 'resources/icon.ico'
+    elif os.path.exists('assets/icon.ico'):
         icon_path = 'assets/icon.ico'
 elif sys.platform == 'darwin':
-    if os.path.exists('assets/icon.icns'):
+    if os.path.exists('resources/icon.icns'):
+        icon_path = 'resources/icon.icns'
+    elif os.path.exists('assets/icon.icns'):
         icon_path = 'assets/icon.icns'
 
 a = Analysis(
@@ -32,7 +37,22 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=datas,
-    hiddenimports=['uvicorn.loops.auto', 'uvicorn.protocols.http.auto'],
+    hiddenimports=[
+        'uvicorn.loops.auto', 
+        'uvicorn.protocols.http.auto',
+        'webview',
+        'bs4',
+        'requests',
+        'numpy',
+        'faiss',
+        'sentence_transformers',
+        # Dependencies often missed by hook
+        'sklearn.neighbors._typedefs',
+        'sklearn.utils._cython_blas',
+        'sklearn.neighbors._quad_tree',
+        'sklearn.tree._utils',
+        'scipy.special.cython_special',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
