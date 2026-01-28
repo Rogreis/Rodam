@@ -1,6 +1,7 @@
 name: Build e Release do Rodam
 
 on:
+  workflow_dispatch:
   push:
     tags:
       - 'v*'
