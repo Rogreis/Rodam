@@ -5,6 +5,7 @@ import inspect
 from rodam_exception import RodamException
 
 # Define resource_path and get_data_dir first as they are fundamental
+APP_VERSION = "1.0.0"
 
 def log_exception(e: Exception, msg: str = ""):
     """

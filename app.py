@@ -887,7 +887,7 @@ if __name__ == '__main__':
     time.sleep(1.5)
     
     # Start WebView
-    webview.create_window('Rodam', 'http://127.0.0.1:5000', maximized=True, text_select=True)
+    webview.create_window(f'Rodam v{helpers.globals.APP_VERSION}', 'http://127.0.0.1:5000', maximized=True, text_select=True)
 
     # 2. O Controle do "Inspecionar Elemento"
     # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.

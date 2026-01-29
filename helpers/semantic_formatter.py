@@ -121,34 +121,45 @@ class SemanticFormatter:
         #     print(f"DEBUG: Restrição ATIVA.allowed_papers: {allowed_papers}")
             
         html_parts = []
+        
+        # --- CSS for Scroll-Driven Fade Out (Sticky Header) ---
+        style_block = """
+        <style>
+        .semantic-header-sticky {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--bg-color-main, #fff);
+            padding: 8px;
+            border-bottom: 1px solid #dee2e6;
+            transition: opacity 0.3s ease;
+            
+            /* Scroll-Driven Animation */
+            animation: fadeOutHeader linear both;
+            animation-timeline: scroll(nearest);
+            animation-range: 0px 80px;
+        }
+        
+        [data-bs-theme="dark"] .semantic-header-sticky {
+             background: #212529;
+             border-bottom-color: #495057;
+        }
+
+        @keyframes fadeOutHeader {
+            from { opacity: 1; transform: translateY(0); }
+            to { opacity: 0; transform: translateY(-10px); pointer-events: none; }
+        }
+        </style>
+        """
+        html_parts.append(style_block)
+
+        # 1. Header (Warning: Must be direct child of scrolling container #leftColumn for sticky to work best)
+        html_parts.append(f'<div class="semantic-header-sticky">')
+        html_parts.append(f'<div class="text-muted small text-end fw-bold">Encontrados {len(results)} resultados ({elapsed:.2f}s)</div>')
+        html_parts.append('</div>')
+        
+        # 2. Results Container
         html_parts.append('<div class="list-group list-group-flush p-2">')
-        
-        # Header / Status (moved) 
-        # But sort first!
-        
-        # Ordenação
-        # Por padrão (True) = Relevância (já vem do FAISS assim)
-        # Se False = Parágrafos (ordenar pelo primeiro link)
-        # Assumindo que global_config tem SemanticSearchSortOrder. Se não tiver, default True.
-        
-        sort_by_relevance = getattr(global_config, 'SemanticSearchSortOrder', True)
-        
-        if not sort_by_relevance:
-            def get_sort_key(item):
-                links_str = item.get('links', '')
-                if not links_str: return (9999, 0, 0)
-                
-                # Pega primeiro código
-                first_code = links_str.split()[0]
-                triplet = Paper.extract_code_triplet(first_code)
-                if triplet:
-                    return triplet
-                return (9999, 0, 0)
-            
-            # Ordenar lista in-place
-            results.sort(key=get_sort_key)
-            
-        html_parts.append(f'<div class="text-muted small mb-2 text-end">Encontrados {len(results)} resultados em {elapsed:.2f}s</div>')
 
         for item in results:
             rank = item.get('rank', 0)

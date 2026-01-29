@@ -249,7 +249,7 @@ class SearchFragment:
         if total_items == 0:
             msg_left += "<div class='alert alert-warning'>Nenhum resultado encontrado.</div>"
         else:
-            msg_left += f"<p>Encontrados: {total_items} resultados (Página {page} de {total_pages}).</p>"
+            msg_left += f'<div class="text-muted small mb-2 text-end">Encontrados {total_items} resultados (Página {page} de {total_pages}).</div>'
             
             # Generate Pagination HTML (Reuse for Top and Bottom)
             pagination_html = ""
