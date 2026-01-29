@@ -789,43 +789,7 @@
                 'settings': '/settings'
             };
 
-            window.openSemanticModal = function () {
-                console.log("Opening Semantic Modal...");
-                var modalEl = document.getElementById('semanticSearchResultModal');
-                if (modalEl) {
-                    var searchModal = new bootstrap.Modal(modalEl);
-                    searchModal.show();
-                } else {
-                    console.error("Semantic Modal element not found!");
-                }
-            };
 
-            window.toggleSemanticScope = function () {
-                const scopeType = document.querySelector('#semanticForm input[name="scopeType"]:checked').value;
-                const partsOptions = document.getElementById('semPartsOptions');
-                const docsInput = document.getElementById('semDocsInput');
-                // Parts checkboxes
-                const partChecks = partsOptions.querySelectorAll('.part-check');
-
-                if (scopeType === 'parts') {
-                    // Enable parts, disable docs
-                    partChecks.forEach(cb => {
-                        cb.disabled = false;
-                        cb.parentElement.classList.remove('text-muted');
-                    });
-                    // Disable docs
-                    docsInput.disabled = true;
-
-                } else {
-                    // Disable parts, enable docs
-                    partChecks.forEach(cb => {
-                        cb.disabled = true;
-                        cb.parentElement.classList.add('text-muted');
-                    });
-                    // Enable docs
-                    docsInput.disabled = false;
-                }
-            }
 
             window.performSemanticSearch = async function () {
                 const form = document.getElementById('semanticForm');

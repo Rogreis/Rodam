@@ -3,12 +3,14 @@ import sys
 import threading
 import time
 import json
+
 import uvicorn
 import webview
 from fastapi import FastAPI, Request, Query
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse, HTMLResponse
 from fastapi.templating import Jinja2Templates
+
 
 from pydantic import BaseModel
 from typing import List, Optional
@@ -79,7 +81,7 @@ def get_application_title(context_code: str = None) -> str:
     """
     import helpers.globals
     from helpers.translations import Paper
-    logger.info("get_application_title Context code: ", context_code)
+    logger.info(f"get_application_title Context code: {context_code}")
 
     if not context_code:
         return 'Rodam'
