@@ -21,15 +21,7 @@ distro==1.9.0
 faiss-cpu==1.13.2
 fastapi==0.127.0
 filelock==3.20.3
-flask==3.1.2
 fsspec==2026.1.0
-google-ai-generativelanguage==0.6.15
-google-api-core==2.29.0
-google-api-python-client==2.188.0
-google-auth==2.47.0
-google-auth-httplib2==0.3.0
-google-genai==1.60.0
-googleapis-common-protos==1.72.0
 grpcio==1.76.0
 grpcio-status==1.71.2
 h11==0.16.0
@@ -48,7 +40,6 @@ murmurhash==1.0.15
 networkx==3.6.1
 numpy==2.4.1
 packaging==25.0
-pandas==2.3.3
 pefile==2024.8.26
 pillow==12.1.0
 preshed==3.0.12
@@ -65,10 +56,10 @@ pyinstaller==6.17.0
 pyinstaller-hooks-contrib==2025.11
 pyparsing==3.3.2
 python-dateutil==2.9.0.post0
-pythonnet==3.0.5; sys_platform == 'win32'
+pythonnet==3.0.5
 pytz==2025.2
 pywebview==6.1
-pywin32-ctypes==0.2.3; sys_platform == 'win32'
+pywin32-ctypes==0.2.3
 pyyaml==6.0.3
 regex==2026.1.14
 requests==2.32.5
