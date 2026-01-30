@@ -55,6 +55,7 @@ pydantic-core==2.41.5
 pyinstaller==6.17.0
 pyinstaller-hooks-contrib==2025.11
 pyparsing==3.3.2
+pyperclip==1.11.0
 python-dateutil==2.9.0.post0
 pythonnet==3.0.5
 pytz==2025.2

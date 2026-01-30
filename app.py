@@ -844,6 +844,31 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         "initial_title": initial_title
     })
 
+# --- PyWebView API ---
+class RodamApi:
+    def copy_to_clipboard(self, text):
+        logger.info(f"API: copy_to_clipboard called with text len={len(text)}")
+        try:
+            import pyperclip
+            pyperclip.copy(text)
+            logger.info("API: pyperclip.copy success")
+        except ImportError:
+            logger.warning("API: pyperclip not found, trying Tkinter fallback")
+            # Fallback to Tkinter if pyperclip is missing
+            try:
+                import tkinter as tk
+                r = tk.Tk()
+                r.withdraw()
+                r.clipboard_clear()
+                r.clipboard_append(text)
+                r.update() # now it stays on the clipboard after the window is closed
+                r.destroy()
+                logger.info("API: Tkinter fallback success")
+            except Exception as e:
+                logger.error(f"Failed to copy to clipboard (Tkinter): {e}")
+        except Exception as pyper_err:
+             logger.error(f"Failed to copy to clipboard (pyperclip): {pyper_err}")
+
 # --- Server Start ---
 def start_server():
     """
@@ -886,10 +911,33 @@ if __name__ == '__main__':
     # Give it a moment
     time.sleep(1.5)
     
+# --- PyWebView API ---
+class RodamApi:
+    def copy_to_clipboard(self, text):
+        try:
+            import pyperclip
+            pyperclip.copy(text)
+        except ImportError:
+            # Fallback to Tkinter if pyperclip is missing
+            try:
+                import tkinter as tk
+                r = tk.Tk()
+                r.withdraw()
+                r.clipboard_clear()
+                r.clipboard_append(text)
+                r.update() # now it stays on the clipboard after the window is closed
+                r.destroy()
+            except Exception as e:
+                logger.error(f"Failed to copy to clipboard: {e}")
+
+# ... existing code ...
+
     # Start WebView
-    webview.create_window(f'Rodam v{helpers.globals.APP_VERSION}', 'http://127.0.0.1:5000', maximized=True, text_select=True)
+    api = RodamApi()
+    window = webview.create_window(f'Rodam v{helpers.globals.APP_VERSION}', 'http://127.0.0.1:5000', js_api=api, maximized=True, text_select=True)
+
 
     # 2. O Controle do "Inspecionar Elemento"
     # debug=True (Desenvolvimento): Quando o usuário (ou você) clica com o botão direito na janela do app, aparece o menu "Inspect" ou "Inspecionar". Isso abrirá as ferramentas de desenvolvedor (DevTools) acopladas àquela janela.
     # debug=False (Produção): O botão direito é desativado ou não mostra o menu de inspeção. O usuário vê apenas o app, sem saber como ele foi feito.
-    webview.start(debug=False)
+    webview.start(debug=True)
