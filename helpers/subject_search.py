@@ -1,6 +1,7 @@
 import pickle
 import os
 import sys
+import threading
 import time
 
 from helpers.globals import MODEL_PREFIX
@@ -12,6 +13,8 @@ class SubjectSearch:
         self.model = None
         self.index = None
         self.metadata = None
+        self.lock = threading.Lock()
+        self.is_loading = False
 
     def carregar(self, status_callback=None, cancel_check=None):
         """
@@ -26,35 +29,44 @@ class SubjectSearch:
             else:
                 print(msg) # Fallback
 
-        # Check se já está carregado
+        # Check rápido sem lock
         if self.model is not None and self.index is not None and self.metadata is not None:
             return True
 
-        if not os.path.exists(self.index_path) or not os.path.exists(self.meta_path):
-            report(f"Erro Crítico: Arquivos do modelo não encontrados em '{MODEL_PREFIX}'.")
-            report("Certifique-se de executar o script 'treinar_modelo.py' primeiro.")
-            return False
-
-        if cancel_check and cancel_check(): return False
-        report("Carregando IA (Isso pode demorar um pouco na primeira vez)...")
-        # Imports tardios para acelerar startup
-        import faiss
-        from sentence_transformers import SentenceTransformer
-
-        # Carrega o modelo de linguagem
-        self.model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
-
-        if cancel_check and cancel_check(): return False
-        report("Carregando Índice de Busca Rápida (FAISS)...")
-        self.index = faiss.read_index(self.index_path)
-
-        if cancel_check and cancel_check(): return False
-        report("Carregando Metadados...")
-        with open(self.meta_path, "rb") as f:
-            self.metadata = pickle.load(f)
-            
-        report("Sistema Pronto!")
-        return True
+        with self.lock:
+            # Check novamente dentro do lock
+            if self.model is not None and self.index is not None and self.metadata is not None:
+                return True
+                
+            self.is_loading = True
+            try:
+                if not os.path.exists(self.index_path) or not os.path.exists(self.meta_path):
+                    report(f"Erro Crítico: Arquivos do modelo não encontrados em '{MODEL_PREFIX}'.")
+                    report("Certifique-se de executar o script 'treinar_modelo.py' primeiro.")
+                    return False
+    
+                if cancel_check and cancel_check(): return False
+                report("Carregando IA (Isso pode demorar um pouco na primeira vez)...")
+                # Imports tardios para acelerar startup
+                import faiss
+                from sentence_transformers import SentenceTransformer
+    
+                # Carrega o modelo de linguagem
+                self.model = SentenceTransformer('all-MiniLM-L6-v2', device='cpu')
+    
+                if cancel_check and cancel_check(): return False
+                report("Carregando Índice de Busca Rápida (FAISS)...")
+                self.index = faiss.read_index(self.index_path)
+    
+                if cancel_check and cancel_check(): return False
+                report("Carregando Metadados...")
+                with open(self.meta_path, "rb") as f:
+                    self.metadata = pickle.load(f)
+                    
+                report("Sistema Pronto!")
+                return True
+            finally:
+                self.is_loading = False
 
     def buscar(self, query, top_k=5, allowed_papers=None, status_callback=None, cancel_check=None):
         """
@@ -140,7 +152,7 @@ def main():
     print("       BUSCA SEMÂNTICA - INTERFACE INTERATIVA")
     print("========================================================")
 
-    buscador = MotorBusca(MODEL_PREFIX)
+    buscador = SubjectSearch(MODEL_PREFIX)
     sucesso = buscador.carregar()
 
     if not sucesso:

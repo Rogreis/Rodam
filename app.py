@@ -898,8 +898,30 @@ if __name__ == '__main__':
     except ImportError:
         pass
 
-    # Init Semantic Search Engine (Lazy - it loads on first 'buscar')
+    # Init Semantic Search Engine
+    # Previously Lazy, now triggering background load to improve UX.
     global_config.semantic_engine = SubjectSearch(MODEL_PREFIX)
+    
+    def background_load_semantic():
+        # Avoid logger usage if it might race on startup, but usually safe.
+        # We pass a callback to receive status updates if needed, logging them.
+        try:
+            time.sleep(2) # Give a small breath to valid startup
+            logger.info("Background thread: Starting Semantic Model loading...")
+            start_t = time.time()
+            # We ignore status callbacks effectively (or log them as debug) to avoid clutter
+            # Note: carregar uses lock, so it's safe if user searches immediately
+            success = global_config.semantic_engine.carregar(status_callback=lambda msg: logger.debug(f"SemanticLoad: {msg}"))
+            if success:
+                 logger.info(f"Background thread: Semantic Model loaded in {time.time()-start_t:.2f}s")
+            else:
+                 logger.warning("Background thread: Semantic Model failed to load.")
+        except Exception as e:
+            logger.error(f"Background thread: Semantic Loading Error: {e}")
+
+    t_ai = threading.Thread(target=background_load_semantic, name="SemanticLoader")
+    t_ai.daemon = True
+    t_ai.start()
 
     logger.info("Starting Rodam (FastAPI + Whoosh)...")
     
