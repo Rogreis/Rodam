@@ -86,8 +86,18 @@ jobs:
           sudo gem install fpm
 
       - name: Instalar Python Requirements
+        shell: bash
         run: |
           pip install --upgrade pip setuptools wheel
+          
+          # TRUQUE: Remover torch do requirements.txt para evitar baixar a versão GIGANTE com CUDA (GPU)
+          # Vamos instalar especificamente a versão CPU para economizar ~3GB
+          sed -i '/torch==/d' requirements.txt
+          
+          # Instala versão CPU leve do PyTorch
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          
+          # Instala o resto
           pip install -r requirements.txt
           pip install pyinstaller Pillow
 
@@ -186,6 +196,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           name: Versão ${{ env.APP_VERSION }}
+          fail_on_unmatched_files: false
           files: |
             dist/*.exe
             dist/*.deb
