@@ -91,8 +91,11 @@ jobs:
           pip install --upgrade pip setuptools wheel
           
           # TRUQUE: Remover torch do requirements.txt para evitar baixar a versão GIGANTE com CUDA (GPU)
-          # Vamos instalar especificamente a versão CPU para economizar ~3GB
-          sed -i '/torch==/d' requirements.txt
+          if [[ "${{ runner.os }}" == "macOS" ]]; then
+            sed -i '' '/torch==/d' requirements.txt
+          else
+            sed -i '/torch==/d' requirements.txt
+          fi
           
           # Instala versão CPU leve do PyTorch
           pip install torch --index-url https://download.pytorch.org/whl/cpu
