@@ -1,7 +1,9 @@
 #!/bin/bash
 
-git tag -d v1.0.0
-git push --delete origin v1.0.0
-git tag v1.0.0
+versao="1.0.1"
+
+git tag -d v${versao}
+git push --delete origin v${versao}
+git tag v${versao}
 git push origin --tags
 git tag -n
