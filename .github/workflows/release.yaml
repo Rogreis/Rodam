@@ -22,7 +22,7 @@ jobs:
           - os: windows-latest
             TARGET_OS: Windows
             ARTIFACT_EXT: .exe
-          - os: macos-13 # Atualizado para macos-13 (Ventura) pois macos-12 foi descontinuado. Mantém Intel (x86_64).
+          - os: macos-15-intel # Atualizado para macos-15-intel (Sequoia) para manter arquitetura x86_64 conforme aviso de depreciação.
             TARGET_OS: MacOS
             ARTIFACT_EXT: .dmg
 
