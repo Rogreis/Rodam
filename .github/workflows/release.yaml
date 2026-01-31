@@ -22,7 +22,7 @@ jobs:
           - os: windows-latest
             TARGET_OS: Windows
             ARTIFACT_EXT: .exe
-          - os: macos-12 # Voltando para macos-12 (Monterey) para garantir runner Intel estável
+          - os: macos-13 # Atualizado para macos-13 (Ventura) pois macos-12 foi descontinuado. Mantém Intel (x86_64).
             TARGET_OS: MacOS
             ARTIFACT_EXT: .dmg
 
