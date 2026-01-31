@@ -22,7 +22,7 @@ jobs:
           - os: windows-latest
             TARGET_OS: Windows
             ARTIFACT_EXT: .exe
-          - os: macos-latest
+          - os: macos-13
             TARGET_OS: MacOS
             ARTIFACT_EXT: .dmg
 
@@ -109,19 +109,20 @@ jobs:
       - name: Build com PyInstaller
         shell: bash
         run: |
-          # Desabilita Splash no MacOS (não suportado) modificando o .spec dinamicamente
+          PYINSTALLER_ARGS=""
+          # Desabilita Splash no MacOS e define arquitetura Intel (x86_64)
           if [[ "${{ runner.os }}" == "macOS" ]]; then
-             # 1. Comment out the entire Splash definition block (from start to closing parenthesis)
+             # 1. Ajuste do .spec para Splash
              sed -i '' '/^splash = Splash(/,/^)/ s/^/# /' Rodam.spec
-             
-             # 2. Define splash as None so the variable exists
              sed -i '' 's/^# splash = Splash(/splash = None # splash = Splash(/' Rodam.spec
-             
-             # 3. Comment out references inside EXE()
              sed -i '' 's/splash,/# splash,/' Rodam.spec
              sed -i '' 's/splash.binaries,/# splash.binaries,/' Rodam.spec
+             
+             # 2. Forçar arquitetura x86_64
+             PYINSTALLER_ARGS="--target-arch x86_64"
           fi
-          pyinstaller Rodam.spec
+          
+          pyinstaller Rodam.spec $PYINSTALLER_ARGS
 
       # ========================================================
       # 1. WINDOWS: INNO SETUP
