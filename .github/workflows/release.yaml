@@ -118,8 +118,8 @@ jobs:
              sed -i '' 's/splash,/# splash,/' Rodam.spec
              sed -i '' 's/splash.binaries,/# splash.binaries,/' Rodam.spec
              
-             # 2. Forçar arquitetura x86_64
-             PYINSTALLER_ARGS="--target-arch x86_64"
+             # 2. Forçar arquitetura x86_64 editando o .spec (CLI arg falha com .spec)
+             sed -i '' "s/target_arch=None/target_arch='x86_64'/" Rodam.spec
           fi
           
           pyinstaller Rodam.spec $PYINSTALLER_ARGS
