@@ -44,6 +44,8 @@ logger = logging.getLogger("Rodam")
 import helpers.globals
 helpers.globals.logger = logger
 
+PORT=5001
+
 # --- FastAPI App ---
 app = FastAPI()
 
@@ -875,7 +877,7 @@ def start_server():
         Inicia o servidor Uvicorn em background
         log_config=None remove logs excessivos no console
     """
-    uvicorn.run(app, host="127.0.0.1", port=5000, log_level="info")
+    uvicorn.run(app, host="127.0.0.1", port=PORT, log_level="info")
     #uvicorn.run(app, host="127.0.0.1", port=54321, log_config=None)
 
 if __name__ == '__main__':
@@ -956,7 +958,7 @@ class RodamApi:
 
     # Start WebView
     api = RodamApi()
-    window = webview.create_window(f'Rodam v{helpers.globals.APP_VERSION}', 'http://127.0.0.1:5000', js_api=api, maximized=True, text_select=True)
+    window = webview.create_window(f'Rodam v{helpers.globals.APP_VERSION}', f'http://127.0.0.1:{PORT}', js_api=api, maximized=True, text_select=True)
 
 
     # 2. O Controle do "Inspecionar Elemento"

@@ -9,7 +9,7 @@ app_name = 'Rodam'
 
 # --- ARQUIVOS EXTRAS ---
 # (source_folder, dest_folder)
-datas = [
+_raw_datas = [
     ('templates', 'templates'),
     ('css', 'css'),
     ('js', 'js'),
@@ -17,6 +17,9 @@ datas = [
     ('resources', 'resources'),
     ('favicon.ico', '.')
 ]
+
+# Filtrar apenas arquivos/diretórios que realmente existem, para evitar falhas durante o build
+datas = [(src, dest) for src, dest in _raw_datas if os.path.exists(src)]
 
 # --- SELEÇÃO DE ÍCONE ---
 # Coloque seus ícones numa pasta 'assets' ou use o favicon da raiz
@@ -93,8 +96,8 @@ exe = EXE(
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
-    codesign_identity=None,
-    entitlements_file=None,
+    codesign_identity=os.environ.get('CODESIGN_IDENTITY', None),
+    entitlements_file='entitlements.plist' if sys.platform == 'darwin' and os.path.exists('entitlements.plist') else None,
     icon=icon_path
 )
 
@@ -104,5 +107,14 @@ if sys.platform == 'darwin':
         exe,
         name=f'{app_name}.app',
         icon=icon_path,
-        bundle_identifier='com.rodam.app'
+        bundle_identifier='com.rodam.app',
+        info_plist={
+            'NSHighResolutionCapable': 'True',
+            # Requisito para App Store / Notarização: Declarar uso de microfone/câmera se for usado pelo engine web
+            'NSMicrophoneUsageDescription': 'O aplicativo precisa de acesso ao microfone, caso solicitado.',
+            'NSCameraUsageDescription': 'O aplicativo precisa de acesso à câmera, caso solicitado.'
+        },
+        # É fundamental aplicar a identidade e os entitlements também na raiz do App Bundle
+        entitlements_file='entitlements.plist' if os.path.exists('entitlements.plist') else None,
+        codesign_identity=os.environ.get('CODESIGN_IDENTITY', None),
     )

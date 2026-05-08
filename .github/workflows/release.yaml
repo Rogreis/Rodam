@@ -22,7 +22,10 @@ jobs:
           - os: windows-latest
             TARGET_OS: Windows
             ARTIFACT_EXT: .exe
-          - os: macos-15-intel # Atualizado para macos-15-intel (Sequoia) para manter arquitetura x86_64 conforme aviso de depreciação.
+          - os: [macos-13, macos-14]
+            # os: macos-15-intel # Atualizado para macos-15-intel (Sequoia) para manter arquitetura x86_64 conforme aviso de depreciação.
+            # macos-13 → x86_64
+            # macos-14 → arm64
             TARGET_OS: MacOS
             ARTIFACT_EXT: .dmg
 
