@@ -94,6 +94,29 @@
             border-radius: 2px;
             padding: 0 2px;
         }
+
+        .dropdown-submenu {
+            position: relative;
+        }
+
+        .dropdown-submenu>.dropdown-menu {
+            top: 0;
+            left: 100%;
+            margin-top: -0.125rem;
+        }
+
+        .dropdown-submenu .submenu-caret {
+            float: right;
+            margin-left: 0.5rem;
+        }
+
+        @media (max-width: 991.98px) {
+            .dropdown-submenu>.dropdown-menu {
+                position: static;
+                margin-left: 1rem;
+                border-left: 1px solid rgba(255, 255, 255, 0.2);
+            }
+        }
     </style>
 </head>
 
@@ -118,6 +141,49 @@
                         </li>
 
                         {% for item in nav_items %}
+                        {% if item.id == 'settings' %}
+                        <li id="nav-item-ferramentas" class="nav-item dropdown bg-primary">
+                            <a class="nav-link dropdown-toggle navinactive" href="#" role="button"
+                                data-bs-toggle="dropdown" aria-expanded="false"
+                                title="Recursos e ferramentas de estudo do Livro de Urantia">
+                                Ferramentas
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-dark">
+                                {% for group in tools_links_grouped %}
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle tools-submenu-toggle" href="#"
+                                        title="Abrir opções da categoria {{ group.category }}">
+                                        {{ group.category }}
+                                        <i class="bi bi-chevron-right submenu-caret"></i>
+                                    </a>
+                                    <ul class="dropdown-menu dropdown-menu-dark">
+                                        {% for link in group.links %}
+                                        <li>
+                                            <a class="dropdown-item" href="{{ link.url }}" target="_blank"
+                                                title="{{ link.description }}">
+                                                {{ link.title }}
+                                            </a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                                {% endfor %}
+
+                                {% if tools_links_uncategorized and tools_links_grouped %}
+                                <li><hr class="dropdown-divider"></li>
+                                {% endif %}
+
+                                {% for link in tools_links_uncategorized %}
+                                <li>
+                                    <a class="dropdown-item" href="{{ link.url }}" target="_blank"
+                                        title="{{ link.description }}">
+                                        {{ link.title }}
+                                    </a>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </li>
+                        {% endif %}
                         <li class="nav-item bg-primary {{ 'd-none' if item.visible == False else '' }}"
                             id="nav-item-{{ item.id }}">
                             <a class="nav-link {{ 'active navactive' if current_page == item.id else 'navinactive' }}"
@@ -201,10 +267,6 @@
     <!-- Semantic Search Results Modal (Included from Template) -->
     {% include 'semantic_search_modal.html' %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-ka7Sk0Gln4gmtz2MlQnikT1wXgYsOg+OMhuP+IlRH9sENBO0LRn5q+8nbTov4+1p"
-        crossorigin="anonymous"></script>
-
     <!-- Local JS -->
     <!-- 
     <script src="js/tub_pt_br.js"></script>
@@ -262,6 +324,35 @@
                 }
             } else {
                 cleanHighlights();
+            }
+        }
+
+        function initToolsSubmenus() {
+            document.querySelectorAll('.tools-submenu-toggle').forEach(toggle => {
+                toggle.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    const submenu = this.nextElementSibling;
+                    if (!submenu) return;
+
+                    const siblingSubmenus = this.closest('.dropdown-menu')
+                        .querySelectorAll('.dropdown-submenu > .dropdown-menu.show');
+                    siblingSubmenus.forEach(openMenu => {
+                        if (openMenu !== submenu) openMenu.classList.remove('show');
+                    });
+
+                    submenu.classList.toggle('show');
+                });
+            });
+
+            const toolsDropdown = document.querySelector('#nav-item-ferramentas > .dropdown-menu');
+            if (toolsDropdown) {
+                toolsDropdown.parentElement.addEventListener('hide.bs.dropdown', function () {
+                    toolsDropdown.querySelectorAll('.dropdown-submenu > .dropdown-menu.show').forEach(submenu => {
+                        submenu.classList.remove('show');
+                    });
+                });
             }
         }
 
@@ -705,6 +796,8 @@
 
         // Init logic based on 'p' parameter
         document.addEventListener('DOMContentLoaded', () => {
+            initToolsSubmenus();
+
             // Apply Initial Settings (Immediate)
             toggleDarkMode(savedDarkMode);
             toggleBgColors(savedShowBg);

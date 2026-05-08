@@ -59,6 +59,25 @@ from helpers.search_engine import RodamSearch
 search_engine = None
 paper_formatter = None
 
+# Load study tools links for Ferramentas dropdown
+_tools_links_path = os.path.join(os.path.dirname(__file__), "urantia_study_links.json")
+with open(_tools_links_path, encoding="utf-8") as _f:
+    _tools_links = json.load(_f)
+
+_tools_links_grouped = []
+_tools_links_uncategorized = []
+_tools_group_index = {}
+
+for _link in _tools_links:
+    _category = (_link.get("category") or "").strip()
+    if _category:
+        if _category not in _tools_group_index:
+            _tools_group_index[_category] = len(_tools_links_grouped)
+            _tools_links_grouped.append({"category": _category, "links": []})
+        _tools_links_grouped[_tools_group_index[_category]]["links"].append(_link)
+    else:
+        _tools_links_uncategorized.append(_link)
+
 # Initialize Fragments
 subject_frag = SubjectFragment()
 articles_frag = ArticlesFragment()
@@ -813,8 +832,7 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
             "id": "indexArticles", 
             "label": "Artigos", 
             "title": "Abre o recurso de navegação por artigos", 
-            "href": "javascript:loadContent('/articles', 'indexArticles')",
-            "visible": False
+            "href": "javascript:loadContent('/articles', 'indexArticles')"
         },
         {
             "id": "search", 
@@ -842,6 +860,9 @@ async def read_root(request: Request, p: str = Query("indexToc", alias="p")):
         "request": request,
         "current_page": p,
         "nav_items": nav_items,
+        "tools_links": _tools_links,
+        "tools_links_grouped": _tools_links_grouped,
+        "tools_links_uncategorized": _tools_links_uncategorized,
         "config": config,
         "initial_title": initial_title
     })
